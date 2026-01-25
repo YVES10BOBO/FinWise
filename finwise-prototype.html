@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinWise - Smart Finance Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 420px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            min-height: 90vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* Balance Card */
+        .balance-card {
+            background: white;
+            margin: -30px 20px 20px;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .balance-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .balance-amount {
+            font-size: 36px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .income-expense {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        .income-expense-item {
+            flex: 1;
+        }
+
+        .income-expense-label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .income-amount {
+            font-size: 20px;
+            font-weight: 600;
+            color: #10b981;
+        }
+
+        .expense-amount {
+            font-size: 20px;
+            font-weight: 600;
+            color: #ef4444;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            padding: 5px;
+            margin: 0 20px 20px;
+            border-radius: 12px;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            color: #666;
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Content Sections */
+        .content-section {
+            display: none;
+            padding: 0 20px 20px;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        /* Categories */
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .category-card {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .category-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .category-card.selected {
+            border-color: #667eea;
+            background: #eef2ff;
+        }
+
+        .category-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .category-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .category-amount {
+            font-size: 16px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .category-budget {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        /* Budget Recommendation */
+        .ai-recommendation {
+            background: linear-gradient(135deg, #eef2ff 0%, #f0f9ff 100%);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .ai-recommendation-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ai-recommendation-text {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        /* Goals */
+        .goals-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .goal-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            padding: 18px;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .goal-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .goal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .goal-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .goal-amount {
+            font-size: 18px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .goal-progress {
+            background: #e5e7eb;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .goal-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .goal-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Add Button */
+        .add-button {
+            position: fixed;
+            bottom: 30px;
+            right: calc(50% - 190px);
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .add-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.5);
+        }
+
+        /* Transaction List */
+        .transaction-item {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-left: 4px solid #e5e7eb;
+            transition: all 0.3s;
+        }
+
+        .transaction-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .transaction-item.expense {
+            border-left-color: #ef4444;
+        }
+
+        .transaction-item.income {
+            border-left-color: #10b981;
+        }
+
+        .transaction-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            background: #f8f9fa;
+        }
+
+        .transaction-details {
+            flex: 1;
+        }
+
+        .transaction-name {
+            font-size: 15px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .transaction-category {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .transaction-amount {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .transaction-amount.income {
+            color: #10b981;
+        }
+
+        .transaction-amount.expense {
+            color: #ef4444;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 90%;
+            width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #999;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .close-btn:hover {
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .container {
+                max-width: 100%;
+                border-radius: 0;
+                min-height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>💰 FinWise</h1>
+            <p>Smart Finance Assistant</p>
+        </div>
+
+        <!-- Balance Card -->
+        <div class="balance-card">
+            <div class="balance-label">Available Balance</div>
+            <div class="balance-amount" id="balanceAmount">450,000 RWF</div>
+            <div class="income-expense">
+                <div class="income-expense-item">
+                    <div class="income-expense-label">Income</div>
+                    <div class="income-amount">600,000 RWF</div>
+                </div>
+                <div class="income-expense-item">
+                    <div class="income-expense-label">Expenses</div>
+                    <div class="expense-amount">150,000 RWF</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <div class="nav-tab active" data-tab="dashboard">Dashboard</div>
+            <div class="nav-tab" data-tab="categories">Categories</div>
+            <div class="nav-tab" data-tab="goals">Goals</div>
+            <div class="nav-tab" data-tab="transactions">History</div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div class="content-section active" id="dashboard">
+            <div class="section-title">AI Recommendations</div>
+            <div class="ai-recommendation">
+                <div class="ai-recommendation-title">
+                    🤖 Smart Budget Tip
+                </div>
+                <div class="ai-recommendation-text">
+                    Based on your spending patterns, you're doing great! You can save an additional 30,000 RWF this month by reducing entertainment expenses by 15%.
+                </div>
+            </div>
+
+            <div class="section-title">Quick Stats</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">75%</div>
+                    <div class="stat-label">Budget Used</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">25%</div>
+                    <div class="stat-label">Savings Rate</div>
+                </div>
+            </div>
+
+            <div class="section-title">Recent Transactions</div>
+            <div class="transaction-item income">
+                <div class="transaction-icon">💵</div>
+                <div class="transaction-details">
+                    <div class="transaction-name">Salary</div>
+                    <div class="transaction-category">Income</div>
+                </div>
+                <div class="transaction-amount income">+600,000</div>
+            </div>
+            <div class="transaction-item expense">
+                <div class="transaction-icon">🍔</div>
+                <div class="transaction-details">
+                    <div class="transaction-name">Restaurant</div>
+                    <div class="transaction-category">Food</div>
+                </div>
+                <div class="transaction-amount expense">-25,000</div>
+            </div>
+        </div>
+
+        <!-- Categories Section -->
+        <div class="content-section" id="categories">
+            <div class="section-title">Spending Categories</div>
+            <div class="categories-grid">
+                <div class="category-card">
+                    <div class="category-icon">🍔</div>
+                    <div class="category-name">Food</div>
+                    <div class="category-amount">45,000 RWF</div>
+                    <div class="category-budget">Budget: 90,000 RWF</div>
+                </div>
+                <div class="category-card">
+                    <div class="category-icon">🚗</div>
+                    <div class="category-name">Transport</div>
+                    <div class="category-amount">30,000 RWF</div>
+                    <div class="category-budget">Budget: 45,000 RWF</div>
+                </div>
+                <div class="category-card">
+                    <div class="category-icon">🎉</div>
+                    <div class="category-name">Entertainment</div>
+                    <div class="category-amount">35,000 RWF</div>
+                    <div class="category-budget">Budget: 30,000 RWF</div>
+                </div>
+                <div class="category-card">
+                    <div class="category-icon">🏠</div>
+                    <div class="category-name">Rent</div>
+                    <div class="category-amount">0 RWF</div>
+                    <div class="category-budget">Budget: 45,000 RWF</div>
+                </div>
+                <div class="category-card">
+                    <div class="category-icon">📱</div>
+                    <div class="category-name">Utilities</div>
+                    <div class="category-amount">20,000 RWF</div>
+                    <div class="category-budget">Budget: 45,000 RWF</div>
+                </div>
+                <div class="category-card">
+                    <div class="category-icon">💰</div>
+                    <div class="category-name">Savings</div>
+                    <div class="category-amount">150,000 RWF</div>
+                    <div class="category-budget">Target: 120,000 RWF</div>
+                </div>
+            </div>
+
+            <div class="ai-recommendation">
+                <div class="ai-recommendation-title">
+                    💡 Category Insight
+                </div>
+                <div class="ai-recommendation-text">
+                    Your Entertainment spending is 17% over budget. Consider reducing by 5,000 RWF to stay on track with your savings goal.
+                </div>
+            </div>
+        </div>
+
+        <!-- Goals Section -->
+        <div class="content-section" id="goals">
+            <div class="section-title">Financial Goals</div>
+            <div class="goals-list">
+                <div class="goal-card">
+                    <div class="goal-header">
+                        <div class="goal-name">💻 New Laptop</div>
+                        <div class="goal-amount">1,000,000 RWF</div>
+                    </div>
+                    <div class="goal-progress">
+                        <div class="goal-progress-bar" style="width: 45%"></div>
+                    </div>
+                    <div class="goal-info">
+                        <span>450,000 RWF saved</span>
+                        <span>3 months remaining</span>
+                    </div>
+                </div>
+                <div class="goal-card">
+                    <div class="goal-header">
+                        <div class="goal-name">🚗 Car Down Payment</div>
+                        <div class="goal-amount">2,500,000 RWF</div>
+                    </div>
+                    <div class="goal-progress">
+                        <div class="goal-progress-bar" style="width: 20%"></div>
+                    </div>
+                    <div class="goal-info">
+                        <span>500,000 RWF saved</span>
+                        <span>8 months remaining</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ai-recommendation">
+                <div class="ai-recommendation-title">
+                    🎯 Goal Progress
+                </div>
+                <div class="ai-recommendation-text">
+                    You're on track! To reach your laptop goal faster, save an extra 20,000 RWF this month by reducing entertainment expenses.
+                </div>
+            </div>
+        </div>
+
+        <!-- Transactions Section -->
+        <div class="content-section" id="transactions">
+            <div class="section-title">Transaction History</div>
+            <div class="transaction-item income">
+                <div class="transaction-icon">💵</div>
+                <div class="transaction-details">
+                    <div class="transaction-name">Salary Payment</div>
+                    <div class="transaction-category">Income • Today</div>
+                </div>
+                <div class="transaction-amount income">+600,000</div>
+            </div>
+            <div class="transaction-item expense">
+                <div class="transaction-icon">🍔</div>
+                <div class="transaction-details">
+                    <div class="transaction-name">Restaurant Dinner</div>
+                    <div class="transaction-category">Food • Today</div>
+                </div>
+                <div class="transaction-amount expense">-25,000</div>
+            </div>
+            <div class="transaction-item expense">
+                <div class="transaction-icon">🚗</div>
+                <div class="transaction-details">
+                    <div class="transaction-name">Taxi Ride</div>
+                    <div class="transaction-category">Transport • Yesterday</div>
+                </div>
+                <div class="transaction-amount expense">-5,000</div>
+            </div>
+            <div class="transaction-item expense">
+                <div class="transaction-icon">🎬</div>
+                <div class="transaction-details">
+                    <div class="transaction-name">Movie Tickets</div>
+                    <div class="transaction-category">Entertainment • Yesterday</div>
+                </div>
+                <div class="transaction-amount expense">-10,000</div>
+            </div>
+            <div class="transaction-item expense">
+                <div class="transaction-icon">📱</div>
+                <div class="transaction-details">
+                    <div class="transaction-name">Mobile Airtime</div>
+                    <div class="transaction-category">Utilities • 2 days ago</div>
+                </div>
+                <div class="transaction-amount expense">-5,000</div>
+            </div>
+            <div class="transaction-item expense">
+                <div class="transaction-icon">🛒</div>
+                <div class="transaction-details">
+                    <div class="transaction-name">Grocery Shopping</div>
+                    <div class="transaction-category">Food • 3 days ago</div>
+                </div>
+                <div class="transaction-amount expense">-20,000</div>
+            </div>
+        </div>
+
+        <!-- Add Button -->
+        <button class="add-button" onclick="openAddModal()">+</button>
+    </div>
+
+    <!-- Add Transaction Modal -->
+    <div class="modal" id="addModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Add Transaction</div>
+                <button class="close-btn" onclick="closeAddModal()">&times;</button>
+            </div>
+            <form onsubmit="addTransaction(event)">
+                <div class="form-group">
+                    <label class="form-label">Transaction Type</label>
+                    <select class="form-select" id="transactionType" required>
+                        <option value="expense">Expense</option>
+                        <option value="income">Income</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Amount (RWF)</label>
+                    <input type="number" class="form-input" id="transactionAmount" placeholder="Enter amount" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" id="transactionCategory" required>
+                        <option value="">Select category</option>
+                        <option value="food">Food</option>
+                        <option value="transport">Transport</option>
+                        <option value="entertainment">Entertainment</option>
+                        <option value="utilities">Utilities</option>
+                        <option value="rent">Rent</option>
+                        <option value="shopping">Shopping</option>
+                        <option value="income">Income</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <input type="text" class="form-input" id="transactionDescription" placeholder="What is this for?">
+                </div>
+                <button type="submit" class="btn-primary">Add Transaction</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Tab Navigation
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs and sections
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding section
+                tab.classList.add('active');
+                const tabName = tab.getAttribute('data-tab');
+                document.getElementById(tabName).classList.add('active');
+            });
+        });
+
+        // Modal Functions
+        function openAddModal() {
+            document.getElementById('addModal').classList.add('active');
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').classList.remove('active');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('addModal').addEventListener('click', (e) => {
+            if (e.target.id === 'addModal') {
+                closeAddModal();
+            }
+        });
+
+        // Add Transaction
+        function addTransaction(event) {
+            event.preventDefault();
+            
+            const type = document.getElementById('transactionType').value;
+            const amount = parseFloat(document.getElementById('transactionAmount').value);
+            const category = document.getElementById('transactionCategory').value;
+            const description = document.getElementById('transactionDescription').value || category;
+            
+            // Get category icon
+            const icons = {
+                food: '🍔',
+                transport: '🚗',
+                entertainment: '🎉',
+                utilities: '📱',
+                rent: '🏠',
+                shopping: '🛒',
+                income: '💵'
+            };
+            
+            // Create transaction item
+            const transactionHTML = `
+                <div class="transaction-item ${type}">
+                    <div class="transaction-icon">${icons[category] || '💰'}</div>
+                    <div class="transaction-details">
+                        <div class="transaction-name">${description}</div>
+                        <div class="transaction-category">${category.charAt(0).toUpperCase() + category.slice(1)} • Just now</div>
+                    </div>
+                    <div class="transaction-amount ${type}">${type === 'income' ? '+' : '-'}${amount.toLocaleString()}</div>
+                </div>
+            `;
+            
+            // Add to transactions list
+            const transactionsSection = document.getElementById('transactions');
+            const firstTransaction = transactionsSection.querySelector('.transaction-item');
+            if (firstTransaction) {
+                firstTransaction.insertAdjacentHTML('beforebegin', transactionHTML);
+            } else {
+                transactionsSection.insertAdjacentHTML('beforeend', transactionHTML);
+            }
+            
+            // Update balance
+            updateBalance(type, amount);
+            
+            // Close modal and reset form
+            closeAddModal();
+            event.target.reset();
+            
+            // Show success message (simple alert for demo)
+            alert('Transaction added successfully!');
+        }
+
+        // Update Balance
+        function updateBalance(type, amount) {
+            const balanceElement = document.getElementById('balanceAmount');
+            const currentBalance = parseFloat(balanceElement.textContent.replace(/[^\d]/g, ''));
+            
+            let newBalance;
+            if (type === 'income') {
+                newBalance = currentBalance + amount;
+            } else {
+                newBalance = currentBalance - amount;
+            }
+            
+            balanceElement.textContent = newBalance.toLocaleString() + ' RWF';
+        }
+
+        // Category Card Click (for future enhancement)
+        document.querySelectorAll('.category-card').forEach(card => {
+            card.addEventListener('click', () => {
+                card.classList.toggle('selected');
+            });
+        });
+    </script>
+</body>
+</html>
