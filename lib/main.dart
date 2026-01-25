@@ -11,6 +11,7 @@ import 'screens/onboarding/welcome_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'providers/transaction_provider.dart';
 import 'providers/goal_provider.dart';
+import 'providers/category_provider.dart';
 import 'theme/theme_provider.dart';
 import 'widgets/add_transaction_dialog.dart';
 
@@ -27,6 +28,7 @@ class FinWiseApp extends StatelessWidget {
       return MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => ThemeProvider()),
+          ChangeNotifierProvider(create: (_) => CategoryProvider()),
           ChangeNotifierProvider(create: (_) => TransactionProvider()),
           ChangeNotifierProvider(create: (_) => GoalProvider()),
         ],

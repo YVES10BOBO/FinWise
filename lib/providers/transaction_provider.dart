@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import '../models/transaction.dart';
+import '../models/transaction.dart' hide Category;
+import '../models/transaction.dart' as models show Category;
 
 class TransactionProvider with ChangeNotifier {
   List<Transaction> _transactions = [];
@@ -112,5 +113,19 @@ class TransactionProvider with ChangeNotifier {
       return t.description.toLowerCase().contains(lowerQuery) ||
           t.category.name.toLowerCase().contains(lowerQuery);
     }).toList();
+  }
+
+  // Get spending by category (returns map of category to total amount)
+  Map<models.Category, double> getCategorySpending() {
+    final Map<models.Category, double> spending = {};
+    
+    for (var transaction in _transactions) {
+      if (transaction.type == TransactionType.expense) {
+        spending[transaction.category] = 
+            (spending[transaction.category] ?? 0.0) + transaction.amount;
+      }
+    }
+    
+    return spending;
   }
 }

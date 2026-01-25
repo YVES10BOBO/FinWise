@@ -461,7 +461,14 @@ class _FinancialQuestionnaireScreenState
           children: _defaultCategories.map((category) {
             final isSelected = _selectedCategories.contains(category);
             return FilterChip(
-              label: Text(category),
+              label: Text(
+                category,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : AppTheme.textPrimary,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
               selected: isSelected,
               onSelected: (selected) {
                 setState(() {
@@ -472,12 +479,12 @@ class _FinancialQuestionnaireScreenState
                   }
                 });
               },
-              selectedColor: Colors.white,
-              checkmarkColor: AppTheme.primaryColor,
-              backgroundColor: Colors.white.withOpacity(0.3),
-              labelStyle: TextStyle(
-                color: isSelected ? AppTheme.primaryColor : Colors.white,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              selectedColor: AppTheme.primaryColor,
+              checkmarkColor: Colors.white,
+              backgroundColor: Colors.white,
+              side: BorderSide(
+                color: isSelected ? AppTheme.primaryColor : Colors.grey[300]!,
+                width: isSelected ? 2 : 1,
               ),
             );
           }).toList(),
@@ -499,14 +506,18 @@ class _FinancialQuestionnaireScreenState
             runSpacing: 12,
             children: _customCategories.map((category) {
               return Chip(
-                label: Text(category),
-                deleteIcon: const Icon(Icons.close, size: 18),
+                label: Text(
+                  category,
+                  style: const TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                deleteIcon: const Icon(Icons.close, size: 18, color: AppTheme.textSecondary),
                 onDeleted: () => _removeCustomCategory(category),
                 backgroundColor: Colors.white,
-                labelStyle: const TextStyle(
-                  color: AppTheme.primaryColor,
-                  fontWeight: FontWeight.bold,
-                ),
+                side: BorderSide(color: Colors.grey[300]!),
               );
             }).toList(),
           ),

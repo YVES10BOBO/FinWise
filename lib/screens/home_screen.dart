@@ -7,9 +7,15 @@ import '../widgets/ai_tip_card.dart';
 import '../widgets/transaction_item.dart';
 import '../widgets/add_transaction_dialog.dart';
 import '../widgets/expense_trend_chart.dart';
+import '../widgets/personalized_header.dart';
+import '../widgets/savings_rate_card.dart';
+import '../widgets/financial_health_score.dart';
+import '../widgets/top_spending_categories_widget.dart';
 import '../providers/transaction_provider.dart';
+import '../providers/goal_provider.dart';
 import '../models/transaction.dart';
 import '../services/budget_recommendation_service.dart';
+import 'transactions_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -17,16 +23,18 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<TransactionProvider>(
-      builder: (context, provider, child) {
-        final balance = provider.balance;
-        final income = provider.totalIncome;
-        final expenses = provider.totalExpenses;
-        final recentTransactions = provider.getRecentTransactions(3);
+    return Consumer2<TransactionProvider, GoalProvider>(
+      builder: (context, transactionProvider, goalProvider, child) {
+        final balance = transactionProvider.balance;
+        final income = transactionProvider.totalIncome;
+        final expenses = transactionProvider.totalExpenses;
+        final savings = income - expenses;
+        final recentTransactions = transactionProvider.getRecentTransactions(3);
+        final categorySpending = transactionProvider.getCategorySpending();
         
         // Show default message if no transactions
-        if (provider.transactions.isEmpty) {
-          return _buildEmptyState(context, provider, balance, income, expenses);
+        if (transactionProvider.transactions.isEmpty) {
+          return _buildEmptyState(context, transactionProvider, balance, income, expenses);
         }
 
         return FutureBuilder<double>(
@@ -35,108 +43,104 @@ class HomeScreen extends StatelessWidget {
             final monthlyIncome = incomeSnapshot.data ?? income;
             final aiInsight = BudgetRecommendationService.generateInsight(
               monthlyIncome,
-              provider.transactions,
+              transactionProvider.transactions,
             );
 
             return SafeArea(
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '👋 Hello, User!',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      "Let's manage your money wisely",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                    // Personalized Header
+                    const PersonalizedHeader(),
 
-              // Balance Card
-              BalanceCard(
-                balance: balance,
-                onAddIncome: () {
-                  _showAddTransactionDialog(context, TransactionType.income);
-                },
-                onAddExpense: () {
-                  _showAddTransactionDialog(context, TransactionType.expense);
-                },
-              ),
+                    // Balance Card
+                    BalanceCard(
+                      balance: balance,
+                      onAddIncome: () {
+                        _showAddTransactionDialog(context, TransactionType.income);
+                      },
+                      onAddExpense: () {
+                        _showAddTransactionDialog(context, TransactionType.expense);
+                      },
+                    ),
 
-              // Stats Grid
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: StatsCard(
-                        icon: '📈',
-                        label: 'Income',
-                        value: income,
-                        color: AppTheme.incomeColor,
+                    // Stats Grid
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: StatsCard(
+                              icon: '📈',
+                              label: 'Income',
+                              value: income,
+                              color: AppTheme.incomeColor,
+                            ),
+                          ),
+                          const SizedBox(width: 15),
+                          Expanded(
+                            child: StatsCard(
+                              icon: '📉',
+                              label: 'Expenses',
+                              value: expenses,
+                              color: AppTheme.expenseColor,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: StatsCard(
-                        icon: '📉',
-                        label: 'Expenses',
-                        value: expenses,
-                        color: AppTheme.expenseColor,
+
+                    const SizedBox(height: 10),
+
+                    // Financial Health Score
+                    FinancialHealthScore(
+                      income: monthlyIncome > 0 ? monthlyIncome : income,
+                      expenses: expenses,
+                      goalsCompleted: goalProvider.goals.where((g) => g.currentAmount >= g.targetAmount).length,
+                      totalGoals: goalProvider.goals.length,
+                    ),
+
+                    // Savings Rate Card
+                    SavingsRateCard(
+                      income: monthlyIncome > 0 ? monthlyIncome : income,
+                      expenses: expenses,
+                      savings: savings,
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // Top Spending Categories
+                    if (categorySpending.isNotEmpty)
+                      TopSpendingCategoriesWidget(
+                        categorySpending: categorySpending,
+                        limit: 3,
+                      ),
+
+                    const SizedBox(height: 20),
+
+                    // AI Tip (Dynamic based on spending patterns)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: AITipCard(
+                        tip: aiInsight,
                       ),
                     ),
-                  ],
-                ),
-              ),
 
               const SizedBox(height: 20),
 
-              // AI Tip (Dynamic based on spending patterns)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: AITipCard(
-                  tip: aiInsight,
-                ),
-              ),
+                    // Expense Trend Chart
+                    if (recentTransactions.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: ExpenseTrendChart(
+                          transactions: transactionProvider.transactions,
+                        ),
+                      ),
 
-              const SizedBox(height: 20),
+                    if (recentTransactions.isNotEmpty) const SizedBox(height: 20),
 
-              // Expense Trend Chart
-              if (recentTransactions.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: ExpenseTrendChart(
-                    transactions: provider.transactions,
-                  ),
-                ),
-
-              if (recentTransactions.isNotEmpty) const SizedBox(height: 20),
-
-              // Categories Section
-              Padding(
+                    // Categories Section
+                    Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -187,7 +191,15 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        // Navigate to transactions screen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const TransactionsScreen(),
+                          ),
+                        );
+                      },
                       child: const Text(
                         'View All →',
                         style: TextStyle(color: AppTheme.primaryColor),

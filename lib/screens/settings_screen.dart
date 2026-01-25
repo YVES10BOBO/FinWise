@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 import '../theme/theme_provider.dart';
 import '../providers/transaction_provider.dart';
@@ -7,6 +8,7 @@ import '../providers/goal_provider.dart';
 import '../screens/onboarding/profile_setup_screen.dart';
 import '../services/export_service.dart';
 import '../screens/calendar_view_screen.dart';
+import '../screens/auth/login_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -36,6 +38,13 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   );
                 },
+              ),
+              _SettingsTile(
+                icon: Icons.logout,
+                title: 'Logout',
+                subtitle: 'Sign out and return to login',
+                onTap: () => _showLogoutDialog(context),
+                iconColor: AppTheme.expenseColor,
               ),
             ],
           ),
@@ -116,15 +125,33 @@ class SettingsScreen extends StatelessWidget {
               _SettingsTile(
                 icon: Icons.info_outline,
                 title: 'App Version',
-                subtitle: '1.0.0',
+                subtitle: '1.0.0 (Build 1)',
                 onTap: null,
+              ),
+              _SettingsTile(
+                icon: Icons.help_outline,
+                title: 'Help & Support',
+                subtitle: 'Get help using FinWise',
+                onTap: () => _showHelpDialog(context),
               ),
               _SettingsTile(
                 icon: Icons.description,
                 title: 'Privacy Policy',
                 subtitle: 'How we handle your data',
                 onTap: () {
-                  // TODO: Show privacy policy
+                  _showPrivacyPolicy(context);
+                },
+              ),
+              _SettingsTile(
+                icon: Icons.star_outline,
+                title: 'Rate App',
+                subtitle: 'Love FinWise? Rate us!',
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Thank you! Rating feature coming soon.'),
+                    ),
+                  );
                 },
               ),
             ],
@@ -250,6 +277,143 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
+
+  void _showHelpDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Help & Support'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _HelpSection(
+                title: 'Getting Started',
+                items: [
+                  'Add your first transaction using the + button',
+                  'Set up financial goals to track savings',
+                  'View spending by category in Budget tab',
+                  'Check your financial health score on Home',
+                ],
+              ),
+              const SizedBox(height: 16),
+              _HelpSection(
+                title: 'Managing Transactions',
+                items: [
+                  'Tap + button to add income or expense',
+                  'Select category from chips',
+                  'Swipe left on transaction to delete',
+                  'Tap transaction to edit',
+                ],
+              ),
+              const SizedBox(height: 16),
+              _HelpSection(
+                title: 'Categories',
+                items: [
+                  'Add custom categories during onboarding',
+                  'Add more categories when adding transactions',
+                  'View spending by category in Budget tab',
+                  'Delete custom categories anytime',
+                ],
+              ),
+              const SizedBox(height: 16),
+              _HelpSection(
+                title: 'Tips',
+                items: [
+                  'Track all expenses for accurate insights',
+                  'Set realistic financial goals',
+                  'Check AI tips for budget recommendations',
+                  'Export data for backup',
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPrivacyPolicy(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Privacy Policy'),
+        content: const SingleChildScrollView(
+          child: Text(
+            'FinWise Privacy Policy\n\n'
+            'Data Storage:\n'
+            '• All data is stored locally on your device\n'
+            '• No data is shared with third parties\n'
+            '• You can export your data anytime\n\n'
+            'Security:\n'
+            '• Your financial data is private\n'
+            '• No cloud sync (until you enable it)\n'
+            '• You control your data\n\n'
+            'Future Features:\n'
+            '• Optional cloud backup\n'
+            '• Multi-device sync\n'
+            '• All optional and user-controlled\n\n'
+            'Last Updated: 2024',
+            style: TextStyle(fontSize: 14, height: 1.6),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text(
+          'Are you sure you want to logout? You will need to login again to access the app.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              // Clear authentication status
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('user_authenticated', false);
+              await prefs.setBool('onboarding_complete', false);
+              
+              if (context.mounted) {
+                Navigator.pop(context); // Close dialog
+                // Navigate to login screen and clear navigation stack
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (context) => const LoginScreen(),
+                  ),
+                  (route) => false, // Remove all previous routes
+                );
+              }
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.expenseColor,
+            ),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SettingsSection extends StatelessWidget {
@@ -273,6 +437,50 @@ class _SettingsSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         ...children,
+      ],
+    );
+  }
+}
+
+class _HelpSection extends StatelessWidget {
+  final String title;
+  final List<String> items;
+
+  const _HelpSection({required this.title, required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...items.map((item) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('• ', style: TextStyle(color: AppTheme.primaryColor)),
+                  Expanded(
+                    child: Text(
+                      item,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppTheme.textSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )),
       ],
     );
   }
