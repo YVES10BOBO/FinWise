@@ -390,6 +390,9 @@ class SettingsScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () async {
+              // Close dialog first
+              Navigator.pop(context);
+              
               // Firebase logout + clear local cached profile/onboarding (avoid mixing users on same device)
               await FirebaseAuth.instance.signOut();
               final prefs = await SharedPreferences.getInstance();
@@ -404,12 +407,31 @@ class SettingsScreen extends StatelessWidget {
               await prefs.remove('onboarding_complete');
               
               if (context.mounted) {
-                // Close dialog
-                Navigator.pop(context);
-                // Return to the root (_InitialScreen). Use the root navigator
-                // so we also pop the Settings screen route.
-                Navigator.of(context, rootNavigator: true)
-                    .popUntil((route) => route.isFirst);
+                // Show logout success message
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.white),
+                        SizedBox(width: 8),
+                        Text('You\'ve been logged out successfully'),
+                      ],
+                    ),
+                    backgroundColor: Colors.green.shade600,
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+                
+                // Small delay to show the message, then navigate
+                await Future.delayed(const Duration(milliseconds: 500));
+                
+                if (context.mounted) {
+                  // Return to the root (_InitialScreen). Use the root navigator
+                  // so we also pop the Settings screen route.
+                  Navigator.of(context, rootNavigator: true)
+                      .popUntil((route) => route.isFirst);
+                }
               }
             },
             style: TextButton.styleFrom(

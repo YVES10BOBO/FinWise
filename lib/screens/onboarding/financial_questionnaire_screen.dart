@@ -332,6 +332,48 @@ class _FinancialQuestionnaireScreenState
             color: Colors.white.withValues(alpha: 0.9),
           ),
         ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.lightbulb_outline, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Why we need this:',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white.withValues(alpha: 0.95),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '• Your name: Personalizes your dashboard\n'
+                '• Income: Calculates your financial health score and helps set realistic budgets\n'
+                '• Frequency: Converts your income to monthly for accurate analysis',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: 0.85),
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 40),
         Container(
           decoration: BoxDecoration(
@@ -417,7 +459,7 @@ class _FinancialQuestionnaireScreenState
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'AI Tip: Start with approximate numbers — FinWise will learn from your real transactions.',
+                  '💡 Tip: Start with approximate numbers — FinWise will learn from your real transactions and adjust automatically.',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.white.withValues(alpha: 0.9),
@@ -449,6 +491,47 @@ class _FinancialQuestionnaireScreenState
           style: TextStyle(
             fontSize: 14,
             color: Colors.white.withValues(alpha: 0.9),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.lightbulb_outline, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'How this helps:',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white.withValues(alpha: 0.95),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '• Spending style: Helps FinWise give personalized budget advice\n'
+                '• Spending estimate: Optional starting point — we\'ll track real spending automatically',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: 0.85),
+                  height: 1.5,
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 24),
@@ -644,6 +727,49 @@ class _FinancialQuestionnaireScreenState
           style: TextStyle(
             fontSize: 14,
             color: Colors.white.withValues(alpha: 0.9),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.lightbulb_outline, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Why categories matter:',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white.withValues(alpha: 0.95),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '• Track spending by category (Food, Transport, etc.)\n'
+                '• Get insights like "You spent 30% on Food this month"\n'
+                '• Set budgets per category and get alerts\n'
+                '• You can add more categories anytime',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: 0.85),
+                  height: 1.5,
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 32),
