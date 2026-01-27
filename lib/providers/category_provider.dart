@@ -31,8 +31,7 @@ class CategoryProvider extends ChangeNotifier {
       final savedCustom = prefs.getStringList('custom_categories') ?? [];
       _customCategories = savedCustom;
     } catch (e) {
-      print('Error loading categories: $e');
-      // If no categories saved, use default ones
+      // Error loading categories - use default ones
       _userCategories = [
         'Food',
         'Transport',
@@ -76,7 +75,7 @@ class CategoryProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList('custom_categories', _customCategories);
     } catch (e) {
-      print('Error saving custom categories: $e');
+      // Error saving custom categories - data will be lost on app restart
     }
   }
 

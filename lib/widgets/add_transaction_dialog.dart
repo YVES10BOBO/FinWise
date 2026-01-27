@@ -29,6 +29,8 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
   final _descriptionController = TextEditingController();
   final _customCategoryController = TextEditingController();
   bool _showAddCategory = false;
+  AccountType _selectedAccount = AccountType.mobileMoney;
+  SpendingReason _selectedReason = SpendingReason.necessity;
 
   @override
   void initState() {
@@ -40,6 +42,9 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
       _selectedCategory = widget.existingTransaction!.category;
       _amountController.text = widget.existingTransaction!.amount.toString();
       _descriptionController.text = widget.existingTransaction!.description;
+      _selectedAccount = widget.existingTransaction!.account;
+      _selectedReason =
+          widget.existingTransaction!.reason ?? SpendingReason.necessity;
     } else {
       _selectedCategory = _selectedType == TransactionType.income
           ? Category.income
@@ -90,6 +95,8 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
         amount: double.parse(_amountController.text),
         description: description,
         date: widget.existingTransaction?.date ?? DateTime.now(),
+        account: _selectedAccount,
+        reason: _selectedType == TransactionType.expense ? _selectedReason : null,
       );
       widget.onSave(transaction);
       Navigator.of(context).pop();
@@ -177,6 +184,54 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 24),
+                // Account selection
+                const Text(
+                  'Account',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _AccountChip(
+                      label: 'Cash',
+                      icon: Icons.payments_outlined,
+                      isSelected: _selectedAccount == AccountType.cash,
+                      onTap: () {
+                        setState(() {
+                          _selectedAccount = AccountType.cash;
+                        });
+                      },
+                    ),
+                    _AccountChip(
+                      label: 'Mobile Money',
+                      icon: Icons.phone_iphone,
+                      isSelected: _selectedAccount == AccountType.mobileMoney,
+                      onTap: () {
+                        setState(() {
+                          _selectedAccount = AccountType.mobileMoney;
+                        });
+                      },
+                    ),
+                    _AccountChip(
+                      label: 'Bank',
+                      icon: Icons.account_balance,
+                      isSelected: _selectedAccount == AccountType.bank,
+                      onTap: () {
+                        setState(() {
+                          _selectedAccount = AccountType.bank;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+
                 const SizedBox(height: 24),
                 // Amount
                 TextFormField(
@@ -349,14 +404,75 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                     ],
                   ],
                   const SizedBox(height: 16),
+                  // Spending reason (why)
+                  const Text(
+                    'Why are you spending this?',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _ReasonChip(
+                        label: 'Necessity',
+                        emoji: '🧾',
+                        reason: SpendingReason.necessity,
+                        selectedReason: _selectedReason,
+                        onSelected: (reason) {
+                          setState(() {
+                            _selectedReason = reason;
+                          });
+                        },
+                      ),
+                      _ReasonChip(
+                        label: 'Business',
+                        emoji: '💼',
+                        reason: SpendingReason.business,
+                        selectedReason: _selectedReason,
+                        onSelected: (reason) {
+                          setState(() {
+                            _selectedReason = reason;
+                          });
+                        },
+                      ),
+                      _ReasonChip(
+                        label: 'Enjoyment',
+                        emoji: '🎉',
+                        reason: SpendingReason.enjoyment,
+                        selectedReason: _selectedReason,
+                        onSelected: (reason) {
+                          setState(() {
+                            _selectedReason = reason;
+                          });
+                        },
+                      ),
+                      _ReasonChip(
+                        label: 'Emergency',
+                        emoji: '🚨',
+                        reason: SpendingReason.emergency,
+                        selectedReason: _selectedReason,
+                        onSelected: (reason) {
+                          setState(() {
+                            _selectedReason = reason;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
                 ] else ...[
                   // Income category (always income)
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
+                      border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
@@ -464,7 +580,7 @@ class _TypeButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppTheme.primaryColor.withOpacity(0.15)
+              ? AppTheme.primaryColor.withValues(alpha: 0.15)
               : Colors.grey[100],
           border: Border.all(
             color: isSelected ? AppTheme.primaryColor : Colors.grey[300]!,
@@ -488,6 +604,99 @@ class _TypeButton extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AccountChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _AccountChip({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 18,
+            color: isSelected ? Colors.white : AppTheme.textSecondary,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : AppTheme.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+      selected: isSelected,
+      onSelected: (_) => onTap(),
+      selectedColor: AppTheme.primaryColor,
+      backgroundColor: Colors.grey[100],
+      side: BorderSide(
+        color: isSelected ? AppTheme.primaryColor : Colors.grey[300]!,
+        width: isSelected ? 2 : 1,
+      ),
+      showCheckmark: false,
+    );
+  }
+}
+
+class _ReasonChip extends StatelessWidget {
+  final String label;
+  final String emoji;
+  final SpendingReason reason;
+  final SpendingReason selectedReason;
+  final ValueChanged<SpendingReason> onSelected;
+
+  const _ReasonChip({
+    required this.label,
+    required this.emoji,
+    required this.reason,
+    required this.selectedReason,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = selectedReason == reason;
+    return ChoiceChip(
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(emoji),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : AppTheme.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+      selected: isSelected,
+      onSelected: (_) => onSelected(reason),
+      selectedColor: AppTheme.primaryColor,
+      backgroundColor: Colors.grey[100],
+      side: BorderSide(
+        color: isSelected ? AppTheme.primaryColor : Colors.grey[300]!,
+        width: isSelected ? 2 : 1,
+      ),
+      showCheckmark: false,
     );
   }
 }

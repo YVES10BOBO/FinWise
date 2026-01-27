@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
 import '../models/goal.dart';
 
@@ -12,39 +13,51 @@ class GoalProvider with ChangeNotifier {
 
   GoalProvider() {
     _loadGoals();
+    // Reload goals whenever the authenticated user changes
+    FirebaseAuth.instance.authStateChanges().listen((_) {
+      _loadGoals();
+    });
   }
 
-  // Load goals from local storage
+  String _storageKey() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return 'goals_guest';
+    return 'goals_${user.uid}';
+  }
+
+  // Load goals from local storage (per user)
   Future<void> _loadGoals() async {
     _isLoading = true;
     notifyListeners();
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final goalsJson = prefs.getString('goals');
+      final key = _storageKey();
+      final goalsJson = prefs.getString(key);
       
       if (goalsJson != null) {
         final List<dynamic> decoded = json.decode(goalsJson);
         _goals = decoded.map((json) => Goal.fromJson(json)).toList();
       }
     } catch (e) {
-      print('Error loading goals: $e');
+      // Error loading goals - will use empty list
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Save goals to local storage
+  // Save goals to local storage (per user)
   Future<void> _saveGoals() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final key = _storageKey();
       final goalsJson = json.encode(
         _goals.map((g) => g.toJson()).toList(),
       );
-      await prefs.setString('goals', goalsJson);
+      await prefs.setString(key, goalsJson);
     } catch (e) {
-      print('Error saving goals: $e');
+      // Error saving goals - data will be lost on app restart
     }
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../theme/app_theme.dart';
 import 'login_screen.dart';
 
@@ -25,14 +26,45 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       
-      // TODO: Implement Firebase password reset
-      await Future.delayed(const Duration(seconds: 1));
-      
-      if (mounted) {
+      try {
+        await FirebaseAuth.instance.sendPasswordResetEmail(
+          email: _emailController.text.trim(),
+        );
+
+        if (!mounted) return;
         setState(() {
           _isLoading = false;
           _emailSent = true;
         });
+      } on FirebaseAuthException catch (e) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+
+        final message = switch (e.code) {
+          'invalid-email' => 'Invalid email address. Please check and try again.',
+          'user-not-found' => 'No account found for that email.',
+          'too-many-requests' => 'Too many attempts. Please try again later.',
+          'network-request-failed' => 'Network error. Please check your connection.',
+          _ => e.message ?? 'Failed to send reset email. Please try again.',
+        };
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } catch (_) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to send reset email. Please try again.'),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }
@@ -74,7 +106,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
                       child: const Center(
@@ -104,7 +136,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         : 'Enter your email and we\'ll send you reset instructions',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -178,7 +210,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -202,7 +234,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             'We\'ve sent password reset instructions to ${_emailController.text}',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha: 0.9),
                             ),
                             textAlign: TextAlign.center,
                           ),

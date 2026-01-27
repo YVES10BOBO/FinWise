@@ -23,9 +23,7 @@ class _PersonalizedHeaderState extends State<PersonalizedHeader> {
   Future<void> _loadUserName() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final name = prefs.getString('user_name') ?? 
-                   prefs.getString('user_income') ?? 
-                   'User';
+      final name = prefs.getString('user_name') ?? 'User';
       if (mounted) {
         setState(() {
           _userName = name.split(' ').first; // Get first name only
@@ -74,7 +72,7 @@ class _PersonalizedHeaderState extends State<PersonalizedHeader> {
             "Let's manage your money wisely",
             style: TextStyle(
               fontSize: 14,
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
             ),
           ),
         ],

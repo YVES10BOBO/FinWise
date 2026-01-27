@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'theme/app_theme.dart';
@@ -17,6 +19,7 @@ import 'widgets/add_transaction_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const FinWiseApp());
 }
 
@@ -58,14 +61,24 @@ class _InitialScreenState extends State<_InitialScreen> {
   void initState() {
     super.initState();
     _checkAuthAndOnboarding();
+    // Listen to auth state changes - this will automatically update the UI
+    FirebaseAuth.instance.authStateChanges().listen((User? user) {
+      if (mounted) {
+        // Small delay to ensure Firebase state is fully updated
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            _checkAuthAndOnboarding();
+          }
+        });
+      }
+    });
   }
 
   Future<void> _checkAuthAndOnboarding() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      // Check if user is authenticated (for now, check if onboarding is complete)
-      // TODO: Replace with actual Firebase auth check
-      final authenticated = prefs.getBool('user_authenticated') ?? false;
+      // Firebase auth check
+      final authenticated = FirebaseAuth.instance.currentUser != null;
       final completed = prefs.getBool('onboarding_complete') ?? false;
       
       if (mounted) {
@@ -76,7 +89,7 @@ class _InitialScreenState extends State<_InitialScreen> {
         });
       }
     } catch (e) {
-      print('Error checking auth/onboarding: $e');
+      // Error checking auth/onboarding - will be handled by showing login screen
       if (mounted) {
         setState(() {
           _isAuthenticated = false;
@@ -155,7 +168,7 @@ class _MainScreenState extends State<MainScreen> {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),
@@ -164,7 +177,6 @@ class _MainScreenState extends State<MainScreen> {
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (index) {
-            print('Navigation tapped: $index');
             setState(() {
               _currentIndex = index;
             });
@@ -198,12 +210,10 @@ class _MainScreenState extends State<MainScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          print('FAB tapped');
           showDialog(
             context: context,
             builder: (context) => AddTransactionDialog(
               onSave: (transaction) {
-                print('Transaction saved: ${transaction.description}');
                 Provider.of<TransactionProvider>(context, listen: false)
                     .addTransaction(transaction);
               },

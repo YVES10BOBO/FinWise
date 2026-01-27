@@ -24,27 +24,45 @@ class FinancialHealthScore extends StatelessWidget {
     int score = 0;
     
     // Savings rate (0-40 points)
-    if (savingsRate >= 20) score += 40;
-    else if (savingsRate >= 15) score += 35;
-    else if (savingsRate >= 10) score += 30;
-    else if (savingsRate >= 5) score += 20;
-    else if (savingsRate >= 0) score += 10;
-    else score += 0; // Negative savings
+    if (savingsRate >= 20) {
+      score += 40;
+    } else if (savingsRate >= 15) {
+      score += 35;
+    } else if (savingsRate >= 10) {
+      score += 30;
+    } else if (savingsRate >= 5) {
+      score += 20;
+    } else if (savingsRate >= 0) {
+      score += 10;
+    } else {
+      score += 0; // Negative savings
+    }
     
     // Spending control (0-30 points)
-    if (expenses <= income * 0.7) score += 30; // Spending 70% or less
-    else if (expenses <= income * 0.8) score += 25;
-    else if (expenses <= income * 0.9) score += 20;
-    else if (expenses <= income) score += 10;
-    else score += 0; // Overspending
+    if (expenses <= income * 0.7) {
+      score += 30; // Spending 70% or less
+    } else if (expenses <= income * 0.8) {
+      score += 25;
+    } else if (expenses <= income * 0.9) {
+      score += 20;
+    } else if (expenses <= income) {
+      score += 10;
+    } else {
+      score += 0; // Overspending
+    }
     
     // Goals progress (0-30 points)
     if (totalGoals > 0) {
       final goalProgress = (goalsCompleted / totalGoals) * 100;
-      if (goalProgress >= 75) score += 30;
-      else if (goalProgress >= 50) score += 20;
-      else if (goalProgress >= 25) score += 10;
-      else score += 5;
+      if (goalProgress >= 75) {
+        score += 30;
+      } else if (goalProgress >= 50) {
+        score += 20;
+      } else if (goalProgress >= 25) {
+        score += 10;
+      } else {
+        score += 5;
+      }
     } else {
       score += 15; // No goals set, neutral
     }
@@ -53,26 +71,50 @@ class FinancialHealthScore extends StatelessWidget {
   }
 
   String get healthLabel {
-    if (healthScore >= 80) return 'Excellent';
-    if (healthScore >= 60) return 'Good';
-    if (healthScore >= 40) return 'Fair';
-    if (healthScore >= 20) return 'Needs Improvement';
+    if (healthScore >= 80) {
+      return 'Excellent';
+    }
+    if (healthScore >= 60) {
+      return 'Good';
+    }
+    if (healthScore >= 40) {
+      return 'Fair';
+    }
+    if (healthScore >= 20) {
+      return 'Needs Improvement';
+    }
     return 'Critical';
   }
 
   Color get healthColor {
-    if (healthScore >= 80) return AppTheme.incomeColor; // Green
-    if (healthScore >= 60) return Colors.blue; // Blue
-    if (healthScore >= 40) return Colors.orange; // Orange
-    if (healthScore >= 20) return Colors.amber; // Amber
+    if (healthScore >= 80) {
+      return AppTheme.incomeColor; // Green
+    }
+    if (healthScore >= 60) {
+      return Colors.blue; // Blue
+    }
+    if (healthScore >= 40) {
+      return Colors.orange; // Orange
+    }
+    if (healthScore >= 20) {
+      return Colors.amber; // Amber
+    }
     return AppTheme.expenseColor; // Red
   }
 
   String get healthEmoji {
-    if (healthScore >= 80) return '🎉';
-    if (healthScore >= 60) return '👍';
-    if (healthScore >= 40) return '📊';
-    if (healthScore >= 20) return '⚠️';
+    if (healthScore >= 80) {
+      return '🎉';
+    }
+    if (healthScore >= 60) {
+      return '👍';
+    }
+    if (healthScore >= 40) {
+      return '📊';
+    }
+    if (healthScore >= 20) {
+      return '⚠️';
+    }
     return '🔴';
   }
 
@@ -100,18 +142,18 @@ class FinancialHealthScore extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            healthColor.withOpacity(0.1),
-            healthColor.withOpacity(0.05),
+            healthColor.withValues(alpha: 0.1),
+            healthColor.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: healthColor.withOpacity(0.3),
+          color: healthColor.withValues(alpha: 0.3),
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: healthColor.withOpacity(0.1),
+            color: healthColor.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),

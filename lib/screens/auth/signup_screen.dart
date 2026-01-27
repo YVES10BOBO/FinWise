@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import 'login_screen.dart';
-import '../onboarding/welcome_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -44,21 +44,64 @@ class _SignupScreenState extends State<SignupScreen> {
 
       setState(() => _isLoading = true);
       
-      // TODO: Implement Firebase authentication
-      // For now, simulate signup and proceed to onboarding
-      await Future.delayed(const Duration(seconds: 1));
-      
-      // Save authentication status
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('user_authenticated', true);
-      await prefs.setString('user_name', _nameController.text);
-      
-      if (mounted) {
+      try {
+        // Normalize email (trim and lowercase) for consistency
+        final email = _emailController.text.trim().toLowerCase();
+        final password = _passwordController.text;
+        
+        final credential =
+            await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+
+        // Save name locally for UI personalization (until we migrate to Firestore profile)
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_name', _nameController.text.trim());
+
+        // Also set displayName in Firebase Auth profile
+        await credential.user?.updateDisplayName(_nameController.text.trim());
+
+        if (!mounted) return;
         setState(() => _isLoading = false);
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => const WelcomeScreen(),
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Account created successfully!'),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
           ),
+        );
+        
+        // Let _InitialScreen handle navigation automatically via auth state listener
+        // No manual navigation needed - the app will rebuild automatically
+      } on FirebaseAuthException catch (e) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+
+        final message = switch (e.code) {
+          'email-already-in-use' => 'That email is already registered. Try logging in instead.',
+          'invalid-email' => 'Invalid email address. Please check and try again.',
+          'weak-password' => 'Password is too weak. Use at least 6 characters.',
+          'operation-not-allowed' => 'Signup is currently disabled. Please contact support.',
+          'network-request-failed' => 'Network error. Please check your connection.',
+          _ => e.message ?? 'Signup failed. Please try again.',
+        };
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } catch (_) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Signup failed. Please try again.')),
         );
       }
     }
@@ -105,7 +148,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
                       child: const Center(
@@ -132,7 +175,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     'Start your journey to financial wisdom',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -300,7 +343,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           child: Text(
                             'I agree to the Terms & Conditions',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha: 0.9),
                               fontSize: 14,
                             ),
                           ),
@@ -350,7 +393,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       Text(
                         'Already have an account? ',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                         ),
                       ),
                       TextButton(

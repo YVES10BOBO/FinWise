@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
 import '../models/transaction.dart' hide Category;
 import '../models/transaction.dart' as models show Category;
@@ -13,6 +14,10 @@ class TransactionProvider with ChangeNotifier {
 
   TransactionProvider() {
     _loadTransactions();
+    // Reload transactions whenever the authenticated user changes
+    FirebaseAuth.instance.authStateChanges().listen((_) {
+      _loadTransactions();
+    });
   }
 
   double get totalIncome {
@@ -29,14 +34,48 @@ class TransactionProvider with ChangeNotifier {
 
   double get balance => totalIncome - totalExpenses;
 
-  // Load transactions from local storage
+  /// Computed balances per account (Cash / Mobile Money / Bank)
+  Map<AccountType, double> get accountBalances {
+    final Map<AccountType, double> balances = {
+      AccountType.cash: 0.0,
+      AccountType.mobileMoney: 0.0,
+      AccountType.bank: 0.0,
+    };
+
+    for (final t in _transactions) {
+      final sign = t.type == TransactionType.income ? 1.0 : -1.0;
+      balances[t.account] = (balances[t.account] ?? 0.0) + sign * t.amount;
+    }
+
+    return balances;
+  }
+
+  /// Spending totals grouped by reason (necessity, enjoyment, etc.)
+  Map<SpendingReason, double> get spendingByReason {
+    final Map<SpendingReason, double> totals = {};
+    for (final t in _transactions) {
+      if (t.type == TransactionType.expense && t.reason != null) {
+        totals[t.reason!] = (totals[t.reason!] ?? 0.0) + t.amount;
+      }
+    }
+    return totals;
+  }
+
+  String _storageKey() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return 'transactions_guest';
+    return 'transactions_${user.uid}';
+  }
+
+  // Load transactions from local storage (per user)
   Future<void> _loadTransactions() async {
     _isLoading = true;
     notifyListeners();
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final transactionsJson = prefs.getString('transactions');
+      final key = _storageKey();
+      final transactionsJson = prefs.getString(key);
       
       if (transactionsJson != null) {
         final List<dynamic> decoded = json.decode(transactionsJson);
@@ -45,23 +84,24 @@ class TransactionProvider with ChangeNotifier {
         _transactions.sort((a, b) => b.date.compareTo(a.date));
       }
     } catch (e) {
-      print('Error loading transactions: $e');
+      // Error loading transactions - will use empty list
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Save transactions to local storage
+  // Save transactions to local storage (per user)
   Future<void> _saveTransactions() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final key = _storageKey();
       final transactionsJson = json.encode(
         _transactions.map((t) => t.toJson()).toList(),
       );
-      await prefs.setString('transactions', transactionsJson);
+      await prefs.setString(key, transactionsJson);
     } catch (e) {
-      print('Error saving transactions: $e');
+      // Error saving transactions - data will be lost on app restart
     }
   }
 

@@ -15,11 +15,13 @@ class _FinancialQuestionnaireScreenState
     extends State<FinancialQuestionnaireScreen> {
   int _currentStep = 0;
   
-  // Step 1: Income
+  // Step 1: About you
+  final _nameController = TextEditingController();
   final _incomeController = TextEditingController();
   String _incomeFrequency = 'Monthly';
   
-  // Step 2: Spending
+  // Step 2: Spending style + optional estimate
+  String _spendingStyle = 'Balanced';
   final _spendingController = TextEditingController();
   String _spendingFrequency = 'Monthly';
   
@@ -41,23 +43,95 @@ class _FinancialQuestionnaireScreenState
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadExistingData();
+  }
+
+  @override
   void dispose() {
+    _nameController.dispose();
     _incomeController.dispose();
     _spendingController.dispose();
     _customCategoryController.dispose();
     super.dispose();
   }
 
+  Future<void> _loadExistingData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final name = prefs.getString('user_name');
+      final income = prefs.getString('user_income');
+      final incomeFreq = prefs.getString('income_frequency');
+      final spending = prefs.getString('user_spending');
+      final spendingFreq = prefs.getString('spending_frequency');
+      final spendingStyle = prefs.getString('spending_style');
+      final categories = prefs.getStringList('user_categories');
+
+      if (!mounted) return;
+
+      setState(() {
+        if (name != null && name.trim().isNotEmpty) {
+          _nameController.text = name;
+        }
+        if (income != null && income.trim().isNotEmpty) {
+          _incomeController.text = income;
+        }
+        if (incomeFreq != null &&
+            ['Daily', 'Weekly', 'Monthly', 'Yearly'].contains(incomeFreq)) {
+          _incomeFrequency = incomeFreq;
+        }
+
+        if (spending != null && spending.trim().isNotEmpty) {
+          _spendingController.text = spending;
+        }
+        if (spendingFreq != null &&
+            ['Daily', 'Weekly', 'Monthly', 'Yearly'].contains(spendingFreq)) {
+          _spendingFrequency = spendingFreq;
+        }
+        if (spendingStyle != null &&
+            ['Saver', 'Balanced', 'Spender', 'Overspender'].contains(spendingStyle)) {
+          _spendingStyle = spendingStyle;
+        }
+
+        _selectedCategories.clear();
+        _customCategories.clear();
+        if (categories != null) {
+          for (final c in categories) {
+            if (_defaultCategories.contains(c)) {
+              _selectedCategories.add(c);
+            } else if (c.trim().isNotEmpty && !_customCategories.contains(c)) {
+              _customCategories.add(c);
+            }
+          }
+        }
+      });
+    } catch (_) {
+      // Safe to ignore - onboarding can start empty.
+    }
+  }
+
   Future<void> _saveQuestionnaire() async {
     final prefs = await SharedPreferences.getInstance();
     
+    // Save name
+    await prefs.setString('user_name', _nameController.text.trim());
+
     // Save income
-    await prefs.setString('user_income', _incomeController.text);
+    await prefs.setString('user_income', _incomeController.text.trim());
     await prefs.setString('income_frequency', _incomeFrequency);
     
-    // Save spending
-    await prefs.setString('user_spending', _spendingController.text);
-    await prefs.setString('spending_frequency', _spendingFrequency);
+    // Save spending style + optional spending estimate
+    await prefs.setString('spending_style', _spendingStyle);
+    final spendingText = _spendingController.text.trim();
+    if (spendingText.isEmpty) {
+      await prefs.remove('user_spending');
+      await prefs.remove('spending_frequency');
+    } else {
+      await prefs.setString('user_spending', spendingText);
+      await prefs.setString('spending_frequency', _spendingFrequency);
+    }
     
     // Save categories
     final allCategories = [..._selectedCategories, ..._customCategories];
@@ -68,6 +142,9 @@ class _FinancialQuestionnaireScreenState
     await prefs.setBool('onboarding_complete', true);
     
     if (mounted) {
+      // Replace the current onboarding route with the main app,
+      // but keep the root _InitialScreen route alive so it can
+      // respond to future auth state changes (logout/login).
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => const MainScreen(),
@@ -135,7 +212,7 @@ class _FinancialQuestionnaireScreenState
                         decoration: BoxDecoration(
                           color: index <= _currentStep
                               ? Colors.white
-                              : Colors.white.withOpacity(0.3),
+                              : Colors.white.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -157,7 +234,7 @@ class _FinancialQuestionnaireScreenState
                   color: Colors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 10,
                       offset: const Offset(0, -5),
                     ),
@@ -225,7 +302,7 @@ class _FinancialQuestionnaireScreenState
   Widget _buildStepContent() {
     switch (_currentStep) {
       case 0:
-        return _buildIncomeStep();
+        return _buildAboutYouStep();
       case 1:
         return _buildSpendingStep();
       case 2:
@@ -235,12 +312,12 @@ class _FinancialQuestionnaireScreenState
     }
   }
 
-  Widget _buildIncomeStep() {
+  Widget _buildAboutYouStep() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          '💰 How much do you earn?',
+          '👋 Let\'s set up your FinWise',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -249,13 +326,33 @@ class _FinancialQuestionnaireScreenState
         ),
         const SizedBox(height: 8),
         Text(
-          'This helps us provide personalized budget recommendations',
+          'Tell us a bit about you. You can change this anytime.',
           style: TextStyle(
             fontSize: 14,
-            color: Colors.white.withOpacity(0.9),
+            color: Colors.white.withValues(alpha: 0.9),
           ),
         ),
         const SizedBox(height: 40),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: TextFormField(
+            controller: _nameController,
+            decoration: InputDecoration(
+              labelText: 'Your Name',
+              prefixIcon: const Icon(Icons.person),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+            textCapitalization: TextCapitalization.words,
+          ),
+        ),
+        const SizedBox(height: 16),
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -311,7 +408,7 @@ class _FinancialQuestionnaireScreenState
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -320,10 +417,10 @@ class _FinancialQuestionnaireScreenState
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Don\'t worry! You can update this anytime in settings.',
+                  'AI Tip: Start with approximate numbers — FinWise will learn from your real transactions.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                   ),
                 ),
               ),
@@ -339,7 +436,7 @@ class _FinancialQuestionnaireScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          '💸 How much do you spend?',
+          '💡 What\'s your spending style?',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -348,13 +445,49 @@ class _FinancialQuestionnaireScreenState
         ),
         const SizedBox(height: 8),
         Text(
-          'Approximate monthly spending helps us track your habits',
+          'Choose what fits you best. This helps FinWise suggest realistic budgets.',
           style: TextStyle(
             fontSize: 14,
-            color: Colors.white.withOpacity(0.9),
+            color: Colors.white.withValues(alpha: 0.9),
           ),
         ),
+        const SizedBox(height: 24),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            _buildStyleChip(
+              label: 'Saver',
+              subtitle: 'I save a lot',
+              icon: Icons.savings_outlined,
+            ),
+            _buildStyleChip(
+              label: 'Balanced',
+              subtitle: 'I\'m balanced',
+              icon: Icons.balance_outlined,
+            ),
+            _buildStyleChip(
+              label: 'Spender',
+              subtitle: 'I spend most income',
+              icon: Icons.shopping_bag_outlined,
+            ),
+            _buildStyleChip(
+              label: 'Overspender',
+              subtitle: 'I often overspend',
+              icon: Icons.warning_amber_outlined,
+            ),
+          ],
+        ),
         const SizedBox(height: 40),
+        Text(
+          'Optional: add a rough spending estimate',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.white.withValues(alpha: 0.95),
+          ),
+        ),
+        const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -371,6 +504,7 @@ class _FinancialQuestionnaireScreenState
               ),
               filled: true,
               fillColor: Colors.white,
+              helperText: 'Leave blank if you\'re not sure',
             ),
           ),
         ),
@@ -410,7 +544,7 @@ class _FinancialQuestionnaireScreenState
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -419,10 +553,10 @@ class _FinancialQuestionnaireScreenState
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'This is just an estimate. We\'ll track your actual spending as you use the app.',
+                  'FinWise will track your real spending automatically as you add transactions.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                   ),
                 ),
               ),
@@ -430,6 +564,65 @@ class _FinancialQuestionnaireScreenState
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildStyleChip({
+    required String label,
+    required String subtitle,
+    required IconData icon,
+  }) {
+    final isSelected = _spendingStyle == label;
+    return ChoiceChip(
+      labelPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 18,
+            color: isSelected ? Colors.white : AppTheme.textPrimary,
+          ),
+          const SizedBox(width: 8),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : AppTheme.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.9)
+                      : AppTheme.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      selected: isSelected,
+      onSelected: (_) {
+        setState(() {
+          _spendingStyle = label;
+        });
+      },
+      selectedColor: AppTheme.primaryColor,
+      backgroundColor: Colors.white,
+      side: BorderSide(
+        color: isSelected ? AppTheme.primaryColor : Colors.grey[300]!,
+        width: isSelected ? 2 : 1,
+      ),
+      showCheckmark: false,
     );
   }
 
@@ -450,7 +643,7 @@ class _FinancialQuestionnaireScreenState
           'Select all categories that apply to your spending',
           style: TextStyle(
             fontSize: 14,
-            color: Colors.white.withOpacity(0.9),
+            color: Colors.white.withValues(alpha: 0.9),
           ),
         ),
         const SizedBox(height: 32),
@@ -563,7 +756,7 @@ class _FinancialQuestionnaireScreenState
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -575,7 +768,7 @@ class _FinancialQuestionnaireScreenState
                   'You can always add or remove categories later in settings.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                   ),
                 ),
               ),
@@ -589,9 +782,11 @@ class _FinancialQuestionnaireScreenState
   bool _canProceed() {
     switch (_currentStep) {
       case 0:
-        return _incomeController.text.isNotEmpty;
+        return _nameController.text.trim().isNotEmpty &&
+            _incomeController.text.trim().isNotEmpty &&
+            double.tryParse(_incomeController.text.trim()) != null;
       case 1:
-        return _spendingController.text.isNotEmpty;
+        return true; // spending step is optional (style has a default)
       case 2:
         return _selectedCategories.isNotEmpty || _customCategories.isNotEmpty;
       default:

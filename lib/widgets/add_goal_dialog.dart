@@ -120,7 +120,7 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
                         height: 50,
                         decoration: BoxDecoration(
                           color: _selectedEmoji == emoji
-                              ? AppTheme.primaryColor.withOpacity(0.1)
+                              ? AppTheme.primaryColor.withValues(alpha: 0.1)
                               : Colors.grey[200],
                           border: Border.all(
                             color: _selectedEmoji == emoji

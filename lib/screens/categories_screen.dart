@@ -19,6 +19,17 @@ class CategoriesScreen extends StatelessWidget {
         return FutureBuilder<double>(
           future: _getUserIncome(),
           builder: (context, incomeSnapshot) {
+            if (incomeSnapshot.connectionState == ConnectionState.waiting) {
+              return Scaffold(
+                appBar: AppBar(
+                  title: const Text('Categories'),
+                ),
+                body: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+            
             final monthlyIncome = incomeSnapshot.data ?? 0.0;
             
             // Calculate real budgets from transactions
@@ -66,7 +77,7 @@ class CategoriesScreen extends StatelessWidget {
                           colors: [Color(0xFFE8F5E9), Color(0xFFE3F2FD)],
                         ),
                         borderRadius: BorderRadius.circular(15),
-                        border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
+                        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,7 +150,7 @@ class _CategoryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),

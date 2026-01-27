@@ -11,6 +11,7 @@ import '../widgets/personalized_header.dart';
 import '../widgets/savings_rate_card.dart';
 import '../widgets/financial_health_score.dart';
 import '../widgets/top_spending_categories_widget.dart';
+import '../widgets/loading_skeleton.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/goal_provider.dart';
 import '../models/transaction.dart';
@@ -31,6 +32,8 @@ class HomeScreen extends StatelessWidget {
         final savings = income - expenses;
         final recentTransactions = transactionProvider.getRecentTransactions(3);
         final categorySpending = transactionProvider.getCategorySpending();
+        final accountBalances = transactionProvider.accountBalances;
+        final spendingByReason = transactionProvider.spendingByReason;
         
         // Show default message if no transactions
         if (transactionProvider.transactions.isEmpty) {
@@ -40,6 +43,10 @@ class HomeScreen extends StatelessWidget {
         return FutureBuilder<double>(
           future: _getUserIncome(),
           builder: (context, incomeSnapshot) {
+            if (incomeSnapshot.connectionState == ConnectionState.waiting) {
+              return const DashboardSkeleton();
+            }
+            
             final monthlyIncome = incomeSnapshot.data ?? income;
             final aiInsight = BudgetRecommendationService.generateInsight(
               monthlyIncome,
@@ -109,11 +116,30 @@ class HomeScreen extends StatelessWidget {
 
                     const SizedBox(height: 10),
 
+                    // Accounts Summary (Cash / MoMo / Bank)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: _AccountsSummaryCard(balances: accountBalances),
+                    ),
+
+                    const SizedBox(height: 10),
+
                     // Top Spending Categories
                     if (categorySpending.isNotEmpty)
                       TopSpendingCategoriesWidget(
                         categorySpending: categorySpending,
                         limit: 3,
+                      ),
+
+                    const SizedBox(height: 20),
+
+                    // Spending Reason Summary
+                    if (spendingByReason.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: _SpendingReasonSummaryCard(
+                          totals: spendingByReason,
+                        ),
                       ),
 
                     const SizedBox(height: 20),
@@ -282,7 +308,7 @@ class HomeScreen extends StatelessWidget {
                     "Let's manage your money wisely",
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
                 ],
@@ -400,6 +426,244 @@ class _CategoryPill extends StatelessWidget {
           fontSize: 13,
           color: AppTheme.textSecondary,
         ),
+      ),
+    );
+  }
+}
+
+class _AccountsSummaryCard extends StatelessWidget {
+  final Map<AccountType, double> balances;
+
+  const _AccountsSummaryCard({required this.balances});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Accounts overview',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _AccountBalanceChip(
+                  label: 'Cash',
+                  icon: Icons.payments_outlined,
+                  color: Colors.orangeAccent,
+                  amount: balances[AccountType.cash] ?? 0,
+                ),
+                const SizedBox(width: 8),
+                _AccountBalanceChip(
+                  label: 'MoMo',
+                  icon: Icons.phone_iphone,
+                  color: AppTheme.primaryColor,
+                  amount: balances[AccountType.mobileMoney] ?? 0,
+                ),
+                const SizedBox(width: 8),
+                _AccountBalanceChip(
+                  label: 'Bank',
+                  icon: Icons.account_balance,
+                  color: Colors.teal,
+                  amount: balances[AccountType.bank] ?? 0,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountBalanceChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final double amount;
+
+  const _AccountBalanceChip({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.amount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 18, color: color),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'RWF ${amount.toStringAsFixed(0)}',
+              style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SpendingReasonSummaryCard extends StatelessWidget {
+  final Map<SpendingReason, double> totals;
+
+  const _SpendingReasonSummaryCard({required this.totals});
+
+  @override
+  Widget build(BuildContext context) {
+    final totalAmount =
+        totals.values.fold<double>(0.0, (sum, v) => sum + v).clamp(0.0, double.infinity);
+    if (totalAmount == 0) return const SizedBox.shrink();
+
+    double pct(SpendingReason r) =>
+        ((totals[r] ?? 0) / totalAmount * 100).clamp(0, 100);
+
+    String formatPct(double v) => v.toStringAsFixed(0);
+
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Why you spent this month',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Most of your expenses are ${_dominantReasonLabel()}',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _ReasonPill(
+                  label: 'Necessity',
+                  emoji: '🧾',
+                  percent: formatPct(pct(SpendingReason.necessity)),
+                ),
+                _ReasonPill(
+                  label: 'Business',
+                  emoji: '💼',
+                  percent: formatPct(pct(SpendingReason.business)),
+                ),
+                _ReasonPill(
+                  label: 'Enjoyment',
+                  emoji: '🎉',
+                  percent: formatPct(pct(SpendingReason.enjoyment)),
+                ),
+                _ReasonPill(
+                  label: 'Emergency',
+                  emoji: '🚨',
+                  percent: formatPct(pct(SpendingReason.emergency)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _dominantReasonLabel() {
+    if (totals.isEmpty) return 'mixed';
+    final sorted = totals.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final top = sorted.first.key;
+    switch (top) {
+      case SpendingReason.necessity:
+        return 'on necessities';
+      case SpendingReason.business:
+        return 'for business';
+      case SpendingReason.enjoyment:
+        return 'for enjoyment';
+      case SpendingReason.emergency:
+        return 'on emergencies';
+    }
+  }
+}
+
+class _ReasonPill extends StatelessWidget {
+  final String label;
+  final String emoji;
+  final String percent;
+
+  const _ReasonPill({
+    required this.label,
+    required this.emoji,
+    required this.percent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(emoji),
+          const SizedBox(width: 6),
+          Text(
+            '$label · $percent%',
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }

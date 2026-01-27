@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../theme/app_theme.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
-import '../onboarding/welcome_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -30,21 +29,73 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       
-      // TODO: Implement Firebase authentication
-      // For now, simulate login and proceed to onboarding
-      await Future.delayed(const Duration(seconds: 1));
-      
-      // Save authentication status
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('user_authenticated', true);
-      
-      if (mounted) {
+      try {
+        // Normalize email (trim and lowercase) but keep password as-is
+        final email = _emailController.text.trim().toLowerCase();
+        final password = _passwordController.text;
+        
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+
+        if (!mounted) return;
         setState(() => _isLoading = false);
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => const WelcomeScreen(),
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Login successful!'),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
           ),
         );
+
+        // Let _InitialScreen handle navigation automatically via auth state listener
+        // No manual navigation needed - the app will rebuild automatically
+      } on FirebaseAuthException catch (e) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+
+        // Handle all possible Firebase Auth error codes
+        final message = switch (e.code) {
+          'user-not-found' => 'No account found for that email. Please sign up first.',
+          'wrong-password' => 'Incorrect password. Please check your password and try again.',
+          'invalid-credential' => 'Invalid email or password. Please check your credentials.',
+          'invalid-email' => 'Invalid email address. Please enter a valid email.',
+          'user-disabled' => 'This account has been disabled. Please contact support.',
+          'too-many-requests' => 'Too many failed attempts. Please wait a few minutes and try again.',
+          'network-request-failed' => 'Network error. Please check your internet connection.',
+          'operation-not-allowed' => 'Login is currently disabled. Please contact support.',
+          'requires-recent-login' => 'Please log out and log in again to continue.',
+          _ => 'Login failed: ${e.message ?? e.code}. Please check your email and password.',
+        };
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+
+        // Some background plugins (e.g. Pigeon-generated APIs) can throw
+        // benign type-cast errors after a successful login. We don't want to
+        // confuse the user with those if auth actually worked.
+        final message = e.toString();
+        if (!message.contains('PigeonUserDetails')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Login failed. Please try again.'),
+              backgroundColor: Colors.red.shade600,
+            ),
+          );
+        }
       }
     }
   }
@@ -75,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
                       child: const Center(
@@ -102,7 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     'Sign in to continue managing your finances',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -239,7 +290,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Expanded(
                         child: Divider(
-                          color: Colors.white.withOpacity(0.3),
+                          color: Colors.white.withValues(alpha: 0.3),
                           thickness: 1,
                         ),
                       ),
@@ -248,14 +299,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Text(
                           'OR',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
                       Expanded(
                         child: Divider(
-                          color: Colors.white.withOpacity(0.3),
+                          color: Colors.white.withValues(alpha: 0.3),
                           thickness: 1,
                         ),
                       ),
@@ -269,7 +320,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text(
                         'Don\'t have an account? ',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                         ),
                       ),
                       TextButton(

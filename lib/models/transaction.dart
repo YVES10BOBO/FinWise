@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 
 enum TransactionType { income, expense }
 
+/// Which pot the money comes from / goes to.
+enum AccountType { cash, mobileMoney, bank }
+
+/// Why the user is spending (only relevant for expenses).
+enum SpendingReason { necessity, business, enjoyment, emergency }
+
 enum Category {
   food('Food', '🍔', 0xFFFFE8E8),
   transport('Transport', '🚗', 0xFFE8F5E9),
@@ -32,6 +38,8 @@ class Transaction {
   final double amount;
   final String description;
   final DateTime date;
+  final AccountType account;
+  final SpendingReason? reason;
 
   Transaction({
     required this.id,
@@ -40,6 +48,8 @@ class Transaction {
     required this.amount,
     required this.description,
     required this.date,
+    required this.account,
+    this.reason,
   });
 
   // Convert to JSON for storage
@@ -51,6 +61,8 @@ class Transaction {
       'amount': amount,
       'description': description,
       'date': date.toIso8601String(),
+      'account': account.name,
+      'reason': reason?.name,
     };
   }
 
@@ -69,6 +81,16 @@ class Transaction {
       amount: (json['amount'] as num).toDouble(),
       description: json['description'],
       date: DateTime.parse(json['date']),
+      account: AccountType.values.firstWhere(
+        (e) => e.name == (json['account'] ?? 'mobileMoney'),
+        orElse: () => AccountType.mobileMoney,
+      ),
+      reason: json['reason'] == null
+          ? null
+          : SpendingReason.values.firstWhere(
+              (e) => e.name == json['reason'],
+              orElse: () => SpendingReason.necessity,
+            ),
     );
   }
 
@@ -80,6 +102,8 @@ class Transaction {
     double? amount,
     String? description,
     DateTime? date,
+    AccountType? account,
+    SpendingReason? reason,
   }) {
     return Transaction(
       id: id ?? this.id,
@@ -88,6 +112,8 @@ class Transaction {
       amount: amount ?? this.amount,
       description: description ?? this.description,
       date: date ?? this.date,
+      account: account ?? this.account,
+      reason: reason ?? this.reason,
     );
   }
 }

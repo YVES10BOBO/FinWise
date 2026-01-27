@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 import '../theme/theme_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/goal_provider.dart';
-import '../screens/onboarding/profile_setup_screen.dart';
+import '../screens/onboarding/financial_questionnaire_screen.dart';
 import '../services/export_service.dart';
 import '../screens/calendar_view_screen.dart';
-import '../screens/auth/login_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -28,13 +28,14 @@ class SettingsScreen extends StatelessWidget {
             children: [
               _SettingsTile(
                 icon: Icons.person,
-                title: 'Edit Profile',
-                subtitle: 'Update your name and income',
+                title: 'Profile & onboarding',
+                subtitle: 'Update your name, income, and categories',
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const ProfileSetupScreen(),
+                      builder: (context) =>
+                          const FinancialQuestionnaireScreen(),
                     ),
                   );
                 },
@@ -389,20 +390,26 @@ class SettingsScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () async {
-              // Clear authentication status
+              // Firebase logout + clear local cached profile/onboarding (avoid mixing users on same device)
+              await FirebaseAuth.instance.signOut();
               final prefs = await SharedPreferences.getInstance();
-              await prefs.setBool('user_authenticated', false);
-              await prefs.setBool('onboarding_complete', false);
+              await prefs.remove('user_name');
+              await prefs.remove('user_income');
+              await prefs.remove('income_frequency');
+              await prefs.remove('user_spending');
+              await prefs.remove('spending_frequency');
+              await prefs.remove('spending_style');
+              await prefs.remove('user_categories');
+              await prefs.remove('questionnaire_complete');
+              await prefs.remove('onboarding_complete');
               
               if (context.mounted) {
-                Navigator.pop(context); // Close dialog
-                // Navigate to login screen and clear navigation stack
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                    builder: (context) => const LoginScreen(),
-                  ),
-                  (route) => false, // Remove all previous routes
-                );
+                // Close dialog
+                Navigator.pop(context);
+                // Return to the root (_InitialScreen). Use the root navigator
+                // so we also pop the Settings screen route.
+                Navigator.of(context, rootNavigator: true)
+                    .popUntil((route) => route.isFirst);
               }
             },
             style: TextButton.styleFrom(
@@ -507,7 +514,7 @@ class _SettingsTile extends StatelessWidget {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: (iconColor ?? AppTheme.primaryColor).withOpacity(0.1),
+          color: (iconColor ?? AppTheme.primaryColor).withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
