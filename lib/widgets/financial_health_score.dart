@@ -134,6 +134,8 @@ class FinancialHealthScore extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final displayIncome = income.clamp(0, double.infinity);
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       padding: const EdgeInsets.all(20),
@@ -228,6 +230,15 @@ class FinancialHealthScore extends StatelessWidget {
               height: 1.4,
             ),
           ),
+          const SizedBox(height: 8),
+          if (displayIncome > 0)
+            Text(
+              'Profile income used: ${displayIncome.toStringAsFixed(0)} RWF per month',
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppTheme.textSecondary,
+              ),
+            ),
         ],
       ),
     );

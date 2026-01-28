@@ -35,11 +35,15 @@ class FinWiseApp extends StatelessWidget {
           ChangeNotifierProvider(create: (_) => TransactionProvider()),
           ChangeNotifierProvider(create: (_) => GoalProvider()),
         ],
-      child: MaterialApp(
-        title: 'FinWise',
-        theme: AppTheme.theme,
-        debugShowCheckedModeBanner: false,
-        home: const _InitialScreen(),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) {
+          return MaterialApp(
+            title: 'FinWise',
+            theme: themeProvider.currentTheme,
+            debugShowCheckedModeBanner: false,
+            home: const _InitialScreen(),
+          );
+        },
       ),
     );
   }

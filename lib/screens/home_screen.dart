@@ -109,7 +109,9 @@ class HomeScreen extends StatelessWidget {
 
                     // Savings Rate Card
                     SavingsRateCard(
-                      income: monthlyIncome > 0 ? monthlyIncome : income,
+                      // For savings rate, use actual tracked income from transactions
+                      // so this card always reflects real money flowing through the app.
+                      income: income,
                       expenses: expenses,
                       savings: savings,
                     ),
@@ -269,11 +271,26 @@ class HomeScreen extends StatelessWidget {
 
   Future<double> _getUserIncome() async {
     final prefs = await SharedPreferences.getInstance();
-    final incomeStr = prefs.getString('income');
-    if (incomeStr != null) {
-      return double.tryParse(incomeStr) ?? 0.0;
+    // Backward compatible: older builds may have saved `income`, newer onboarding uses `user_income`.
+    final incomeStr = prefs.getString('user_income') ?? prefs.getString('income');
+    if (incomeStr == null) return 0.0;
+
+    final rawIncome = double.tryParse(incomeStr.trim()) ?? 0.0;
+    if (rawIncome <= 0) return 0.0;
+
+    // Convert to monthly income for consistent analysis across the app.
+    final freq = prefs.getString('income_frequency') ?? 'Monthly';
+    switch (freq) {
+      case 'Daily':
+        return rawIncome * 30;
+      case 'Weekly':
+        return rawIncome * 4.345; // average weeks per month
+      case 'Yearly':
+        return rawIncome / 12;
+      case 'Monthly':
+      default:
+        return rawIncome;
     }
-    return 0.0;
   }
 
   Widget _buildEmptyState(BuildContext context, TransactionProvider provider,

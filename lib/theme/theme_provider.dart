@@ -21,6 +21,9 @@ class ThemeProvider with ChangeNotifier {
           foregroundColor: Colors.white,
           elevation: 0,
         ),
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+          backgroundColor: Colors.white,
+        ),
       );
 
   ThemeData get darkTheme => ThemeData(
@@ -38,6 +41,11 @@ class ThemeProvider with ChangeNotifier {
           backgroundColor: Color(0xFF1E1E1E),
           foregroundColor: Colors.white,
           elevation: 0,
+        ),
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+          backgroundColor: Color(0xFF1E1E1E),
+          selectedItemColor: Color(0xFF14FFEC),
+          unselectedItemColor: Color(0xFFE0E0E0),
         ),
       );
 

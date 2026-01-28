@@ -5,6 +5,7 @@ import '../models/goal.dart';
 import '../providers/goal_provider.dart';
 import '../widgets/add_goal_dialog.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 class GoalsScreen extends StatelessWidget {
   const GoalsScreen({super.key});
@@ -173,8 +174,10 @@ class _GoalCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey[300]!),
+        color: Theme.of(context).cardColor,
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+        ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -253,8 +256,78 @@ class _GoalCard extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton.icon(
+                onPressed: () => _showContributeDialog(context),
+                icon: const Icon(Icons.savings_outlined, size: 18),
+                label: const Text('Contribute'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.primaryColor,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
+    );
+  }
+
+  void _showContributeDialog(BuildContext context) {
+    final controller = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Add contribution'),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Amount to add (RWF)',
+              prefixIcon: Icon(Icons.attach_money),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                final raw = controller.text.trim();
+                final value = double.tryParse(raw);
+                if (value == null || value <= 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter a valid amount greater than 0'),
+                    ),
+                  );
+                  return;
+                }
+
+                final newAmount = goal.currentAmount + value;
+                Provider.of<GoalProvider>(context, listen: false)
+                    .updateGoalProgress(goal.id, newAmount);
+
+                Navigator.of(ctx).pop();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Added ${value.toStringAsFixed(0)} RWF to "${goal.name}"',
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

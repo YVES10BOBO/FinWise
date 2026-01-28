@@ -20,10 +20,8 @@ class _FinancialQuestionnaireScreenState
   final _incomeController = TextEditingController();
   String _incomeFrequency = 'Monthly';
   
-  // Step 2: Spending style + optional estimate
+  // Step 2: Spending style
   String _spendingStyle = 'Balanced';
-  final _spendingController = TextEditingController();
-  String _spendingFrequency = 'Monthly';
   
   // Step 3: Categories
   final Set<String> _selectedCategories = {};
@@ -52,7 +50,6 @@ class _FinancialQuestionnaireScreenState
   void dispose() {
     _nameController.dispose();
     _incomeController.dispose();
-    _spendingController.dispose();
     _customCategoryController.dispose();
     super.dispose();
   }
@@ -64,8 +61,6 @@ class _FinancialQuestionnaireScreenState
       final name = prefs.getString('user_name');
       final income = prefs.getString('user_income');
       final incomeFreq = prefs.getString('income_frequency');
-      final spending = prefs.getString('user_spending');
-      final spendingFreq = prefs.getString('spending_frequency');
       final spendingStyle = prefs.getString('spending_style');
       final categories = prefs.getStringList('user_categories');
 
@@ -83,13 +78,6 @@ class _FinancialQuestionnaireScreenState
           _incomeFrequency = incomeFreq;
         }
 
-        if (spending != null && spending.trim().isNotEmpty) {
-          _spendingController.text = spending;
-        }
-        if (spendingFreq != null &&
-            ['Daily', 'Weekly', 'Monthly', 'Yearly'].contains(spendingFreq)) {
-          _spendingFrequency = spendingFreq;
-        }
         if (spendingStyle != null &&
             ['Saver', 'Balanced', 'Spender', 'Overspender'].contains(spendingStyle)) {
           _spendingStyle = spendingStyle;
@@ -122,16 +110,8 @@ class _FinancialQuestionnaireScreenState
     await prefs.setString('user_income', _incomeController.text.trim());
     await prefs.setString('income_frequency', _incomeFrequency);
     
-    // Save spending style + optional spending estimate
+    // Save spending style (profile preference for future tips)
     await prefs.setString('spending_style', _spendingStyle);
-    final spendingText = _spendingController.text.trim();
-    if (spendingText.isEmpty) {
-      await prefs.remove('user_spending');
-      await prefs.remove('spending_frequency');
-    } else {
-      await prefs.setString('user_spending', spendingText);
-      await prefs.setString('spending_frequency', _spendingFrequency);
-    }
     
     // Save categories
     final allCategories = [..._selectedCategories, ..._customCategories];
@@ -523,8 +503,8 @@ class _FinancialQuestionnaireScreenState
               ),
               const SizedBox(height: 8),
               Text(
-                '• Spending style: Helps FinWise give personalized budget advice\n'
-                '• Spending estimate: Optional starting point — we\'ll track real spending automatically',
+                '• Spending style: Helps FinWise give personalized budget advice later\n'
+                '• Real spending: We only use your actual transactions to calculate charts and budgets',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.white.withValues(alpha: 0.85),
@@ -562,68 +542,6 @@ class _FinancialQuestionnaireScreenState
           ],
         ),
         const SizedBox(height: 40),
-        Text(
-          'Optional: add a rough spending estimate',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.white.withValues(alpha: 0.95),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: TextFormField(
-            controller: _spendingController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'Spending Amount (RWF)',
-              prefixIcon: const Icon(Icons.shopping_cart),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-              helperText: 'Leave blank if you\'re not sure',
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: DropdownButtonFormField<String>(
-            value: _spendingFrequency,
-            decoration: InputDecoration(
-              labelText: 'Spending Frequency',
-              prefixIcon: const Icon(Icons.calendar_today),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-            items: ['Daily', 'Weekly', 'Monthly', 'Yearly']
-                .map((freq) => DropdownMenuItem(
-                      value: freq,
-                      child: Text(freq),
-                    ))
-                .toList(),
-            onChanged: (value) {
-              if (value != null) {
-                setState(() {
-                  _spendingFrequency = value;
-                });
-              }
-            },
-          ),
-        ),
-        const SizedBox(height: 24),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -636,7 +554,7 @@ class _FinancialQuestionnaireScreenState
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'FinWise will track your real spending automatically as you add transactions.',
+                  'FinWise will track your real spending automatically from the transactions you add on the dashboard.',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.white.withValues(alpha: 0.9),
