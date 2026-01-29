@@ -19,6 +19,14 @@ enum Category {
   clothes('Clothes', '👕', 0xFFFFF9C4),
   water('Water', '💧', 0xFFE3F2FD),
   shoes('Shoes', '👟', 0xFFFFE0B2),
+  health('Health', '🏥', 0xFFE8F5E9),
+  education('Education', '🎓', 0xFFE3F2FD),
+  family('Family & Support', '👨‍👩‍👧', 0xFFFFF8E1),
+  debt('Debt & Loans', '💳', 0xFFFFEBEE),
+  business('Business', '📦', 0xFFE1F5FE),
+  giving('Giving & Church', '🙏', 0xFFEDE7F6),
+  fees('Fees & Taxes', '📄', 0xFFE0F2F1),
+  personal('Personal Care', '💅', 0xFFFFF3E0),
   income('Income', '💼', 0xFFE8F5E9),
   savings('Savings', '💰', 0xFFE8F5E9);
 

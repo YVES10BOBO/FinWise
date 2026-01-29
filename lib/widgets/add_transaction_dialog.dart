@@ -373,6 +373,14 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'FinWise will group these under the closest main category so your budgets stay simple.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,

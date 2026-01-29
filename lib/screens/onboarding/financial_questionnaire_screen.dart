@@ -647,6 +647,14 @@ class _FinancialQuestionnaireScreenState
             color: Colors.white.withValues(alpha: 0.9),
           ),
         ),
+        const SizedBox(height: 4),
+        Text(
+          'FinWise uses these 20 main categories on every page so your budgets and insights stay clear and simple.',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.white.withValues(alpha: 0.9),
+          ),
+        ),
         const SizedBox(height: 24),
         Container(
           padding: const EdgeInsets.all(16),

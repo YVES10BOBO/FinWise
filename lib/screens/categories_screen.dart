@@ -60,6 +60,22 @@ class CategoriesScreen extends StatelessWidget {
                         color: AppTheme.textPrimary,
                       ),
                     ),
+                const SizedBox(height: 4),
+                const Text(
+                  'FinWise groups all your expenses into 20 main categories so you can quickly see where your money goes.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Budgets here use your profile income from onboarding plus your real spending from transactions.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
                     const SizedBox(height: 20),
                     // Spending Chart
                     if (spendingPatterns.isNotEmpty)

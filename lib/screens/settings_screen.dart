@@ -29,7 +29,7 @@ class SettingsScreen extends StatelessWidget {
               _SettingsTile(
                 icon: Icons.person,
                 title: 'Profile & onboarding',
-                subtitle: 'Update your name, income, and categories',
+                subtitle: 'Update your name, usual income, and main categories (keep this fresh when your life changes)',
                 onTap: () {
                   Navigator.push(
                     context,

@@ -87,6 +87,14 @@ class SavingsRateCard extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 4),
+          const Text(
+            'Based only on the income and expenses you\'ve added as transactions.',
+            style: TextStyle(
+              fontSize: 11,
+              color: AppTheme.textSecondary,
+            ),
+          ),
           const SizedBox(height: 12),
           Text(
             savingsRateLabel,

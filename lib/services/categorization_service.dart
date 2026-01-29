@@ -79,6 +79,41 @@ class CategorizationService {
       return Category.shopping;
     }
 
+    // Health patterns
+    if (lowerDesc.contains('hospital') ||
+        lowerDesc.contains('clinic') ||
+        lowerDesc.contains('pharmacy') ||
+        lowerDesc.contains('doctor') ||
+        lowerDesc.contains('medicine')) {
+      return Category.health;
+    }
+
+    // Education patterns
+    if (lowerDesc.contains('school') ||
+        lowerDesc.contains('tuition') ||
+        lowerDesc.contains('fees') ||
+        lowerDesc.contains('university') ||
+        lowerDesc.contains('college')) {
+      return Category.education;
+    }
+
+    // Debt / loan patterns
+    if (lowerDesc.contains('loan') ||
+        lowerDesc.contains('debt') ||
+        lowerDesc.contains('credit') ||
+        lowerDesc.contains('installment')) {
+      return Category.debt;
+    }
+
+    // Giving / charity patterns
+    if (lowerDesc.contains('tithe') ||
+        lowerDesc.contains('offering') ||
+        lowerDesc.contains('church') ||
+        lowerDesc.contains('donation') ||
+        lowerDesc.contains('charity')) {
+      return Category.giving;
+    }
+
     // Default to food if amount is small (likely food expense)
     if (amount < 50000) {
       return Category.food;
