@@ -81,10 +81,11 @@ class AccountConnectionScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      children: [
-                        const Text('💡', style: TextStyle(fontSize: 24)),
-                        const SizedBox(width: 12),
-                        const Text(
+                      children: const [
+                        Icon(Icons.lightbulb_outline,
+                            size: 24, color: AppTheme.primaryColor),
+                        SizedBox(width: 12),
+                        Text(
                           'You can skip this step!',
                           style: TextStyle(
                             fontSize: 18,
@@ -114,7 +115,7 @@ class AccountConnectionScreen extends StatelessWidget {
               const SizedBox(height: 30),
               // Connection Options (for future implementation)
               _ConnectionOption(
-                icon: '🏦',
+                icon: Icons.account_balance_outlined,
                 title: 'Bank Account',
                 subtitle: 'Connect via secure API',
                 onTap: () {
@@ -128,7 +129,7 @@ class AccountConnectionScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               _ConnectionOption(
-                icon: '📱',
+                icon: Icons.phone_iphone,
                 title: 'Mobile Money',
                 subtitle: 'MTN, Airtel, or other providers',
                 onTap: () {
@@ -213,7 +214,7 @@ class _BenefitItem extends StatelessWidget {
 }
 
 class _ConnectionOption extends StatelessWidget {
-  final String icon;
+  final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
@@ -239,7 +240,7 @@ class _ConnectionOption extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Text(icon, style: const TextStyle(fontSize: 32)),
+            Icon(icon, size: 32, color: AppTheme.primaryColor),
             const SizedBox(width: 16),
             Expanded(
               child: Column(

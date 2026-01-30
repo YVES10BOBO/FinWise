@@ -3,7 +3,7 @@ import '../theme/app_theme.dart';
 import 'package:intl/intl.dart';
 
 class StatsCard extends StatelessWidget {
-  final String icon;
+  final IconData icon;
   final String label;
   final double value;
   final Color color;
@@ -44,9 +44,10 @@ class StatsCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Center(
-              child: Text(
+              child: Icon(
                 icon,
-                style: const TextStyle(fontSize: 20),
+                size: 20,
+                color: color,
               ),
             ),
           ),
@@ -65,6 +66,14 @@ class StatsCard extends StatelessWidget {
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          const Text(
+            'This month',
+            style: TextStyle(
+              fontSize: 11,
+              color: AppTheme.textSecondary,
             ),
           ),
         ],

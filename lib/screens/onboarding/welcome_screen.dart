@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'financial_questionnaire_screen.dart';
 import '../../theme/app_theme.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -32,9 +33,10 @@ class WelcomeScreen extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: const Center(
-                    child: Text(
-                      '💰',
-                      style: TextStyle(fontSize: 64),
+                    child: FaIcon(
+                      FontAwesomeIcons.piggyBank,
+                      size: 48,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -62,18 +64,18 @@ class WelcomeScreen extends StatelessWidget {
                 const SizedBox(height: 60),
                 // Features
                 _FeatureItem(
-                  icon: '🤖',
-                  text: 'AI-Powered Budget Recommendations',
+                  icon: FontAwesomeIcons.lightbulb,
+                  text: 'Smart budget recommendations',
                 ),
                 const SizedBox(height: 20),
                 _FeatureItem(
-                  icon: '📊',
-                  text: 'Automatic Spending Analysis',
+                  icon: FontAwesomeIcons.chartPie,
+                  text: 'Automatic spending analysis',
                 ),
                 const SizedBox(height: 20),
                 _FeatureItem(
-                  icon: '🎯',
-                  text: 'Smart Goal Tracking',
+                  icon: FontAwesomeIcons.bullseye,
+                  text: 'Goal tracking that keeps you focused',
                 ),
                 const Spacer(),
                 // Get Started Button
@@ -116,7 +118,7 @@ class WelcomeScreen extends StatelessWidget {
 }
 
 class _FeatureItem extends StatelessWidget {
-  final String icon;
+  final IconData icon;
   final String text;
 
   const _FeatureItem({required this.icon, required this.text});
@@ -125,7 +127,7 @@ class _FeatureItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(icon, style: const TextStyle(fontSize: 24)),
+        FaIcon(icon, size: 20, color: Colors.white),
         const SizedBox(width: 16),
         Expanded(
           child: Text(

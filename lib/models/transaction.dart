@@ -35,8 +35,53 @@ enum Category {
   final int colorValue;
 
   const Category(this.name, this.emoji, this.colorValue);
-  
+
   Color get color => Color(colorValue);
+
+  IconData get icon {
+    switch (this) {
+      case Category.food:
+        return Icons.restaurant;
+      case Category.transport:
+        return Icons.directions_car;
+      case Category.entertainment:
+        return Icons.videogame_asset;
+      case Category.utilities:
+        return Icons.lightbulb_outline;
+      case Category.rent:
+        return Icons.home_outlined;
+      case Category.shopping:
+        return Icons.shopping_bag_outlined;
+      case Category.vacation:
+        return Icons.flight_takeoff;
+      case Category.clothes:
+        return Icons.checkroom;
+      case Category.water:
+        return Icons.water_drop_outlined;
+      case Category.shoes:
+        return Icons.hiking;
+      case Category.health:
+        return Icons.local_hospital_outlined;
+      case Category.education:
+        return Icons.school_outlined;
+      case Category.family:
+        return Icons.family_restroom;
+      case Category.debt:
+        return Icons.credit_card;
+      case Category.business:
+        return Icons.business_center_outlined;
+      case Category.giving:
+        return Icons.volunteer_activism;
+      case Category.fees:
+        return Icons.receipt_long_outlined;
+      case Category.personal:
+        return Icons.spa_outlined;
+      case Category.income:
+        return Icons.account_balance_wallet_outlined;
+      case Category.savings:
+        return Icons.savings_outlined;
+    }
+  }
 }
 
 class Transaction {

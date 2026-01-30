@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 import '../../theme/app_theme.dart';
 import '../../main.dart';
+import '../../providers/transaction_provider.dart';
+import '../../models/transaction.dart';
 
 class FinancialQuestionnaireScreen extends StatefulWidget {
   const FinancialQuestionnaireScreen({super.key});
@@ -116,6 +119,58 @@ class _FinancialQuestionnaireScreenState
     // Save categories
     final allCategories = [..._selectedCategories, ..._customCategories];
     await prefs.setStringList('user_categories', allCategories);
+    
+    // Keep onboarding income + transactions in sync:
+    // - If income > 0: ensure there's an "Onboarding income" transaction
+    //   with that amount (create or update).
+    // - If income is 0 or empty: remove any existing "Onboarding income"
+    //   transactions so old values aren't reused.
+    try {
+      final incomeText = _incomeController.text.trim();
+      final incomeValue = double.tryParse(incomeText) ?? 0.0;
+      if (!mounted) {
+        return;
+      }
+
+      final transactionProvider =
+          Provider.of<TransactionProvider>(context, listen: false);
+      final onboardingTxs = transactionProvider.transactions.where(
+        (t) =>
+            t.type == TransactionType.income &&
+            t.description == 'Onboarding income',
+      );
+
+      if (incomeValue > 0) {
+        if (onboardingTxs.isNotEmpty) {
+          // Update existing onboarding income transaction(s) to the new value
+          for (final tx in onboardingTxs) {
+            final updated = tx.copyWith(amount: incomeValue);
+            transactionProvider.updateTransaction(updated);
+          }
+        } else {
+          // No onboarding income transaction yet – create one
+          final onboardingIncome = Transaction(
+            id: 'onboarding_${DateTime.now().millisecondsSinceEpoch}',
+            type: TransactionType.income,
+            category: Category.income,
+            amount: incomeValue,
+            description: 'Onboarding income',
+            date: DateTime.now(),
+            account: AccountType.mobileMoney,
+            reason: null,
+          );
+          transactionProvider.addTransaction(onboardingIncome);
+        }
+      } else {
+        // incomeValue is 0 or invalid → remove any previous onboarding income
+        for (final tx in onboardingTxs.toList()) {
+          transactionProvider.removeTransaction(tx.id);
+        }
+      }
+    } catch (_) {
+      // If anything goes wrong here, we just skip creating the auto transaction.
+      // The app will still work; the user can always add income manually.
+    }
     
     // Mark questionnaire and onboarding as complete
     await prefs.setBool('questionnaire_complete', true);
@@ -297,7 +352,7 @@ class _FinancialQuestionnaireScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          '👋 Let\'s set up your FinWise',
+          'Let\'s set up your FinWise',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -439,7 +494,7 @@ class _FinancialQuestionnaireScreenState
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  '💡 Tip: Start with approximate numbers — FinWise will learn from your real transactions and adjust automatically.',
+                  'Tip: Start with approximate numbers — FinWise will learn from your real transactions and adjust automatically.',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.white.withValues(alpha: 0.9),
@@ -458,7 +513,7 @@ class _FinancialQuestionnaireScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          '💡 What\'s your spending style?',
+          'What\'s your spending style?',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,

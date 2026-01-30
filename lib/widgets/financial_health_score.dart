@@ -102,20 +102,20 @@ class FinancialHealthScore extends StatelessWidget {
     return AppTheme.expenseColor; // Red
   }
 
-  String get healthEmoji {
+  IconData get healthIcon {
     if (healthScore >= 80) {
-      return '🎉';
+      return Icons.emoji_events_outlined;
     }
     if (healthScore >= 60) {
-      return '👍';
+      return Icons.thumb_up_alt_outlined;
     }
     if (healthScore >= 40) {
-      return '📊';
+      return Icons.insights_outlined;
     }
     if (healthScore >= 20) {
-      return '⚠️';
+      return Icons.warning_amber_outlined;
     }
-    return '🔴';
+    return Icons.error_outline;
   }
 
   String get healthAdvice {
@@ -169,9 +169,10 @@ class FinancialHealthScore extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Text(
-                    healthEmoji,
-                    style: const TextStyle(fontSize: 24),
+                  Icon(
+                    healthIcon,
+                    size: 24,
+                    color: healthColor,
                   ),
                   const SizedBox(width: 8),
                   const Text(
@@ -232,11 +233,23 @@ class FinancialHealthScore extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           if (displayIncome > 0)
-            Text(
-              'Profile income used: ${displayIncome.toStringAsFixed(0)} RWF per month',
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppTheme.textSecondary,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.8),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: healthColor.withValues(alpha: 0.4),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                'Profile income used: ${displayIncome.toStringAsFixed(0)} RWF per month',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: healthColor,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
         ],

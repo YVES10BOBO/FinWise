@@ -158,7 +158,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                     Expanded(
                       child: _TypeButton(
                         label: 'Income',
-                        icon: '💰',
+                        icon: Icons.arrow_downward_rounded,
                         isSelected: _selectedType == TransactionType.income,
                         onTap: () {
                           setState(() {
@@ -172,7 +172,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                     Expanded(
                       child: _TypeButton(
                         label: 'Expense',
-                        icon: '💸',
+                        icon: Icons.arrow_upward_rounded,
                         isSelected: _selectedType == TransactionType.expense,
                         onTap: () {
                           setState(() {
@@ -275,13 +275,25 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                     children: availableCategories.map((category) {
                       final isSelected = _selectedCategory == category;
                       return FilterChip(
-                        label: Text(
-                          '${category.emoji} ${category.name}',
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : AppTheme.textPrimary,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            fontSize: 14,
-                          ),
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              category.icon,
+                              size: 18,
+                              color: isSelected ? Colors.white : AppTheme.textPrimary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              category.name,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : AppTheme.textPrimary,
+                                fontWeight:
+                                    isSelected ? FontWeight.bold : FontWeight.normal,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
                         ),
                         selected: isSelected,
                         onSelected: (selected) {
@@ -293,8 +305,8 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                         backgroundColor: Colors.grey[100],
                         checkmarkColor: Colors.white,
                         side: BorderSide(
-                          color: isSelected 
-                              ? AppTheme.primaryColor 
+                          color: isSelected
+                              ? AppTheme.primaryColor
                               : Colors.grey[300]!,
                           width: isSelected ? 2 : 1,
                         ),
@@ -428,7 +440,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                     children: [
                       _ReasonChip(
                         label: 'Necessity',
-                        emoji: '🧾',
+                        icon: Icons.receipt_long_outlined,
                         reason: SpendingReason.necessity,
                         selectedReason: _selectedReason,
                         onSelected: (reason) {
@@ -439,7 +451,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                       ),
                       _ReasonChip(
                         label: 'Business',
-                        emoji: '💼',
+                        icon: Icons.business_center_outlined,
                         reason: SpendingReason.business,
                         selectedReason: _selectedReason,
                         onSelected: (reason) {
@@ -450,7 +462,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                       ),
                       _ReasonChip(
                         label: 'Enjoyment',
-                        emoji: '🎉',
+                        icon: Icons.celebration_outlined,
                         reason: SpendingReason.enjoyment,
                         selectedReason: _selectedReason,
                         onSelected: (reason) {
@@ -461,7 +473,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                       ),
                       _ReasonChip(
                         label: 'Emergency',
-                        emoji: '🚨',
+                        icon: Icons.warning_amber_outlined,
                         reason: SpendingReason.emergency,
                         selectedReason: _selectedReason,
                         onSelected: (reason) {
@@ -480,13 +492,20 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                     decoration: BoxDecoration(
                       color: AppTheme.primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
+                      border:
+                          Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
                     ),
                     child: Row(
-                      children: [
+                      children: const [
+                        Icon(
+                          Icons.account_balance_wallet_outlined,
+                          size: 20,
+                          color: AppTheme.primaryColor,
+                        ),
+                        SizedBox(width: 8),
                         Text(
-                          '${Category.income.emoji} ${Category.income.name}',
-                          style: const TextStyle(
+                          'Income',
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: AppTheme.primaryColor,
@@ -569,7 +588,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
 
 class _TypeButton extends StatelessWidget {
   final String label;
-  final String icon;
+  final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -599,7 +618,11 @@ class _TypeButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(icon, style: const TextStyle(fontSize: 20)),
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+            ),
             const SizedBox(width: 8),
             Text(
               label,
@@ -665,14 +688,14 @@ class _AccountChip extends StatelessWidget {
 
 class _ReasonChip extends StatelessWidget {
   final String label;
-  final String emoji;
+  final IconData icon;
   final SpendingReason reason;
   final SpendingReason selectedReason;
   final ValueChanged<SpendingReason> onSelected;
 
   const _ReasonChip({
     required this.label,
-    required this.emoji,
+    required this.icon,
     required this.reason,
     required this.selectedReason,
     required this.onSelected,
@@ -685,7 +708,11 @@ class _ReasonChip extends StatelessWidget {
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(emoji),
+          Icon(
+            icon,
+            size: 16,
+            color: isSelected ? Colors.white : AppTheme.textSecondary,
+          ),
           const SizedBox(width: 6),
           Text(
             label,

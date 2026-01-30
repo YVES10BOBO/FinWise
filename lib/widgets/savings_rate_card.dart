@@ -6,12 +6,14 @@ class SavingsRateCard extends StatelessWidget {
   final double income;
   final double expenses;
   final double savings;
+  final bool isUsingFallbackIncome; // true if using onboarding income (no transaction income)
 
   const SavingsRateCard({
     super.key,
     required this.income,
     required this.expenses,
     required this.savings,
+    this.isUsingFallbackIncome = false,
   });
 
   double get savingsRate {
@@ -88,9 +90,11 @@ class SavingsRateCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Based only on the income and expenses you\'ve added as transactions.',
-            style: TextStyle(
+          Text(
+            isUsingFallbackIncome
+              ? 'Using your profile income (from onboarding) since no income transactions added yet.'
+              : 'Based on your tracked income and expenses from transactions.',
+            style: const TextStyle(
               fontSize: 11,
               color: AppTheme.textSecondary,
             ),

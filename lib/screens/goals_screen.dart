@@ -5,7 +5,6 @@ import '../models/goal.dart';
 import '../providers/goal_provider.dart';
 import '../widgets/add_goal_dialog.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
 class GoalsScreen extends StatelessWidget {
   const GoalsScreen({super.key});
@@ -31,9 +30,10 @@ class GoalsScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    '🎯',
-                    style: TextStyle(fontSize: 64),
+                  const Icon(
+                    Icons.flag_outlined,
+                    size: 56,
+                    color: AppTheme.primaryColor,
                   ),
                   const SizedBox(height: 20),
                   const Text(
@@ -91,6 +91,15 @@ class GoalsScreen extends StatelessWidget {
                     color: AppTheme.textPrimary,
                   ),
                 ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Set clear targets and track your progress visually as you save towards each goal.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
                 const SizedBox(height: 20),
                 ...goals.map((goal) => _GoalCard(goal: goal)),
                 const SizedBox(height: 20),
@@ -115,10 +124,14 @@ class GoalsScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        children: [
-                          const Text('🎯', style: TextStyle(fontSize: 20)),
-                          const SizedBox(width: 10),
-                          const Text(
+                        children: const [
+                          Icon(
+                            Icons.flag_outlined,
+                            size: 18,
+                            color: Colors.white,
+                          ),
+                          SizedBox(width: 10),
+                          Text(
                             'Goal Progress',
                             style: TextStyle(
                               fontSize: 16,
@@ -196,9 +209,10 @@ class _GoalCard extends StatelessWidget {
               Expanded(
                 child: Row(
                   children: [
-                    Text(
-                      goal.emoji,
-                      style: const TextStyle(fontSize: 28),
+                    const Icon(
+                      Icons.flag_outlined,
+                      size: 24,
+                      color: AppTheme.primaryColor,
                     ),
                     const SizedBox(width: 12),
                     Flexible(

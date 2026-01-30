@@ -135,9 +135,10 @@ class _LegendItem extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Text(
-            category.emoji,
-            style: const TextStyle(fontSize: 20),
+          Icon(
+            category.icon,
+            size: 20,
+            color: category.color,
           ),
           const SizedBox(width: 8),
           Expanded(

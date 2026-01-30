@@ -97,9 +97,10 @@ class TopSpendingCategoriesWidget extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   // Category icon
-                  Text(
-                    category.emoji,
-                    style: const TextStyle(fontSize: 24),
+                  Icon(
+                    category.icon,
+                    size: 24,
+                    color: category.color,
                   ),
                   const SizedBox(width: 12),
                   // Category name and progress

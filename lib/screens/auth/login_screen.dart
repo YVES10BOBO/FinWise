@@ -130,9 +130,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         shape: BoxShape.circle,
                       ),
                       child: const Center(
-                        child: Text(
-                          '💰',
-                          style: TextStyle(fontSize: 56),
+                        child: Icon(
+                          Icons.account_balance_wallet_outlined,
+                          size: 56,
+                          color: Colors.white,
                         ),
                       ),
                     ),

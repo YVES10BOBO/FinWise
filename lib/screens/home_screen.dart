@@ -29,7 +29,6 @@ class HomeScreen extends StatelessWidget {
         final balance = transactionProvider.balance;
         final income = transactionProvider.totalIncome;
         final expenses = transactionProvider.totalExpenses;
-        final savings = income - expenses;
         final recentTransactions = transactionProvider.getRecentTransactions(3);
         final categorySpending = transactionProvider.getCategorySpending();
         final accountBalances = transactionProvider.accountBalances;
@@ -78,7 +77,7 @@ class HomeScreen extends StatelessWidget {
                         children: [
                           Expanded(
                             child: StatsCard(
-                              icon: '📈',
+                              icon: Icons.trending_up,
                               label: 'Income',
                               value: income,
                               color: AppTheme.incomeColor,
@@ -87,7 +86,7 @@ class HomeScreen extends StatelessWidget {
                           const SizedBox(width: 15),
                           Expanded(
                             child: StatsCard(
-                              icon: '📉',
+                              icon: Icons.trending_down,
                               label: 'Expenses',
                               value: expenses,
                               color: AppTheme.expenseColor,
@@ -108,12 +107,14 @@ class HomeScreen extends StatelessWidget {
                     ),
 
                     // Savings Rate Card
+                    // Use transaction income if available (real tracked money),
+                    // otherwise fallback to onboarding income (profile baseline)
+                    // This ensures users always see a meaningful savings rate.
                     SavingsRateCard(
-                      // For savings rate, use actual tracked income from transactions
-                      // so this card always reflects real money flowing through the app.
-                      income: income,
+                      income: income > 0 ? income : (monthlyIncome > 0 ? monthlyIncome : 0),
                       expenses: expenses,
-                      savings: savings,
+                      savings: (income > 0 ? income : (monthlyIncome > 0 ? monthlyIncome : 0)) - expenses,
+                      isUsingFallbackIncome: income == 0 && monthlyIncome > 0,
                     ),
 
                     const SizedBox(height: 10),
@@ -309,27 +310,27 @@ class HomeScreen extends StatelessWidget {
                   colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '👋 Hello, User!',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  '👋 Hello!',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
-                  const SizedBox(height: 5),
-                  Text(
-                    "Let's manage your money wisely",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.9),
-                    ),
+                ),
+                SizedBox(height: 5),
+                Text(
+                  "Let's manage your money wisely",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white70,
                   ),
-                ],
-              ),
+                ),
+              ],
+            ),
             ),
 
             // Balance Card
@@ -350,7 +351,7 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: StatsCard(
-                      icon: '📈',
+                      icon: Icons.trending_up,
                       label: 'Income',
                       value: income,
                       color: AppTheme.incomeColor,
@@ -359,7 +360,7 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(width: 15),
                   Expanded(
                     child: StatsCard(
-                      icon: '📉',
+                      icon: Icons.trending_down,
                       label: 'Expenses',
                       value: expenses,
                       color: AppTheme.expenseColor,
@@ -376,9 +377,10 @@ class HomeScreen extends StatelessWidget {
               padding: const EdgeInsets.all(40),
               child: Column(
                 children: [
-                  const Text(
-                    '💰',
-                    style: TextStyle(fontSize: 64),
+                  const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    size: 64,
+                    color: AppTheme.primaryColor,
                   ),
                   const SizedBox(height: 20),
                   const Text(
@@ -605,22 +607,18 @@ class _SpendingReasonSummaryCard extends StatelessWidget {
               children: [
                 _ReasonPill(
                   label: 'Necessity',
-                  emoji: '🧾',
                   percent: formatPct(pct(SpendingReason.necessity)),
                 ),
                 _ReasonPill(
                   label: 'Business',
-                  emoji: '💼',
                   percent: formatPct(pct(SpendingReason.business)),
                 ),
                 _ReasonPill(
                   label: 'Enjoyment',
-                  emoji: '🎉',
                   percent: formatPct(pct(SpendingReason.enjoyment)),
                 ),
                 _ReasonPill(
                   label: 'Emergency',
-                  emoji: '🚨',
                   percent: formatPct(pct(SpendingReason.emergency)),
                 ),
               ],
@@ -651,12 +649,10 @@ class _SpendingReasonSummaryCard extends StatelessWidget {
 
 class _ReasonPill extends StatelessWidget {
   final String label;
-  final String emoji;
   final String percent;
 
   const _ReasonPill({
     required this.label,
-    required this.emoji,
     required this.percent,
   });
 
@@ -671,8 +667,6 @@ class _ReasonPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(emoji),
-          const SizedBox(width: 6),
           Text(
             '$label · $percent%',
             style: const TextStyle(

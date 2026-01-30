@@ -52,30 +52,58 @@ class CategoriesScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Spending Categories',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Row(
+                            children: const [
+                              Icon(Icons.category_outlined,
+                                  size: 22, color: AppTheme.primaryColor),
+                              SizedBox(width: 8),
+                              Text(
+                                'Spending Categories',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'FinWise groups your expenses into simple categories so you can quickly see where your money goes.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textSecondary,
+                              height: 1.4,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Budgets here use your profile income from onboarding plus your real spending from transactions.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textSecondary,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                const SizedBox(height: 4),
-                const Text(
-                  'FinWise groups all your expenses into 20 main categories so you can quickly see where your money goes.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                const Text(
-                  'Budgets here use your profile income from onboarding plus your real spending from transactions.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
                     const SizedBox(height: 20),
                     // Spending Chart
                     if (spendingPatterns.isNotEmpty)
@@ -99,11 +127,12 @@ class CategoriesScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                            children: [
-                              const Text('💡', style: TextStyle(fontSize: 20)),
-                              const SizedBox(width: 10),
-                              const Text(
-                                'Category Insight',
+                            children: const [
+                              Icon(Icons.lightbulb_outline,
+                                  size: 20, color: AppTheme.primaryColor),
+                              SizedBox(width: 10),
+                              Text(
+                                'Category insight',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -192,9 +221,10 @@ class _CategoryCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(
-                budget.category.emoji,
-                style: const TextStyle(fontSize: 28),
+              Icon(
+                budget.category.icon,
+                size: 26,
+                color: budget.category.color,
               ),
               const SizedBox(width: 12),
               Expanded(

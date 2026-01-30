@@ -61,6 +61,31 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           ),
           body: Column(
             children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'Your history',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Search, filter and review all your past transactions in one place.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               // Search Bar
               Padding(
                 padding: const EdgeInsets.all(16),
@@ -103,7 +128,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     children: [
                       if (_selectedCategory != null)
                         _FilterChip(
-                          label: '${_selectedCategory!.emoji} ${_selectedCategory!.name}',
+                          label: _selectedCategory!.name,
                           onRemove: () {
                             setState(() {
                               _selectedCategory = null;
@@ -131,9 +156,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text(
-                              '💰',
-                              style: TextStyle(fontSize: 64),
+                            const Icon(
+                              Icons.receipt_long_outlined,
+                              size: 64,
+                              color: Colors.grey,
                             ),
                             const SizedBox(height: 20),
                             const Text(
@@ -274,7 +300,17 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     return const SizedBox.shrink();
                   }
                   return ChoiceChip(
-                    label: Text('${category.emoji} ${category.name}'),
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          category.icon,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(category.name),
+                      ],
+                    ),
                     selected: _selectedCategory == category,
                     onSelected: (selected) {
                       if (selected) {

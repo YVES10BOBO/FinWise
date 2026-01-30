@@ -139,9 +139,10 @@ class _TransactionItemState extends State<TransactionItem>
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
-                        child: Text(
-                          transaction.category.emoji,
-                          style: const TextStyle(fontSize: 24),
+                        child: Icon(
+                          transaction.category.icon,
+                          size: 24,
+                          color: AppTheme.textPrimary,
                         ),
                       ),
                     ),

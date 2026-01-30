@@ -18,9 +18,21 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 90));
-  String _selectedEmoji = '💰';
+  // Store a simple key for the selected icon (used only for display / JSON)
+  String _selectedIconKey = 'savings';
 
-  final List<String> _emojis = ['💰', '💻', '🚗', '🏠', '🎓', '✈️', '💍', '📱', '🎮', '🎯'];
+  final Map<String, IconData> _iconOptions = {
+    'savings': Icons.savings_outlined,
+    'laptop': Icons.laptop_mac_outlined,
+    'car': Icons.directions_car_outlined,
+    'house': Icons.house_outlined,
+    'education': Icons.school_outlined,
+    'travel': Icons.flight_takeoff_outlined,
+    'ring': Icons.favorite_border,
+    'phone': Icons.phone_iphone,
+    'gaming': Icons.videogame_asset_outlined,
+    'other': Icons.flag_outlined,
+  };
 
   @override
   void initState() {
@@ -29,7 +41,10 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
       _nameController.text = widget.existingGoal!.name;
       _amountController.text = widget.existingGoal!.targetAmount.toString();
       _selectedDate = widget.existingGoal!.targetDate;
-      _selectedEmoji = widget.existingGoal!.emoji;
+      // Use stored emoji/key if present, otherwise default
+      _selectedIconKey = widget.existingGoal!.emoji.isNotEmpty
+          ? widget.existingGoal!.emoji
+          : 'savings';
     }
   }
 
@@ -59,7 +74,7 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
       final goal = Goal(
         id: widget.existingGoal?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         name: _nameController.text,
-        emoji: _selectedEmoji,
+        emoji: _selectedIconKey,
         targetAmount: double.parse(_amountController.text),
         currentAmount: widget.existingGoal?.currentAmount ?? 0.0,
         targetDate: _selectedDate,
@@ -108,22 +123,25 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 10,
-                  children: _emojis.map((emoji) {
+                  children: _iconOptions.entries.map((entry) {
+                    final key = entry.key;
+                    final icon = entry.value;
+                    final isSelected = _selectedIconKey == key;
                     return GestureDetector(
                       onTap: () {
                         setState(() {
-                          _selectedEmoji = emoji;
+                          _selectedIconKey = key;
                         });
                       },
                       child: Container(
                         width: 50,
                         height: 50,
                         decoration: BoxDecoration(
-                          color: _selectedEmoji == emoji
+                          color: isSelected
                               ? AppTheme.primaryColor.withValues(alpha: 0.1)
                               : Colors.grey[200],
                           border: Border.all(
-                            color: _selectedEmoji == emoji
+                            color: isSelected
                                 ? AppTheme.primaryColor
                                 : Colors.transparent,
                             width: 2,
@@ -131,9 +149,10 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Center(
-                          child: Text(
-                            emoji,
-                            style: const TextStyle(fontSize: 24),
+                          child: Icon(
+                            icon,
+                            size: 24,
+                            color: AppTheme.primaryColor,
                           ),
                         ),
                       ),

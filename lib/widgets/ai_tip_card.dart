@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class AITipCard extends StatelessWidget {
   final String tip;
@@ -29,9 +30,10 @@ class AITipCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text(
-                '🤖',
-                style: TextStyle(fontSize: 20),
+              const FaIcon(
+                FontAwesomeIcons.lightbulb,
+                color: Colors.white,
+                size: 20,
               ),
               const SizedBox(width: 10),
               Container(
@@ -41,7 +43,7 @@ class AITipCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Text(
-                  'AI TIP',
+                  'SMART TIP',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,

@@ -55,14 +55,16 @@ class BalanceCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _ActionButton(
-                  label: '💰 Add Income',
+                  label: 'Add Income',
+                  icon: Icons.arrow_downward_rounded,
                   onPressed: onAddIncome,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _ActionButton(
-                  label: '💸 Add Expense',
+                  label: 'Add Expense',
+                  icon: Icons.arrow_upward_rounded,
                   onPressed: onAddExpense,
                 ),
               ),
@@ -76,10 +78,12 @@ class BalanceCard extends StatelessWidget {
 
 class _ActionButton extends StatelessWidget {
   final String label;
+  final IconData icon;
   final VoidCallback onPressed;
 
   const _ActionButton({
     required this.label,
+    required this.icon,
     required this.onPressed,
   });
 
@@ -98,14 +102,25 @@ class _ActionButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
-            child: Text(
-              label,
-              style: const TextStyle(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 16,
                 color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
               ),
-            ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
           ),
         ),
       ),
