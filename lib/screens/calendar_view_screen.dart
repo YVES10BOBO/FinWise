@@ -6,6 +6,7 @@ import '../models/transaction.dart';
 import '../theme/app_theme.dart';
 import '../widgets/transaction_item.dart';
 import 'package:intl/intl.dart';
+import '../widgets/add_transaction_dialog.dart';
 
 class CalendarViewScreen extends StatefulWidget {
   const CalendarViewScreen({super.key});
@@ -44,6 +45,19 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
       }
       _events[date]!.add(transaction);
     }
+  }
+
+  void _editTransaction(BuildContext context, Transaction transaction) {
+    showDialog(
+      context: context,
+      builder: (context) => AddTransactionDialog(
+        existingTransaction: transaction,
+        onSave: (updatedTransaction) {
+          Provider.of<TransactionProvider>(context, listen: false)
+              .updateTransaction(updatedTransaction);
+        },
+      ),
+    );
   }
 
   @override
@@ -215,13 +229,24 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text('📅', style: TextStyle(fontSize: 64)),
+                            const Icon(
+                              Icons.calendar_today_outlined,
+                              size: 64,
+                              color: Colors.grey,
+                            ),
                             const SizedBox(height: 20),
                             const Text(
                               'No transactions on this day',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              'Add an income or expense for this date to see it here.',
+                              style: TextStyle(
+                                color: Colors.grey,
                               ),
                             ),
                           ],
@@ -234,7 +259,10 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                           return TransactionItem(
                             transaction: selectedEvents[index],
                             onEdit: () {
-                              // TODO: Implement edit
+                              _editTransaction(
+                                context,
+                                selectedEvents[index],
+                              );
                             },
                             onDelete: () {
                               provider.removeTransaction(selectedEvents[index].id);

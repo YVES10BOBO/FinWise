@@ -34,7 +34,7 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   child: const Center(
                     child: FaIcon(
-                      FontAwesomeIcons.piggyBank,
+                      FontAwesomeIcons.wallet,
                       size: 48,
                       color: Colors.white,
                     ),

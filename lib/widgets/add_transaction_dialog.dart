@@ -124,9 +124,15 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
   @override
   Widget build(BuildContext context) {
     final categoryProvider = Provider.of<CategoryProvider>(context);
+    // Show ALL expense categories (21 categories: all 23 minus income and savings)
+    // This ensures users can select from ALL available categories, not just ones from onboarding
+    final allExpenseCategories = Category.values
+        .where((cat) => cat != Category.income && cat != Category.savings)
+        .toList()
+        ..sort((a, b) => a.name.compareTo(b.name)); // Sort alphabetically for easier finding
     final availableCategories = _selectedType == TransactionType.income
         ? [Category.income]
-        : categoryProvider.getAvailableExpenseCategories();
+        : allExpenseCategories;
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -259,20 +265,35 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                 const SizedBox(height: 24),
                 // Category Selection (only for expenses)
                 if (_selectedType == TransactionType.expense) ...[
-                  const Text(
-                    'Category',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Category',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        '${availableCategories.length} categories',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
-                  // Category Chips
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: availableCategories.map((category) {
+                  // Category Chips - Scrollable container for all 23 categories
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 200),
+                    child: SingleChildScrollView(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: availableCategories.map((category) {
                       final isSelected = _selectedCategory == category;
                       return FilterChip(
                         label: Row(
@@ -312,6 +333,8 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                         ),
                       );
                     }).toList(),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   // Add Custom Category Button

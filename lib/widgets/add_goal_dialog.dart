@@ -22,7 +22,7 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
   String _selectedIconKey = 'savings';
 
   final Map<String, IconData> _iconOptions = {
-    'savings': Icons.savings_outlined,
+    'savings': Icons.account_balance_wallet,
     'laptop': Icons.laptop_mac_outlined,
     'car': Icons.directions_car_outlined,
     'house': Icons.house_outlined,

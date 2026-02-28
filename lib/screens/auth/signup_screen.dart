@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import 'login_screen.dart';
+import '../../services/firestore_user_profile_service.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -62,6 +63,18 @@ class _SignupScreenState extends State<SignupScreen> {
         // Also set displayName in Firebase Auth profile
         await credential.user?.updateDisplayName(_nameController.text.trim());
 
+        // Create user profile doc in Firestore (so UID maps to name/email)
+        final user = credential.user;
+        if (user != null) {
+          await FirestoreUserProfileService().createProfileIfNeeded(
+            uid: user.uid,
+            email: user.email,
+            name: _nameController.text.trim(),
+          );
+          // Reload user to ensure auth state is fully updated
+          await user.reload();
+        }
+
         if (!mounted) return;
         setState(() => _isLoading = false);
         
@@ -74,9 +87,20 @@ class _SignupScreenState extends State<SignupScreen> {
             duration: const Duration(seconds: 2),
           ),
         );
-        
-        // Let _InitialScreen handle navigation automatically via auth state listener
-        // No manual navigation needed - the app will rebuild automatically
+
+        // Wait a moment for the success message to be visible
+        await Future.delayed(const Duration(milliseconds: 1500));
+
+        if (!mounted) return;
+
+        // Sign out the user so they can log in with their new account
+        await FirebaseAuth.instance.signOut();
+
+        // Navigate directly to LoginScreen
+        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false, // Remove all previous routes
+        );
       } on FirebaseAuthException catch (e) {
         if (!mounted) return;
         setState(() => _isLoading = false);
@@ -97,12 +121,44 @@ class _SignupScreenState extends State<SignupScreen> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-      } catch (_) {
+      } catch (e) {
         if (!mounted) return;
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Signup failed. Please try again.')),
-        );
+
+        final message = e.toString();
+        // Check if account was actually created despite the error
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser != null && currentUser.email == _emailController.text.trim().toLowerCase()) {
+          // Account was created successfully, just handle navigation
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Account created successfully!'),
+              backgroundColor: Colors.green.shade600,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          await Future.delayed(const Duration(milliseconds: 1500));
+          if (mounted) {
+            // Sign out the user so they can log in with their new account
+            await FirebaseAuth.instance.signOut();
+            Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+              (route) => false,
+            );
+          }
+        } else {
+          // Some background plugins can throw benign errors after a successful signup.
+          // Only show error if account wasn't actually created.
+          if (!message.contains('PigeonUserDetails')) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Signup failed. Please try again.'),
+                backgroundColor: Colors.red.shade600,
+              ),
+            );
+          }
+        }
       }
     }
   }

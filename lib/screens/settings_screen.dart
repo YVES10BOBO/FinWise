@@ -6,9 +6,13 @@ import '../theme/app_theme.dart';
 import '../theme/theme_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/goal_provider.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import '../screens/onboarding/financial_questionnaire_screen.dart';
 import '../services/export_service.dart';
+import '../services/profile_picture_service.dart';
 import '../screens/calendar_view_screen.dart';
+import '../main.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -39,6 +43,12 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   );
                 },
+              ),
+              _SettingsTile(
+                icon: Icons.camera_alt,
+                title: 'Change Profile Picture',
+                subtitle: 'Update your profile photo',
+                onTap: () => _changeProfilePicture(context),
               ),
               _SettingsTile(
                 icon: Icons.logout,
@@ -346,23 +356,95 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Privacy Policy'),
-        content: const SingleChildScrollView(
-          child: Text(
-            'FinWise Privacy Policy\n\n'
-            'Data Storage:\n'
-            '• All data is stored locally on your device\n'
-            '• No data is shared with third parties\n'
-            '• You can export your data anytime\n\n'
-            'Security:\n'
-            '• Your financial data is private\n'
-            '• No cloud sync (until you enable it)\n'
-            '• You control your data\n\n'
-            'Future Features:\n'
-            '• Optional cloud backup\n'
-            '• Multi-device sync\n'
-            '• All optional and user-controlled\n\n'
-            'Last Updated: 2024',
-            style: TextStyle(fontSize: 14, height: 1.6),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'FinWise Privacy Policy',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  height: 1.6,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _PrivacySection(
+                title: '1. Information We Collect',
+                content:
+                    '• Account Information: Email address, name\n'
+                    '• Financial Data: Transactions, income, spending categories, financial goals\n'
+                    '• Profile Data: Profile picture (optional)\n'
+                    '• Device Data: Cached data stored locally for offline access',
+              ),
+              const SizedBox(height: 12),
+              _PrivacySection(
+                title: '2. How We Use Your Information',
+                content:
+                    '• Provide financial tracking and budgeting features\n'
+                    '• Sync your data across devices when logged in\n'
+                    '• Generate financial insights and reports\n'
+                    '• Improve app functionality and user experience',
+              ),
+              const SizedBox(height: 12),
+              _PrivacySection(
+                title: '3. Data Storage & Security',
+                content:
+                    '• Your data is stored securely using Firebase (Google Cloud Platform)\n'
+                    '• All data is encrypted in transit and at rest\n'
+                    '• Each user account is private and isolated\n'
+                    '• We use Firebase Authentication and security rules to protect your data',
+              ),
+              const SizedBox(height: 12),
+              _PrivacySection(
+                title: '4. Third-Party Services',
+                content:
+                    '• We use Firebase (Google) for authentication, database, and storage\n'
+                    '• Firebase\'s privacy policy applies to their services\n'
+                    '• We do not share your data with other third parties\n'
+                    '• We do not sell your personal information',
+              ),
+              const SizedBox(height: 12),
+              _PrivacySection(
+                title: '5. Your Rights',
+                content:
+                    '• Access: View all your data within the app\n'
+                    '• Export: Download your transactions as CSV or PDF\n'
+                    '• Delete: Remove transactions, goals, or your entire account\n'
+                    '• Control: Logout anytime to stop cloud sync',
+              ),
+              const SizedBox(height: 12),
+              _PrivacySection(
+                title: '6. Data Retention',
+                content:
+                    '• Your data is retained until you delete it\n'
+                    '• When you delete your account, all data is permanently removed\n'
+                    '• Local cached data is cleared when you logout',
+              ),
+              const SizedBox(height: 12),
+              _PrivacySection(
+                title: '7. Children\'s Privacy',
+                content:
+                    'FinWise is not intended for users under 13 years of age. We do not knowingly collect personal information from children.',
+              ),
+              const SizedBox(height: 12),
+              _PrivacySection(
+                title: '8. Changes to This Policy',
+                content:
+                    'We may update this privacy policy from time to time. The "Last Updated" date will reflect the most recent changes.',
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Last Updated: January 2026\n\n'
+                'For questions or concerns about your privacy, please contact us through the app\'s Help & Support section.',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                  height: 1.5,
+                ),
+              ),
+            ],
           ),
         ),
         actions: [
@@ -373,6 +455,76 @@ class SettingsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _changeProfilePicture(BuildContext context) async {
+    try {
+      // Show dialog to choose source
+      final ImageSource? source = await showDialog<ImageSource>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Select Profile Picture'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Gallery'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take a Photo'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      );
+
+      if (source == null) return;
+
+      // Pick image
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: source,
+        imageQuality: 85,
+        maxWidth: 512,
+        maxHeight: 512,
+      );
+
+      if (image == null) return;
+
+      // Upload image to backend (Firebase Storage) and update Firestore profile
+      final service = ProfilePictureService();
+      await service.uploadProfilePicture(File(image.path));
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile picture updated!'),
+            backgroundColor: AppTheme.primaryColor,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: AppTheme.expenseColor,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   void _showLogoutDialog(BuildContext context) {
@@ -424,13 +576,14 @@ class SettingsScreen extends StatelessWidget {
                 );
                 
                 // Small delay to show the message, then navigate
-                await Future.delayed(const Duration(milliseconds: 500));
+                await Future.delayed(const Duration(milliseconds: 800));
                 
                 if (context.mounted) {
-                  // Return to the root (_InitialScreen). Use the root navigator
-                  // so we also pop the Settings screen route.
-                  Navigator.of(context, rootNavigator: true)
-                      .popUntil((route) => route.isFirst);
+                  // Navigate to InitialScreen which will show login screen
+                  Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (context) => const InitialScreen()),
+                    (route) => false, // Remove all previous routes
+                  );
                 }
               }
             },
@@ -525,6 +678,38 @@ class _HelpSection extends StatelessWidget {
                 ],
               ),
             )),
+      ],
+    );
+  }
+}
+
+class _PrivacySection extends StatelessWidget {
+  final String title;
+  final String content;
+
+  const _PrivacySection({required this.title, required this.content});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            height: 1.6,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          content,
+          style: const TextStyle(
+            fontSize: 13,
+            height: 1.6,
+          ),
+        ),
       ],
     );
   }

@@ -27,6 +27,9 @@ enum Category {
   giving('Giving & Church', '🙏', 0xFFEDE7F6),
   fees('Fees & Taxes', '📄', 0xFFE0F2F1),
   personal('Personal Care', '💅', 0xFFFFF3E0),
+  medicine('Medicine', '💊', 0xFFE8F5E9),
+  alcohol('Alcohol & Drinks', '🍷', 0xFFFFEBEE),
+  tobacco('Tobacco', '🚬', 0xFFFFE0B2),
   income('Income', '💼', 0xFFE8F5E9),
   savings('Savings', '💰', 0xFFE8F5E9);
 
@@ -76,6 +79,12 @@ enum Category {
         return Icons.receipt_long_outlined;
       case Category.personal:
         return Icons.spa_outlined;
+      case Category.medicine:
+        return Icons.medication_outlined;
+      case Category.alcohol:
+        return Icons.wine_bar_outlined;
+      case Category.tobacco:
+        return Icons.smoking_rooms_outlined;
       case Category.income:
         return Icons.account_balance_wallet_outlined;
       case Category.savings:

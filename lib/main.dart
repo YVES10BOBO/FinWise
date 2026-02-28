@@ -16,6 +16,7 @@ import 'providers/goal_provider.dart';
 import 'providers/category_provider.dart';
 import 'theme/theme_provider.dart';
 import 'widgets/add_transaction_dialog.dart';
+import 'services/firestore_user_profile_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,11 +42,21 @@ class FinWiseApp extends StatelessWidget {
             title: 'FinWise',
             theme: themeProvider.currentTheme,
             debugShowCheckedModeBanner: false,
-            home: const _InitialScreen(),
+            home: const InitialScreen(),
           );
         },
       ),
     );
+  }
+}
+
+// Public wrapper for navigation from auth screens
+class InitialScreen extends StatelessWidget {
+  const InitialScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _InitialScreen();
   }
 }
 
@@ -82,8 +93,66 @@ class _InitialScreenState extends State<_InitialScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       // Firebase auth check
-      final authenticated = FirebaseAuth.instance.currentUser != null;
-      final completed = prefs.getBool('onboarding_complete') ?? false;
+      final user = FirebaseAuth.instance.currentUser;
+      final authenticated = user != null;
+      bool completed = prefs.getBool('onboarding_complete') ?? false;
+
+      // Ensure user profile doc exists in Firestore (helps debugging + multi-device)
+      if (user != null) {
+        final localName = prefs.getString('user_name');
+        final profileService = FirestoreUserProfileService();
+
+        await profileService.createProfileIfNeeded(
+          uid: user.uid,
+          email: user.email,
+          name: (user.displayName?.trim().isNotEmpty ?? false)
+              ? user.displayName!.trim()
+              : (localName?.trim().isNotEmpty ?? false)
+                  ? localName!.trim()
+                  : null,
+        );
+
+        // If local onboarding flag is false but Firestore says it's complete,
+        // hydrate local preferences from the profile so a new device can skip onboarding.
+        if (!completed) {
+          try {
+            final remote = await profileService.getProfile(user.uid);
+            if (remote != null && (remote['onboardingComplete'] == true)) {
+              completed = true;
+
+              // Restore key onboarding values locally when present.
+              final remoteName = remote['name'] as String?;
+              final income = (remote['income'] as num?)?.toDouble();
+              final freq = remote['incomeFrequency'] as String?;
+              final spendingStyle = remote['spendingStyle'] as String?;
+              final categoriesDynamic = remote['categories'];
+              final categories = categoriesDynamic is List
+                  ? categoriesDynamic.map((e) => e.toString()).toList()
+                  : <String>[];
+
+              if (remoteName != null && remoteName.trim().isNotEmpty) {
+                await prefs.setString('user_name', remoteName.trim());
+              }
+              if (income != null) {
+                await prefs.setString('user_income', income.toStringAsFixed(0));
+              }
+              if (freq != null && freq.isNotEmpty) {
+                await prefs.setString('income_frequency', freq);
+              }
+              if (spendingStyle != null && spendingStyle.isNotEmpty) {
+                await prefs.setString('spending_style', spendingStyle);
+              }
+              if (categories.isNotEmpty) {
+                await prefs.setStringList('user_categories', categories);
+              }
+              await prefs.setBool('questionnaire_complete', true);
+              await prefs.setBool('onboarding_complete', true);
+            }
+          } catch (_) {
+            // If profile fetch fails, we just keep local state.
+          }
+        }
+      }
       
       if (mounted) {
         setState(() {

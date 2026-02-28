@@ -223,108 +223,119 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Filter Transactions'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Filter by Type:', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Row(
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: ChoiceChip(
-                    label: const Text('All'),
-                    selected: _selectedType == null,
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() {
-                          _selectedType = null;
-                        });
-                        Navigator.pop(context);
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ChoiceChip(
-                    label: const Text('Income'),
-                    selected: _selectedType == TransactionType.income,
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() {
-                          _selectedType = TransactionType.income;
-                        });
-                        Navigator.pop(context);
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ChoiceChip(
-                    label: const Text('Expense'),
-                    selected: _selectedType == TransactionType.expense,
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() {
-                          _selectedType = TransactionType.expense;
-                        });
-                        Navigator.pop(context);
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            const Text('Filter by Category:', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ChoiceChip(
-                  label: const Text('All'),
-                  selected: _selectedCategory == null,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() {
-                        _selectedCategory = null;
-                      });
-                      Navigator.pop(context);
-                    }
-                  },
-                ),
-                ...Category.values.map((category) {
-                  if (category == Category.income || category == Category.savings) {
-                    return const SizedBox.shrink();
-                  }
-                  return ChoiceChip(
-                    label: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          category.icon,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(category.name),
-                      ],
+                const Text('Filter by Type:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text('All'),
+                        selected: _selectedType == null,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() {
+                              _selectedType = null;
+                            });
+                            Navigator.pop(context);
+                          }
+                        },
+                      ),
                     ),
-                    selected: _selectedCategory == category,
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() {
-                          _selectedCategory = category;
-                        });
-                        Navigator.pop(context);
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text('Income'),
+                        selected: _selectedType == TransactionType.income,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() {
+                              _selectedType = TransactionType.income;
+                            });
+                            Navigator.pop(context);
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text('Expense'),
+                        selected: _selectedType == TransactionType.expense,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() {
+                              _selectedType = TransactionType.expense;
+                            });
+                            Navigator.pop(context);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Text('Filter by Category:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('All'),
+                      selected: _selectedCategory == null,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() {
+                            _selectedCategory = null;
+                          });
+                          Navigator.pop(context);
+                        }
+                      },
+                    ),
+                    ...Category.values.map((category) {
+                      if (category == Category.income || category == Category.savings) {
+                        return const SizedBox.shrink();
                       }
-                    },
-                  );
-                }),
+                      return ChoiceChip(
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              category.icon,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                category.name,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        selected: _selectedCategory == category,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() {
+                              _selectedCategory = category;
+                            });
+                            Navigator.pop(context);
+                          }
+                        },
+                      );
+                    }),
+                  ],
+                ),
               ],
             ),
-          ],
+          ),
         ),
         actions: [
           TextButton(

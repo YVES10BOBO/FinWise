@@ -5,6 +5,8 @@ import '../../theme/app_theme.dart';
 import '../../main.dart';
 import '../../providers/transaction_provider.dart';
 import '../../models/transaction.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/firestore_user_profile_service.dart';
 
 class FinancialQuestionnaireScreen extends StatefulWidget {
   const FinancialQuestionnaireScreen({super.key});
@@ -41,6 +43,9 @@ class _FinancialQuestionnaireScreenState
     'Water',
     'Rent',
     'Shoes',
+    'Medicine',
+    'Alcohol & Drinks',
+    'Tobacco',
   ];
 
   @override
@@ -175,6 +180,29 @@ class _FinancialQuestionnaireScreenState
     // Mark questionnaire and onboarding as complete
     await prefs.setBool('questionnaire_complete', true);
     await prefs.setBool('onboarding_complete', true);
+
+    // Sync profile to Firestore (name/income/categories) for the logged-in user
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final name = _nameController.text.trim();
+        final income = double.tryParse(_incomeController.text.trim());
+        final allCategories = [..._selectedCategories, ..._customCategories];
+
+        await FirestoreUserProfileService().updateProfile(
+          uid: user.uid,
+          email: user.email,
+          name: name.isEmpty ? null : name,
+          income: income,
+          incomeFrequency: _incomeFrequency,
+          spendingStyle: _spendingStyle,
+          categories: allCategories,
+          onboardingComplete: true,
+        );
+      }
+    } catch (_) {
+      // Ignore profile sync failures; onboarding can still complete.
+    }
     
     if (mounted) {
       // Replace the current onboarding route with the main app,
@@ -704,7 +732,7 @@ class _FinancialQuestionnaireScreenState
         ),
         const SizedBox(height: 4),
         Text(
-          'FinWise uses these 20 main categories on every page so your budgets and insights stay clear and simple.',
+          'FinWise uses these 23 main categories on every page so your budgets and insights stay clear and simple.',
           style: TextStyle(
             fontSize: 12,
             color: Colors.white.withValues(alpha: 0.9),

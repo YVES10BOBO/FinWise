@@ -131,10 +131,35 @@ class CategoryProvider extends ChangeNotifier {
     // Health
     if (lower == 'health' ||
         lower == 'hospital' ||
-        lower == 'clinic' ||
-        lower == 'medicine' ||
-        lower == 'pharmacy') {
+        lower == 'clinic') {
       return Category.health;
+    }
+
+    // Medicine / Pharmacy
+    if (lower == 'medicine' ||
+        lower == 'pharmacy' ||
+        lower == 'medication' ||
+        lower == 'drugs' ||
+        lower == 'prescription') {
+      return Category.medicine;
+    }
+
+    // Alcohol & Drinks
+    if (lower == 'alcohol' ||
+        lower == 'drinks' ||
+        lower == 'beer' ||
+        lower == 'wine' ||
+        lower == 'bar' ||
+        lower == 'liquor') {
+      return Category.alcohol;
+    }
+
+    // Tobacco / Smoking
+    if (lower == 'tobacco' ||
+        lower == 'cigarettes' ||
+        lower == 'smoking' ||
+        lower == 'cigar') {
+      return Category.tobacco;
     }
 
     // Education / school

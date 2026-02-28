@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../theme/app_theme.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
+import '../../main.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -34,10 +35,15 @@ class _LoginScreenState extends State<LoginScreen> {
         final email = _emailController.text.trim().toLowerCase();
         final password = _passwordController.text;
         
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
+        final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: email,
           password: password,
         );
+
+        // Reload user to ensure auth state is fully updated
+        if (credential.user != null) {
+          await credential.user!.reload();
+        }
 
         if (!mounted) return;
         setState(() => _isLoading = false);
@@ -52,8 +58,25 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
 
-        // Let _InitialScreen handle navigation automatically via auth state listener
-        // No manual navigation needed - the app will rebuild automatically
+        // Wait for auth state to fully propagate
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        if (!mounted) return;
+
+        // Force auth state refresh by checking current user
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser != null) {
+          // Wait a bit more for the auth state listener to trigger
+          await Future.delayed(const Duration(milliseconds: 300));
+        }
+
+        if (!mounted) return;
+
+        // Navigate to InitialScreen which will show onboarding or main app
+        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const InitialScreen()),
+          (route) => false, // Remove all previous routes
+        );
       } on FirebaseAuthException catch (e) {
         if (!mounted) return;
         setState(() => _isLoading = false);
@@ -84,17 +107,44 @@ class _LoginScreenState extends State<LoginScreen> {
         if (!mounted) return;
         setState(() => _isLoading = false);
 
-        // Some background plugins (e.g. Pigeon-generated APIs) can throw
-        // benign type-cast errors after a successful login. We don't want to
-        // confuse the user with those if auth actually worked.
-        final message = e.toString();
-        if (!message.contains('PigeonUserDetails')) {
+        // Check if login was actually successful despite the error
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser != null && currentUser.email == _emailController.text.trim().toLowerCase()) {
+          // Login was successful, just handle navigation
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Login failed. Please try again.'),
-              backgroundColor: Colors.red.shade600,
+              content: const Text('Login successful!'),
+              backgroundColor: Colors.green.shade600,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
             ),
           );
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (mounted) {
+            final currentUser = FirebaseAuth.instance.currentUser;
+            if (currentUser != null) {
+              await Future.delayed(const Duration(milliseconds: 300));
+            }
+            if (mounted) {
+              Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const InitialScreen()),
+                (route) => false,
+              );
+            }
+          }
+        } else {
+          // Some background plugins (e.g. Pigeon-generated APIs) can throw
+          // benign type-cast errors after a successful login. We don't want to
+          // confuse the user with those if auth actually worked.
+          final message = e.toString();
+          if (!message.contains('PigeonUserDetails')) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Login failed. Please try again.'),
+                backgroundColor: Colors.red.shade600,
+              ),
+            );
+          }
         }
       }
     }
