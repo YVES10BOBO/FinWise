@@ -28,20 +28,12 @@
         h2 {
             color: #34495e;
             margin-top: 30px;
+        }
+        p {
             margin-bottom: 15px;
         }
-        p, li {
-            margin-bottom: 10px;
-        }
         ul {
-            margin-left: 20px;
-        }
-        .last-updated {
-            font-style: italic;
-            color: #7f8c8d;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #ecf0f1;
+            margin-bottom: 15px;
         }
         .contact {
             background-color: #ecf0f1;
@@ -49,180 +41,142 @@
             border-radius: 5px;
             margin-top: 20px;
         }
+        .last-updated {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>FinWise Privacy Policy</h1>
-        
-        <p><strong>Effective Date: February 28, 2026</strong></p>
-        
-        <p>Welcome to FinWise! This Privacy Policy explains how we collect, use, store, and protect your personal information when you use our mobile application ("App"). By using FinWise, you agree to the collection and use of information in accordance with this policy.</p>
-        
-        <h2>1. Information We Collect</h2>
-        
-        <h3>1.1 Account Information</h3>
+        <h1>Privacy Policy</h1>
+        <p><strong>Last Updated:</strong> February 28, 2025</p>
+
+        <h2>1. Introduction</h2>
+        <p>Welcome to FinWise ("we," "our," or "us"). We are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application FinWise (the "App").</p>
+
+        <h2>2. Information We Collect</h2>
+        <h3>2.1 Personal Information</h3>
         <p>When you create an account, we collect:</p>
         <ul>
-            <li><strong>Email Address:</strong> Used for account authentication and communication</li>
-            <li><strong>Name:</strong> Used to personalize your experience within the app</li>
-            <li><strong>Password:</strong> Securely hashed and stored by Firebase Authentication (we never see your actual password)</li>
+            <li>Email address</li>
+            <li>Password (encrypted and stored securely)</li>
+            <li>Name (if provided)</li>
+            <li>Profile picture (optional, if uploaded)</li>
         </ul>
-        
-        <h3>1.2 Financial Data</h3>
-        <p>To provide our financial tracking services, we collect:</p>
+
+        <h3>2.2 Financial Data</h3>
+        <p>To provide our services, we collect:</p>
         <ul>
-            <li><strong>Transactions:</strong> Income and expense entries including amount, category, date, description, and transaction type</li>
-            <li><strong>Income Information:</strong> Your usual income amount and frequency (daily, weekly, monthly, yearly)</li>
-            <li><strong>Spending Categories:</strong> Custom spending categories you create and use</li>
-            <li><strong>Financial Goals:</strong> Savings goals including target amount, current progress, and deadlines</li>
-            <li><strong>Spending Patterns:</strong> Information about your spending style and preferences</li>
+            <li>Income information (amount and frequency)</li>
+            <li>Expense transactions (amount, category, date, description)</li>
+            <li>Financial goals (target amount, deadline, progress)</li>
+            <li>Budget information</li>
+            <li>Spending preferences and categories</li>
         </ul>
-        
-        <h3>1.3 Profile Data</h3>
-        <p>Optional information you may provide:</p>
+
+        <h3>2.3 Usage Data</h3>
+        <p>We may collect information about how you use the App, including:</p>
         <ul>
-            <li><strong>Profile Picture:</strong> If you choose to upload a profile photo, it is stored securely</li>
+            <li>App features accessed</li>
+            <li>Time spent in the App</li>
+            <li>Device information (model, operating system)</li>
         </ul>
-        
-        <h3>1.4 Device Data</h3>
-        <p>For offline functionality and improved performance:</p>
+
+        <h2>3. How We Use Your Information</h2>
+        <p>We use the collected information to:</p>
         <ul>
-            <li><strong>Local Cache:</strong> Your data is cached locally on your device for offline access</li>
-            <li><strong>App Preferences:</strong> Settings such as dark mode preference</li>
+            <li>Provide and maintain the App's services</li>
+            <li>Process and store your financial transactions</li>
+            <li>Generate financial insights and recommendations</li>
+            <li>Sync your data across devices</li>
+            <li>Improve and personalize your experience</li>
+            <li>Send important updates and notifications</li>
+            <li>Ensure security and prevent fraud</li>
         </ul>
-        
-        <h2>2. How We Use Your Information</h2>
-        
-        <p>We use the information we collect to:</p>
+
+        <h2>4. Data Storage and Security</h2>
+        <h3>4.1 Cloud Storage</h3>
+        <p>Your data is stored securely using Firebase services:</p>
         <ul>
-            <li><strong>Provide Core Services:</strong> Enable financial tracking, budgeting, and goal management features</li>
-            <li><strong>Sync Across Devices:</strong> Synchronize your data across multiple devices when you log in with the same account</li>
-            <li><strong>Generate Insights:</strong> Calculate financial health scores, spending analytics, and budget recommendations</li>
-            <li><strong>Personalize Experience:</strong> Customize the app interface with your name and preferences</li>
-            <li><strong>Improve the App:</strong> Analyze usage patterns to enhance functionality and fix bugs</li>
-            <li><strong>Maintain Security:</strong> Protect your account and data from unauthorized access</li>
+            <li><strong>Firebase Authentication:</strong> Handles user authentication securely</li>
+            <li><strong>Cloud Firestore:</strong> Stores your financial data with encryption in transit and at rest</li>
+            <li><strong>Firebase Storage:</strong> Stores profile pictures securely</li>
         </ul>
-        
-        <h2>3. Data Storage & Security</h2>
-        
-        <h3>3.1 Cloud Storage</h3>
-        <p>Your data is stored securely using <strong>Firebase</strong> (Google Cloud Platform), which provides:</p>
+
+        <h3>4.2 Local Storage</h3>
+        <p>Some data is cached locally on your device for offline access and faster performance. This includes:</p>
         <ul>
-            <li><strong>Encryption:</strong> All data is encrypted in transit (using TLS/SSL) and at rest</li>
-            <li><strong>Secure Authentication:</strong> Firebase Authentication ensures only you can access your account</li>
-            <li><strong>Access Controls:</strong> Firestore security rules ensure each user can only access their own data</li>
-            <li><strong>Data Isolation:</strong> Your data is stored in separate, private collections tied to your user ID</li>
+            <li>Recent transactions</li>
+            <li>User preferences</li>
+            <li>Onboarding status</li>
         </ul>
-        
-        <h3>3.2 Local Storage</h3>
-        <p>For offline functionality, your data is also cached locally on your device using secure local storage mechanisms.</p>
-        
-        <h3>3.3 Security Measures</h3>
+
+        <h3>4.3 Security Measures</h3>
+        <p>We implement industry-standard security measures:</p>
         <ul>
-            <li>We use industry-standard security practices to protect your information</li>
-            <li>Passwords are never stored in plain text; they are securely hashed by Firebase</li>
-            <li>All API communications are encrypted</li>
-            <li>We regularly review and update our security practices</li>
+            <li>Data encryption in transit (HTTPS/TLS)</li>
+            <li>Data encryption at rest</li>
+            <li>Secure authentication (Firebase Auth)</li>
+            <li>Access controls and user authentication</li>
+            <li>Regular security updates</li>
         </ul>
-        
-        <h2>4. Third-Party Services</h2>
-        
-        <h3>4.1 Firebase Services</h3>
-        <p>FinWise uses the following Firebase (Google) services:</p>
+
+        <h2>5. Data Sharing and Disclosure</h2>
+        <p>We do not sell, trade, or rent your personal information to third parties. We may share your information only in the following circumstances:</p>
         <ul>
-            <li><strong>Firebase Authentication:</strong> For secure user authentication</li>
-            <li><strong>Cloud Firestore:</strong> For storing your financial data and profile information</li>
-            <li><strong>Firebase Storage:</strong> For storing profile pictures</li>
+            <li><strong>Service Providers:</strong> With trusted third-party services (Firebase/Google) that help us operate the App, subject to their privacy policies</li>
+            <li><strong>Legal Requirements:</strong> If required by law or to protect our rights and safety</li>
+            <li><strong>Business Transfers:</strong> In connection with a merger, acquisition, or sale of assets (with notice to users)</li>
         </ul>
-        <p>These services are provided by Google and are subject to Google's Privacy Policy. You can review Google's Privacy Policy at: <a href="https://policies.google.com/privacy" target="_blank">https://policies.google.com/privacy</a></p>
-        
-        <h3>4.2 Data Sharing</h3>
-        <p>We do <strong>NOT</strong>:</p>
+
+        <h2>6. Third-Party Services</h2>
+        <p>Our App uses the following third-party services:</p>
         <ul>
-            <li>Sell your personal information to third parties</li>
-            <li>Share your financial data with advertisers</li>
-            <li>Use your data for marketing purposes without your consent</li>
-            <li>Share your information with other users</li>
+            <li><strong>Firebase (Google):</strong> For authentication, database, and storage services. Their privacy policy: <a href="https://firebase.google.com/support/privacy" target="_blank">https://firebase.google.com/support/privacy</a></li>
+            <li><strong>Google Play Services:</strong> For app functionality and updates</li>
         </ul>
-        
-        <h2>5. Your Rights & Control</h2>
-        
-        <p>You have full control over your data:</p>
-        
-        <h3>5.1 Access</h3>
+        <p>These services have their own privacy policies, and we encourage you to review them.</p>
+
+        <h2>7. Your Rights and Choices</h2>
+        <p>You have the right to:</p>
         <ul>
-            <li>View all your transactions, goals, and profile information within the app</li>
-            <li>Access your data anytime by logging into your account</li>
+            <li><strong>Access:</strong> Request a copy of your personal data</li>
+            <li><strong>Correction:</strong> Update or correct your information through the App settings</li>
+            <li><strong>Deletion:</strong> Delete your account and data by following the steps on our <a href="delete-account.html">Account Deletion page</a></li>
+            <li><strong>Data Export:</strong> Export your financial data (feature available in App settings)</li>
+            <li><strong>Opt-out:</strong> Stop using the App and delete your account at any time</li>
         </ul>
-        
-        <h3>5.2 Export</h3>
+
+        <h2>8. Data Retention</h2>
+        <p>We retain your data for as long as your account is active or as needed to provide services. If you delete your account, we will delete your personal data within 30 days, except where we are required to retain it for legal purposes. For detailed information about account deletion and data retention, please visit our <a href="delete-account.html">Account Deletion page</a>.</p>
+
+        <h2>9. Children's Privacy</h2>
+        <p>Our App is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If you believe we have collected information from a child under 13, please contact us immediately.</p>
+
+        <h2>10. International Data Transfers</h2>
+        <p>Your data may be transferred to and stored on servers located outside your country of residence. By using the App, you consent to the transfer of your data to these servers, which are operated by Firebase/Google and may be located in the United States or other countries.</p>
+
+        <h2>11. Changes to This Privacy Policy</h2>
+        <p>We may update this Privacy Policy from time to time. We will notify you of any changes by:</p>
         <ul>
-            <li>Export your transactions as CSV files</li>
-            <li>Generate PDF reports of your financial data</li>
-            <li>Download your data for backup or migration purposes</li>
+            <li>Posting the new Privacy Policy in the App</li>
+            <li>Updating the "Last Updated" date</li>
+            <li>Sending you a notification (for significant changes)</li>
         </ul>
-        
-        <h3>5.3 Modification</h3>
-        <ul>
-            <li>Edit or delete individual transactions</li>
-            <li>Update your profile information, income, and categories</li>
-            <li>Modify or delete financial goals</li>
-            <li>Change or remove your profile picture</li>
-        </ul>
-        
-        <h3>5.4 Deletion</h3>
-        <ul>
-            <li>Delete individual transactions or goals</li>
-            <li>Clear all transactions or goals at once</li>
-            <li>Logout to stop cloud synchronization (local cached data will be cleared)</li>
-            <li>Delete your account by contacting us (all associated data will be permanently removed)</li>
-        </ul>
-        
-        <h2>6. Data Retention</h2>
-        
-        <ul>
-            <li>Your data is retained for as long as your account is active</li>
-            <li>When you delete your account, all associated data (transactions, goals, profile information, profile pictures) is permanently deleted from our servers</li>
-            <li>Local cached data is cleared when you logout</li>
-            <li>We do not retain your data after account deletion</li>
-        </ul>
-        
-        <h2>7. Children's Privacy</h2>
-        
-        <p>FinWise is not intended for users under the age of 13. We do not knowingly collect personal information from children under 13. If you are a parent or guardian and believe your child has provided us with personal information, please contact us immediately. If we become aware that we have collected personal information from a child under 13, we will take steps to delete such information promptly.</p>
-        
-        <h2>8. International Data Transfers</h2>
-        
-        <p>Your data may be stored and processed on servers located outside your country of residence. Firebase (Google Cloud Platform) operates globally, and your data may be transferred to and stored in the United States or other countries. By using FinWise, you consent to the transfer of your data to these locations.</p>
-        
-        <h2>9. Changes to This Privacy Policy</h2>
-        
-        <p>We may update this Privacy Policy from time to time to reflect changes in our practices or for other operational, legal, or regulatory reasons. We will notify you of any material changes by:</p>
-        <ul>
-            <li>Updating the "Last Updated" date at the top of this policy</li>
-            <li>Posting a notice in the app (for significant changes)</li>
-        </ul>
-        <p>Your continued use of FinWise after any changes to this Privacy Policy constitutes your acceptance of the updated policy.</p>
-        
-        <h2>10. Your Consent</h2>
-        
-        <p>By using FinWise, you consent to our Privacy Policy and agree to its terms. If you do not agree with this policy, please do not use our app.</p>
-        
-        <h2>11. Contact Us</h2>
-        
+        <p>You are advised to review this Privacy Policy periodically for any changes.</p>
+
+        <h2>12. Contact Us</h2>
+        <p>If you have any questions, concerns, or requests regarding this Privacy Policy or your personal data, please contact us:</p>
         <div class="contact">
-            <p>If you have any questions, concerns, or requests regarding this Privacy Policy or your personal data, please contact us:</p>
-            <ul>
-                <li>Through the app: Settings → About → Help & Support</li>
-                <li>Email: yvesrutembeza@gmail.com</li>
-            </ul>
-            <p>We will respond to your inquiries within a reasonable timeframe.</p>
+            <p><strong>Email:</strong> yvesrutembeza@gmail.com</p>
         </div>
-        
+
         <div class="last-updated">
-            <p><strong>Last Updated:</strong> February 28, 2026</p>
-            <p>This Privacy Policy is effective as of the date listed above and applies to all users of the FinWise mobile application.</p>
+            <p>By using FinWise, you acknowledge that you have read and understood this Privacy Policy and agree to the collection and use of your information as described herein.</p>
         </div>
     </div>
 </body>
