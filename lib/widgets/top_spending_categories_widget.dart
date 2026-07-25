@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../models/transaction.dart' as models;
-import 'package:intl/intl.dart';
+import '../providers/currency_provider.dart';
 
 class TopSpendingCategoriesWidget extends StatelessWidget {
   final Map<models.Category, double> categorySpending;
@@ -25,7 +26,7 @@ class TopSpendingCategoriesWidget extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final formatter = NumberFormat('#,###');
+    final currencyProvider = context.watch<CurrencyProvider>();
     final total = categorySpending.values.fold(0.0, (a, b) => a + b);
 
     return Container(
@@ -120,7 +121,7 @@ class TopSpendingCategoriesWidget extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              '${formatter.format(amount)} RWF',
+                              currencyProvider.formatCompact(amount),
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,

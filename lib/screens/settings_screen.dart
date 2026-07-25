@@ -12,6 +12,11 @@ import '../screens/onboarding/financial_questionnaire_screen.dart';
 import '../services/export_service.dart';
 import '../services/profile_picture_service.dart';
 import '../screens/calendar_view_screen.dart';
+import '../providers/currency_provider.dart';
+import '../providers/income_provider.dart';
+import '../widgets/currency_picker_dialog.dart';
+import '../widgets/sms_auto_detect_tile.dart';
+import '../screens/sms_parser_test_screen.dart';
 import '../main.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -33,7 +38,7 @@ class SettingsScreen extends StatelessWidget {
               _SettingsTile(
                 icon: Icons.person,
                 title: 'Profile & onboarding',
-                subtitle: 'Update your name, usual income, and main categories (keep this fresh when your life changes)',
+                subtitle: 'Update your name and currency',
                 onTap: () {
                   Navigator.push(
                     context,
@@ -41,6 +46,19 @@ class SettingsScreen extends StatelessWidget {
                       builder: (context) =>
                           const FinancialQuestionnaireScreen(),
                     ),
+                  );
+                },
+              ),
+              Consumer2<IncomeProvider, CurrencyProvider>(
+                builder: (context, income, currency, _) {
+                  final subtitle = income.isSet
+                      ? '${currency.formatCompact(income.monthlyIncome)}/month — used to measure your savings rate'
+                      : 'Set an optional target to measure your savings rate';
+                  return _SettingsTile(
+                    icon: Icons.account_balance_wallet_outlined,
+                    title: 'Income target',
+                    subtitle: subtitle,
+                    onTap: () => _showIncomeDialog(context),
                   );
                 },
               ),
@@ -106,6 +124,27 @@ class SettingsScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
+          // Automation Section (Beta)
+          _SettingsSection(
+            title: 'Automation (Beta)',
+            children: [
+              const SmsAutoDetectTile(),
+              _SettingsTile(
+                icon: Icons.bug_report_outlined,
+                title: 'Test SMS Parser',
+                subtitle: 'Paste a sample SMS to see what gets detected',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SmsParserTestScreen(),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
           // Appearance Section
           _SettingsSection(
             title: 'Appearance',
@@ -123,6 +162,17 @@ class SettingsScreen extends StatelessWidget {
                       themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
                       color: AppTheme.primaryColor,
                     ),
+                  );
+                },
+              ),
+              Consumer<CurrencyProvider>(
+                builder: (context, currencyProvider, child) {
+                  return _SettingsTile(
+                    icon: Icons.attach_money,
+                    title: 'Currency',
+                    subtitle:
+                        '${currencyProvider.currency.label} (${currencyProvider.currency.code})',
+                    onTap: () => showCurrencyPicker(context),
                   );
                 },
               ),
@@ -187,11 +237,11 @@ class SettingsScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              // Clear transactions
-              final provider = Provider.of<TransactionProvider>(context, listen: false);
-              for (var transaction in provider.transactions) {
-                provider.removeTransaction(transaction.id);
-              }
+              // Safe bulk clear (no iterate-while-deleting) — updates the UI
+              // immediately and removes everything, cloud included.
+              final provider =
+                  Provider.of<TransactionProvider>(context, listen: false);
+              provider.clearAllTransactions();
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('All transactions cleared')),
@@ -207,8 +257,79 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  void _showIncomeDialog(BuildContext context) {
+    final income = Provider.of<IncomeProvider>(context, listen: false);
+    final currencyCode =
+        Provider.of<CurrencyProvider>(context, listen: false).code;
+    final controller = TextEditingController(
+      text: income.amount != null ? income.amount!.toStringAsFixed(0) : '',
+    );
+    String frequency = income.frequency;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('Income target'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'A planning target only — used to measure your savings rate. '
+                'It is never added to your balance.',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Amount ($currencyCode)',
+                  prefixIcon:
+                      const Icon(Icons.account_balance_wallet_outlined),
+                ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: frequency,
+                decoration: const InputDecoration(
+                  labelText: 'How often',
+                  prefixIcon: Icon(Icons.calendar_today),
+                ),
+                items: const ['Daily', 'Weekly', 'Monthly', 'Yearly']
+                    .map((f) => DropdownMenuItem(value: f, child: Text(f)))
+                    .toList(),
+                onChanged: (v) {
+                  if (v != null) setLocal(() => frequency = v);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                income.setIncome(null, frequency);
+                Navigator.pop(ctx);
+              },
+              child: const Text('Clear'),
+            ),
+            TextButton(
+              onPressed: () {
+                final value = double.tryParse(controller.text.trim());
+                income.setIncome(value, frequency);
+                Navigator.pop(ctx);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _exportData(BuildContext context, String format) async {
     final provider = Provider.of<TransactionProvider>(context, listen: false);
+    final currency = Provider.of<CurrencyProvider>(context, listen: false).currency;
     final transactions = provider.transactions;
 
     if (transactions.isEmpty) {
@@ -228,9 +349,9 @@ class SettingsScreen extends StatelessWidget {
       );
 
       if (format == 'csv') {
-        await ExportService.exportToCSV(transactions);
+        await ExportService.exportToCSV(transactions, currency: currency);
       } else {
-        await ExportService.exportToPDF(transactions);
+        await ExportService.exportToPDF(transactions, currency: currency);
       }
 
       if (context.mounted) {
@@ -270,10 +391,10 @@ class SettingsScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              final provider = Provider.of<GoalProvider>(context, listen: false);
-              for (var goal in provider.goals) {
-                provider.removeGoal(goal.id);
-              }
+              // Safe bulk clear (no iterate-while-deleting). Reserved money
+              // returns to available automatically once the goals are gone.
+              Provider.of<GoalProvider>(context, listen: false)
+                  .clearAllGoals();
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('All goals cleared')),

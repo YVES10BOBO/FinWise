@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:provider/provider.dart';
 import '../models/transaction.dart';
 import '../theme/app_theme.dart';
-import 'package:intl/intl.dart';
+import '../providers/currency_provider.dart';
 
 class SpendingChart extends StatelessWidget {
   final Map<Category, double> categorySpending;
@@ -120,8 +121,8 @@ class _LegendItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formatter = NumberFormat('#,###');
-    
+    final currencyProvider = context.watch<CurrencyProvider>();
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -151,7 +152,7 @@ class _LegendItem extends StatelessWidget {
             ),
           ),
           Text(
-            '${formatter.format(amount)} RWF',
+            currencyProvider.formatCompact(amount),
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,

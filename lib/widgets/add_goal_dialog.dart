@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../models/goal.dart';
 import '../theme/app_theme.dart';
+import '../providers/currency_provider.dart';
 
 class AddGoalDialog extends StatefulWidget {
   final Goal? existingGoal;
@@ -18,21 +20,11 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 90));
-  // Store a simple key for the selected icon (used only for display / JSON)
+  // Key of the selected icon. Rendered through Goal.goalIcons everywhere, so
+  // cards show a real icon rather than the key as text.
   String _selectedIconKey = 'savings';
 
-  final Map<String, IconData> _iconOptions = {
-    'savings': Icons.account_balance_wallet,
-    'laptop': Icons.laptop_mac_outlined,
-    'car': Icons.directions_car_outlined,
-    'house': Icons.house_outlined,
-    'education': Icons.school_outlined,
-    'travel': Icons.flight_takeoff_outlined,
-    'ring': Icons.favorite_border,
-    'phone': Icons.phone_iphone,
-    'gaming': Icons.videogame_asset_outlined,
-    'other': Icons.flag_outlined,
-  };
+  final Map<String, IconData> _iconOptions = Goal.goalIcons;
 
   @override
   void initState() {
@@ -41,9 +33,8 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
       _nameController.text = widget.existingGoal!.name;
       _amountController.text = widget.existingGoal!.targetAmount.toString();
       _selectedDate = widget.existingGoal!.targetDate;
-      // Use stored emoji/key if present, otherwise default
-      _selectedIconKey = widget.existingGoal!.emoji.isNotEmpty
-          ? widget.existingGoal!.emoji
+      _selectedIconKey = Goal.goalIcons.containsKey(widget.existingGoal!.iconKey)
+          ? widget.existingGoal!.iconKey
           : 'savings';
     }
   }
@@ -71,14 +62,20 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
 
   void _saveGoal() {
     if (_formKey.currentState!.validate()) {
+      final existing = widget.existingGoal;
       final goal = Goal(
-        id: widget.existingGoal?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        name: _nameController.text,
-        emoji: _selectedIconKey,
+        id: existing?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        name: _nameController.text.trim(),
+        iconKey: _selectedIconKey,
         targetAmount: double.parse(_amountController.text),
-        currentAmount: widget.existingGoal?.currentAmount ?? 0.0,
         targetDate: _selectedDate,
-        createdAt: widget.existingGoal?.createdAt ?? DateTime.now(),
+        createdAt: existing?.createdAt ?? DateTime.now(),
+        // Editing must never wipe the contribution history or status.
+        contributions: existing?.contributions ?? const [],
+        status: existing?.status ?? GoalStatus.active,
+        purchasedAmount: existing?.purchasedAmount,
+        purchasedDate: existing?.purchasedDate,
+        purchaseTransactionId: existing?.purchaseTransactionId,
       );
 
       if (widget.onSave != null) {
@@ -183,11 +180,12 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
                   controller: _amountController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    labelText: 'Target Amount (RWF)',
+                    labelText:
+                        'Target Amount (${context.watch<CurrencyProvider>().code})',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    prefixIcon: const Icon(Icons.attach_money),
+                    prefixIcon: const Icon(Icons.savings_outlined),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {

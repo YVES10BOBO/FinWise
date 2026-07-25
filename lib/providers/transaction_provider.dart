@@ -7,6 +7,13 @@ import '../models/transaction.dart' hide Category;
 import '../models/transaction.dart' as models show Category;
 import '../services/firestore_transaction_service.dart';
 
+/// Prefix for per-item SharedPreferences keys the SMS background isolate
+/// writes detected transactions to. Each detected SMS gets its OWN key
+/// (`detected_sms_tx_<id>`), so several SMS arriving at once can never
+/// overwrite each other — unlike editing one shared list from multiple
+/// background isolates, which loses all but the last write.
+const String kDetectedSmsTxPrefix = 'detected_sms_tx_';
+
 class TransactionProvider with ChangeNotifier {
   List<Transaction> _transactions = [];
   bool _isLoading = false;
@@ -37,6 +44,20 @@ class TransactionProvider with ChangeNotifier {
   }
 
   double get balance => totalIncome - totalExpenses;
+
+  /// Money set aside into savings (goal contributions). It leaves the
+  /// spendable balance, but it is NOT consumption — so all analysis (savings
+  /// rate, top categories, spending trend) treats it separately from spending.
+  double get totalSetAside {
+    return _transactions
+        .where((t) =>
+            t.type == TransactionType.expense &&
+            t.category == models.Category.savings)
+        .fold(0.0, (sum, t) => sum + t.amount);
+  }
+
+  /// Real consumption = expenses excluding money set aside for savings goals.
+  double get totalConsumption => totalExpenses - totalSetAside;
 
   /// Computed balances per account (Cash / Mobile Money / Bank)
   Map<AccountType, double> get accountBalances {
@@ -176,7 +197,126 @@ class TransactionProvider with ChangeNotifier {
     });
   }
 
+  /// Drain any transactions the SMS background isolate detected while the
+  /// app was off-screen (or while another app was in front) into the live
+  /// list. Each detected SMS is stored under its own `detected_sms_tx_<id>`
+  /// key, so this reads every such key, adds the ones we don't already have,
+  /// then deletes the key. Called every couple of seconds while the app is
+  /// on screen and on resume, so detections show up without a reopen — and
+  /// because the keys are per-item, several SMS at once all come through.
+  bool _isDraining = false;
+
+  Future<void> refreshFromCache() async {
+    // Serialize: two concurrent drains could each read a slot before the
+    // other removes it and both insert it → a duplicate. This guard prevents
+    // that (the 3s timer, app-resume, and the SMS callback can all call in).
+    if (_isDraining) return;
+    _isDraining = true;
+    try {
+      await _refreshFromCacheInner();
+    } finally {
+      _isDraining = false;
+    }
+  }
+
+  Future<void> _refreshFromCacheInner() async {
+    final prefs = await SharedPreferences.getInstance();
+    // CRITICAL: the SMS background isolate writes new transactions to disk,
+    // but this (main) isolate holds an in-memory snapshot of preferences and
+    // won't see those writes until it re-reads from disk. Without this
+    // reload, detections only appear after the app is restarted. This is the
+    // fix for "I have to close and reopen the app to see the transaction".
+    await prefs.reload();
+    final keys = prefs
+        .getKeys()
+        .where((k) => k.startsWith(kDetectedSmsTxPrefix))
+        .toList();
+
+    final existingIds = _transactions.map((t) => t.id).toSet();
+    final user = FirebaseAuth.instance.currentUser;
+    bool changed = false;
+
+    for (final k in keys) {
+      final raw = prefs.getString(k);
+      await prefs.remove(k);
+      if (raw == null) continue;
+      try {
+        final tx = Transaction.fromJson(json.decode(raw));
+        if (existingIds.contains(tx.id)) continue;
+        _transactions.insert(0, tx);
+        existingIds.add(tx.id);
+        changed = true;
+        // Sync to the cloud so it reaches other devices (idempotent by id).
+        if (user != null) {
+          _firestore.upsertTransaction(user.uid, tx);
+        }
+      } catch (_) {
+        // Skip anything unreadable rather than blocking the rest.
+      }
+    }
+
+    // Clean up any duplicates left by earlier builds (which used a
+    // time-based id, so the same SMS could be stored under two ids).
+    final removedDupes = _dedupeAutoDetected();
+
+    if (changed || removedDupes) {
+      _transactions.sort((a, b) => b.date.compareTo(a.date));
+      await _saveTransactions();
+      notifyListeners();
+    }
+  }
+
+  /// Collapse auto-detected transactions that are really the same MoMo
+  /// message recorded twice. Keeps the first occurrence and deletes the rest
+  /// (including from Firestore). Only touches auto-detected entries, never
+  /// manual ones. Returns true if anything was removed.
+  bool _dedupeAutoDetected() {
+    final seen = <String>{};
+    final kept = <Transaction>[];
+    final removed = <Transaction>[];
+
+    for (final t in _transactions) {
+      if (t.isAutoDetected) {
+        // Signature: same amount, direction, counterparty and same minute =
+        // the same real transaction seen twice.
+        final sig = '${t.type.name}|${t.amount}|${t.description.toLowerCase()}|'
+            '${t.date.year}-${t.date.month}-${t.date.day}-${t.date.hour}-${t.date.minute}';
+        if (seen.contains(sig)) {
+          removed.add(t);
+          continue;
+        }
+        seen.add(sig);
+      }
+      kept.add(t);
+    }
+
+    if (removed.isEmpty) return false;
+
+    _transactions = kept;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      for (final t in removed) {
+        _firestore.deleteTransaction(user.uid, t.id);
+      }
+    }
+    return true;
+  }
+
   void addTransaction(Transaction transaction) {
+    // Guard against inserting the same id twice (e.g. an auto-detected
+    // transaction that's already present) — update in place instead.
+    final existingIndex = _transactions.indexWhere((t) => t.id == transaction.id);
+    if (existingIndex != -1) {
+      _transactions[existingIndex] = transaction;
+      _saveTransactions();
+      notifyListeners();
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        _firestore.upsertTransaction(user.uid, transaction);
+      }
+      return;
+    }
+
     _transactions.insert(0, transaction);
     _transactions.sort((a, b) => b.date.compareTo(a.date));
     _saveTransactions();
@@ -214,6 +354,39 @@ class TransactionProvider with ChangeNotifier {
     }
   }
 
+  /// Delete every transaction at once. Clears the in-memory list first (so the
+  /// UI updates immediately), then deletes each from the cloud using a
+  /// SNAPSHOT of the ids — never looping over the live list while modifying
+  /// it, which was causing the "Concurrent modification during iteration"
+  /// crash and leaving items behind.
+  Future<void> clearAllTransactions() async {
+    final ids = _transactions.map((t) => t.id).toList(growable: false);
+
+    _transactions = [];
+    await _saveTransactions();
+    notifyListeners();
+
+    // Also drop any pending SMS-detected slots so they don't immediately
+    // repopulate the list on the next refresh tick.
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final slotKeys = prefs
+          .getKeys()
+          .where((k) => k.startsWith(kDetectedSmsTxPrefix))
+          .toList();
+      for (final k in slotKeys) {
+        await prefs.remove(k);
+      }
+    } catch (_) {}
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      for (final id in ids) {
+        _firestore.deleteTransaction(user.uid, id);
+      }
+    }
+  }
+
   List<Transaction> getRecentTransactions(int count) {
     return _transactions.take(count).toList();
   }
@@ -246,12 +419,13 @@ class TransactionProvider with ChangeNotifier {
     final Map<models.Category, double> spending = {};
     
     for (var transaction in _transactions) {
-      if (transaction.type == TransactionType.expense) {
-        spending[transaction.category] = 
+      if (transaction.type == TransactionType.expense &&
+          transaction.category != models.Category.savings) {
+        spending[transaction.category] =
             (spending[transaction.category] ?? 0.0) + transaction.amount;
       }
     }
-    
+
     return spending;
   }
 

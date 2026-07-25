@@ -4,6 +4,7 @@ import '../models/transaction.dart';
 import '../theme/app_theme.dart';
 import '../services/categorization_service.dart';
 import '../providers/category_provider.dart';
+import '../providers/currency_provider.dart';
 
 class AddTransactionDialog extends StatefulWidget {
   final Function(Transaction) onSave;
@@ -84,6 +85,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
         finalCategory = CategorizationService.categorizeTransaction(
           description,
           double.parse(_amountController.text),
+          type: _selectedType,
         );
       }
       
@@ -244,7 +246,8 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                   controller: _amountController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    labelText: 'Amount (RWF)',
+                    labelText:
+                        'Amount (${context.watch<CurrencyProvider>().code})',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),

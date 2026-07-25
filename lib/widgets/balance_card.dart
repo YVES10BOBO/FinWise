@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
-import 'package:intl/intl.dart';
+import '../providers/currency_provider.dart';
 
 class BalanceCard extends StatelessWidget {
   final double balance;
@@ -16,8 +17,8 @@ class BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formatter = NumberFormat('#,###');
-    
+    final currencyProvider = context.watch<CurrencyProvider>();
+
     return Container(
       margin: const EdgeInsets.all(20),
       padding: const EdgeInsets.all(25),
@@ -43,7 +44,7 @@ class BalanceCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            '${formatter.format(balance)} RWF',
+            currencyProvider.format(balance),
             style: const TextStyle(
               fontSize: 36,
               fontWeight: FontWeight.bold,

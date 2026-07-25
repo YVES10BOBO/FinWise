@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
-import 'package:intl/intl.dart';
+import '../providers/currency_provider.dart';
 
 class SavingsRateCard extends StatelessWidget {
   final double income;
@@ -42,8 +43,8 @@ class SavingsRateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formatter = NumberFormat('#,###');
-    
+    final currencyProvider = context.watch<CurrencyProvider>();
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       padding: const EdgeInsets.all(20),
@@ -125,17 +126,17 @@ class SavingsRateCard extends StatelessWidget {
             children: [
               _StatItem(
                 label: 'Income',
-                value: '${formatter.format(income)} RWF',
+                value: currencyProvider.formatCompact(income),
                 color: AppTheme.incomeColor,
               ),
               _StatItem(
                 label: 'Expenses',
-                value: '${formatter.format(expenses)} RWF',
+                value: currencyProvider.formatCompact(expenses),
                 color: AppTheme.expenseColor,
               ),
               _StatItem(
                 label: 'Saved',
-                value: '${formatter.format(savings)} RWF',
+                value: currencyProvider.formatCompact(savings),
                 color: savingsRateColor,
               ),
             ],

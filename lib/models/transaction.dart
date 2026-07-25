@@ -31,7 +31,8 @@ enum Category {
   alcohol('Alcohol & Drinks', '🍷', 0xFFFFEBEE),
   tobacco('Tobacco', '🚬', 0xFFFFE0B2),
   income('Income', '💼', 0xFFE8F5E9),
-  savings('Savings', '💰', 0xFFE8F5E9);
+  savings('Savings', '💰', 0xFFE8F5E9),
+  other('Other', '💸', 0xFFECEFF1);
 
   final String name;
   final String emoji;
@@ -89,6 +90,8 @@ enum Category {
         return Icons.account_balance_wallet_outlined;
       case Category.savings:
         return Icons.savings_outlined;
+      case Category.other:
+        return Icons.swap_horiz;
     }
   }
 }
@@ -103,6 +106,13 @@ class Transaction {
   final AccountType account;
   final SpendingReason? reason;
 
+  /// True when this transaction was created automatically from a parsed
+  /// Mobile Money SMS, rather than entered by hand. Shown as a small badge
+  /// in the transaction list so auto-detected entries are easy to spot and
+  /// double-check, since automatic parsing can occasionally get something
+  /// wrong (amount, category, or direction) in a way manual entry can't.
+  final bool isAutoDetected;
+
   Transaction({
     required this.id,
     required this.type,
@@ -112,6 +122,7 @@ class Transaction {
     required this.date,
     required this.account,
     this.reason,
+    this.isAutoDetected = false,
   });
 
   // Convert to JSON for storage
@@ -125,6 +136,7 @@ class Transaction {
       'date': date.toIso8601String(),
       'account': account.name,
       'reason': reason?.name,
+      'isAutoDetected': isAutoDetected,
     };
   }
 
@@ -153,6 +165,9 @@ class Transaction {
               (e) => e.name == json['reason'],
               orElse: () => SpendingReason.necessity,
             ),
+      // Defaults to false for any transaction saved before this field
+      // existed, so old local/Firestore data keeps loading correctly.
+      isAutoDetected: json['isAutoDetected'] as bool? ?? false,
     );
   }
 
@@ -166,6 +181,7 @@ class Transaction {
     DateTime? date,
     AccountType? account,
     SpendingReason? reason,
+    bool? isAutoDetected,
   }) {
     return Transaction(
       id: id ?? this.id,
@@ -176,6 +192,7 @@ class Transaction {
       date: date ?? this.date,
       account: account ?? this.account,
       reason: reason ?? this.reason,
+      isAutoDetected: isAutoDetected ?? this.isAutoDetected,
     );
   }
 }

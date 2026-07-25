@@ -112,15 +112,19 @@ class ExpenseTrendChart extends StatelessWidget {
     final now = DateTime.now();
     final weeks = <double>[];
 
+    // Four clean, non-overlapping 7-day windows ending today. W1 is oldest,
+    // W4 is the current week. Savings ("set aside") is excluded so the trend
+    // reflects real consumption only.
     for (int i = 3; i >= 0; i--) {
-      final weekStart = now.subtract(Duration(days: i * 7));
-      final weekEnd = weekStart.add(const Duration(days: 7));
+      final windowStart = now.subtract(Duration(days: (i + 1) * 7));
+      final windowEnd = now.subtract(Duration(days: i * 7));
 
       final weekExpenses = transactions
           .where((t) =>
               t.type == TransactionType.expense &&
-              t.date.isAfter(weekStart.subtract(const Duration(days: 1))) &&
-              t.date.isBefore(weekEnd))
+              t.category != Category.savings &&
+              t.date.isAfter(windowStart) &&
+              !t.date.isAfter(windowEnd))
           .fold(0.0, (sum, t) => sum + t.amount);
 
       weeks.add(weekExpenses);

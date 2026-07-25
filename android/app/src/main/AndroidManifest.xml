@@ -1,9 +1,39 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Permissions for image picker (camera and gallery) -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    
+    <uses-permission
+        android:name="android.permission.READ_MEDIA_IMAGES"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.READ_MEDIA_VIDEO"
+        tools:node="remove" />
+
+    <!--
+      SMS permissions for auto-detecting Mobile Money transactions.
+      This qualifies under Google Play's "SMS-based money management"
+      permitted-use exception (apps that track and manage budget), so it
+      does NOT require the app to be the default SMS handler. See:
+      https://support.google.com/googleplay/android-developer/answer/10208820
+      Only READ_SMS/RECEIVE_SMS are requested — never SEND_SMS or WRITE_SMS,
+      since this app only reads transaction notifications, never sends texts.
+    -->
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+
+    <!--
+      Foreground service — keeps FinWise's process alive (with a visible,
+      required notification) while SMS auto-detect is on, so Android is
+      much less likely to kill the app before it can react to an incoming
+      Mobile Money SMS. "dataSync" fits this use case (syncing/monitoring
+      financial transaction data on-device).
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
     <application
         android:label="FinWise Tracker"
         android:name="${applicationName}"
@@ -35,6 +65,25 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Required by the `telephony` package to receive incoming SMS,
+             even while the app is backgrounded. Only fires if the user has
+             granted RECEIVE_SMS (requested at runtime, off by default). -->
+        <receiver
+            android:name="com.shounakmulay.telephony.sms.IncomingSmsReceiver"
+            android:permission="android.permission.BROADCAST_SMS"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Warning: Do not change this service name — required as-is by
+             the flutter_foreground_task plugin. -->
+        <service
+            android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

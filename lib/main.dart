@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'theme/app_theme.dart';
 import 'screens/home_screen.dart';
 import 'screens/categories_screen.dart';
@@ -14,13 +16,27 @@ import 'screens/auth/login_screen.dart';
 import 'providers/transaction_provider.dart';
 import 'providers/goal_provider.dart';
 import 'providers/category_provider.dart';
+import 'providers/currency_provider.dart';
+import 'providers/income_provider.dart';
 import 'theme/theme_provider.dart';
 import 'widgets/add_transaction_dialog.dart';
 import 'services/firestore_user_profile_service.dart';
+import 'services/sms_listener_service.dart';
+import 'services/foreground_service_handler.dart';
+import 'navigation_key.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  // Must run before any FlutterForegroundTask call, and before the service
+  // is (re)attached to a running isolate on app restart.
+  FlutterForegroundTask.initCommunicationPort();
+  ForegroundServiceHandler.init();
+  // Restart the SMS listener + persistent monitoring service if permission
+  // was already granted on a previous launch. (First-run permission
+  // prompting happens from MainScreen, where there's an Activity to attach
+  // the system dialog to — see SmsListenerService.ensureAutoDetectRunning.)
+  await SmsListenerService.startIfEnabled();
   runApp(const FinWiseApp());
 }
 
@@ -35,10 +51,13 @@ class FinWiseApp extends StatelessWidget {
           ChangeNotifierProvider(create: (_) => CategoryProvider()),
           ChangeNotifierProvider(create: (_) => TransactionProvider()),
           ChangeNotifierProvider(create: (_) => GoalProvider()),
+          ChangeNotifierProvider(create: (_) => CurrencyProvider()),
+          ChangeNotifierProvider(create: (_) => IncomeProvider()),
         ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
           return MaterialApp(
+            navigatorKey: navigatorKey,
             title: 'FinWise',
             theme: themeProvider.currentTheme,
             debugShowCheckedModeBanner: false,
@@ -208,8 +227,75 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
+
+  /// While the app is on screen, re-read the local cache every few seconds
+  /// so transactions the SMS background isolate recorded show up live —
+  /// even when the user just sits on the open screen and never leaves it.
+  Timer? _cacheRefreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Turn on auto-detect by default (asks for SMS permission the first
+      // time) and start the monitoring service — no toggle-hunting needed.
+      await SmsListenerService.ensureAutoDetectRunning();
+      await _drainDetectedTransactions();
+    });
+    _startCacheRefreshTimer();
+  }
+
+  @override
+  void dispose() {
+    _cacheRefreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  void _startCacheRefreshTimer() {
+    _cacheRefreshTimer?.cancel();
+    _tickSms();
+    // Every 3s while the app is on screen: (1) read the SMS inbox for new
+    // Mobile Money messages (reliable foreground detection that doesn't
+    // depend on the plugin's flaky foreground callback), then (2) drain any
+    // detected transactions into the live balance/history.
+    _cacheRefreshTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      _tickSms();
+    });
+  }
+
+  Future<void> _tickSms() async {
+    if (!mounted) return;
+    await SmsListenerService.pollInboxForNew();
+    if (!mounted) return;
+    await Provider.of<TransactionProvider>(context, listen: false)
+        .refreshFromCache();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Coming back to the app — pull in anything detected while away, and
+      // resume the live refresh loop.
+      _drainDetectedTransactions();
+      _startCacheRefreshTimer();
+    } else if (state == AppLifecycleState.paused) {
+      // No point polling storage while off-screen; the background isolate
+      // handles detection there.
+      _cacheRefreshTimer?.cancel();
+    }
+  }
+
+  Future<void> _drainDetectedTransactions() async {
+    if (!mounted) return;
+    // Pull in anything the SMS handler recorded to its per-item slots while
+    // FinWise was off-screen (or on another app), so it lands on the balance.
+    await Provider.of<TransactionProvider>(context, listen: false)
+        .refreshFromCache();
+  }
 
   @override
   Widget build(BuildContext context) {

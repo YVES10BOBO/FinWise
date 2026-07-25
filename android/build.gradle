@@ -1,4 +1,13 @@
 allprojects {
+    // buildscript repos included so plugin build tools (e.g. the Kotlin
+    // compiler that `another_telephony` pulls in) resolve from the same
+    // sources as everything else.
+    buildscript {
+        repositories {
+            google()
+            mavenCentral()
+        }
+    }
     repositories {
         google()
         mavenCentral()

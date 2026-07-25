@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
 import 'dart:async';
 import '../models/goal.dart';
+import '../models/transaction.dart';
 import '../services/firestore_goal_service.dart';
 
 class GoalProvider with ChangeNotifier {
@@ -15,6 +16,153 @@ class GoalProvider with ChangeNotifier {
 
   List<Goal> get goals => _goals;
   bool get isLoading => _isLoading;
+
+  /// Goals still being saved for (purchased ones no longer reserve money).
+  List<Goal> get activeGoals =>
+      _goals.where((g) => g.status == GoalStatus.active).toList();
+
+  List<Goal> get purchasedGoals =>
+      _goals.where((g) => g.status == GoalStatus.purchased).toList();
+
+  /// Goals that have reached their target but haven't been bought yet.
+  List<Goal> get readyToPurchase =>
+      activeGoals.where((g) => g.isCompleted).toList();
+
+  /// Total money currently reserved across ACTIVE goals (the "reserved pot").
+  /// Money you still own but have committed to goals, so it's kept out of
+  /// your available total — never counted as income or spending.
+  double get totalReserved =>
+      activeGoals.fold<double>(0, (sum, g) => sum + g.currentAmount);
+
+  /// Reserved money broken down by the account it was reserved from, so each
+  /// account can show Balance / Reserved / Available.
+  Map<AccountType, double> get reservedByAccount {
+    final totals = <AccountType, double>{
+      AccountType.cash: 0,
+      AccountType.mobileMoney: 0,
+      AccountType.bank: 0,
+    };
+    for (final goal in activeGoals) {
+      goal.reservedByAccount.forEach((account, amount) {
+        totals[account] = (totals[account] ?? 0) + amount;
+      });
+    }
+    return totals;
+  }
+
+  double reservedFor(AccountType account) => reservedByAccount[account] ?? 0;
+
+  /// Reserve money from a specific account for a goal.
+  void addContribution(
+    String goalId, {
+    required double amount,
+    required AccountType account,
+    String note = '',
+  }) {
+    final index = _goals.indexWhere((g) => g.id == goalId);
+    if (index == -1 || amount <= 0) return;
+
+    final contribution = GoalContribution(
+      id: 'c_${DateTime.now().millisecondsSinceEpoch}',
+      amount: amount,
+      date: DateTime.now(),
+      account: account,
+      note: note,
+    );
+
+    _persist(index, [..._goals[index].contributions, contribution]);
+  }
+
+  /// Return part of a goal's reserved money to the available balance.
+  /// Releases are taken from the accounts holding the most first, so each
+  /// account's reserved figure stays accurate.
+  void releaseAmount(
+    String goalId, {
+    required double amount,
+    String note = '',
+  }) {
+    final index = _goals.indexWhere((g) => g.id == goalId);
+    if (index == -1 || amount <= 0) return;
+
+    final goal = _goals[index];
+    var remaining = amount > goal.currentAmount ? goal.currentAmount : amount;
+    if (remaining <= 0) return;
+
+    final byAccount = goal.reservedByAccount.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    final releases = <GoalContribution>[];
+    final stamp = DateTime.now().millisecondsSinceEpoch;
+    var i = 0;
+    for (final entry in byAccount) {
+      if (remaining <= 0) break;
+      final take = remaining < entry.value ? remaining : entry.value;
+      releases.add(GoalContribution(
+        id: 'r_${stamp}_${i++}',
+        amount: take,
+        date: DateTime.now(),
+        account: entry.key,
+        note: note,
+        isRelease: true,
+      ));
+      remaining -= take;
+    }
+
+    _persist(index, [...goal.contributions, ...releases]);
+  }
+
+  /// Return everything reserved for this goal to the available balance.
+  void releaseAll(String goalId, {String note = ''}) {
+    final goal = _goals.firstWhere(
+      (g) => g.id == goalId,
+      orElse: () => throw StateError('Goal not found'),
+    );
+    releaseAmount(goalId, amount: goal.currentAmount, note: note);
+  }
+
+  /// Mark a goal as bought. The goal record is KEPT (history/achievement);
+  /// it simply stops reserving money, because the reserved amount has now
+  /// become a real expense recorded by the caller.
+  void markPurchased(
+    String goalId, {
+    required double actualAmount,
+    String? transactionId,
+  }) {
+    final index = _goals.indexWhere((g) => g.id == goalId);
+    if (index == -1) return;
+
+    final goal = _goals[index];
+    final updated = goal.copyWith(
+      status: GoalStatus.purchased,
+      purchasedAmount: actualAmount,
+      purchasedDate: DateTime.now(),
+      purchaseTransactionId: transactionId,
+    );
+
+    _goals[index] = updated;
+    _saveGoals();
+    notifyListeners();
+    _syncGoal(updated, 'purchase');
+  }
+
+  void _persist(int index, List<GoalContribution> contributions) {
+    final updated = _goals[index].copyWith(contributions: contributions);
+    _goals[index] = updated;
+    _saveGoals();
+    notifyListeners();
+    _syncGoal(updated, 'contribution');
+  }
+
+  void _syncGoal(Goal goal, String label) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _firestore.upsertGoal(user.uid, goal).catchError((e) {
+        if (kDebugMode) {
+          debugPrint('Firestore goal $label save failed: $e');
+        }
+      });
+    }
+  }
 
   GoalProvider() {
     _configureForCurrentUser();
@@ -160,6 +308,27 @@ class GoalProvider with ChangeNotifier {
     }
   }
 
+  /// Delete every goal at once. Clears the list first (so the UI updates and
+  /// reserved money is released immediately), then deletes from the cloud
+  /// using a snapshot of ids — never iterating the live list while modifying
+  /// it, which throws "Concurrent modification" and leaves goals behind.
+  Future<void> clearAllGoals() async {
+    final ids = _goals.map((g) => g.id).toList(growable: false);
+
+    _goals = [];
+    await _saveGoals();
+    notifyListeners();
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      for (final id in ids) {
+        _firestore.deleteGoal(user.uid, id).catchError((e) {
+          if (kDebugMode) debugPrint('Firestore goal delete failed: $e');
+        });
+      }
+    }
+  }
+
   void removeGoal(String id) {
     _goals.removeWhere((g) => g.id == id);
     _saveGoals();
@@ -175,21 +344,22 @@ class GoalProvider with ChangeNotifier {
     }
   }
 
-  void updateGoalProgress(String id, double amount) {
+  /// Set a goal's reserved total directly by adding a balancing
+  /// contribution/release. Kept for compatibility; prefer [addContribution]
+  /// and [releaseAmount], which record the account the money came from.
+  void updateGoalProgress(String id, double amount,
+      {AccountType account = AccountType.cash}) {
     final index = _goals.indexWhere((g) => g.id == id);
-    if (index != -1) {
-      _goals[index] = _goals[index].copyWith(currentAmount: amount);
-      _saveGoals();
-      notifyListeners();
+    if (index == -1) return;
 
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        _firestore.upsertGoal(user.uid, _goals[index]).catchError((e) {
-          if (kDebugMode) {
-            debugPrint('Firestore goal progress save failed: $e');
-          }
-        });
-      }
+    final current = _goals[index].currentAmount;
+    final delta = amount - current;
+    if (delta == 0) return;
+
+    if (delta > 0) {
+      addContribution(id, amount: delta, account: account);
+    } else {
+      releaseAmount(id, amount: -delta);
     }
   }
 

@@ -7,6 +7,7 @@ import '../theme/app_theme.dart';
 import '../widgets/transaction_item.dart';
 import 'package:intl/intl.dart';
 import '../widgets/add_transaction_dialog.dart';
+import '../providers/currency_provider.dart';
 
 class CalendarViewScreen extends StatefulWidget {
   const CalendarViewScreen({super.key});
@@ -211,7 +212,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                       ],
                     ),
                     Text(
-                      NumberFormat('#,###').format(dayTotal.abs()),
+                      context.watch<CurrencyProvider>().formatCompact(dayTotal.abs()),
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,

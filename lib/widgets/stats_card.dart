@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
-import 'package:intl/intl.dart';
+import '../providers/currency_provider.dart';
 
 class StatsCard extends StatelessWidget {
   final IconData icon;
@@ -18,8 +19,8 @@ class StatsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formatter = NumberFormat('#,###');
-    
+    final currencyProvider = context.watch<CurrencyProvider>();
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -61,7 +62,7 @@ class StatsCard extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           Text(
-            formatter.format(value),
+            currencyProvider.formatCompact(value),
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,

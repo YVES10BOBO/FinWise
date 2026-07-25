@@ -7,6 +7,9 @@ import '../../providers/transaction_provider.dart';
 import '../../models/transaction.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/firestore_user_profile_service.dart';
+import '../../providers/currency_provider.dart';
+import '../../models/currency.dart';
+import '../../services/sms_listener_service.dart';
 
 class FinancialQuestionnaireScreen extends StatefulWidget {
   const FinancialQuestionnaireScreen({super.key});
@@ -32,6 +35,16 @@ class _FinancialQuestionnaireScreenState
   final Set<String> _selectedCategories = {};
   final TextEditingController _customCategoryController = TextEditingController();
   final List<String> _customCategories = [];
+
+  // Step 4: Auto-tracking (the differentiator)
+  bool _autoTrackEnabled = false;
+  bool _enablingAutoTrack = false;
+
+  // Onboarding is now a single essential step. Spending-style, categories,
+  // and the auto-track intro were removed to reduce friction — auto-tracking
+  // turns on by itself on the home screen, and categories/style are better
+  // set inside the app once real transactions exist.
+  static const int _lastStep = 0;
   
   final List<String> _defaultCategories = [
     'Transport',
@@ -114,69 +127,23 @@ class _FinancialQuestionnaireScreenState
     // Save name
     await prefs.setString('user_name', _nameController.text.trim());
 
-    // Save income
-    await prefs.setString('user_income', _incomeController.text.trim());
-    await prefs.setString('income_frequency', _incomeFrequency);
-    
+    // Save income as a planning TARGET only — never as a fake transaction.
+    // Your real balance comes from actual transactions; this figure is just
+    // used for analysis (savings rate, "vs your usual income"). It's optional
+    // here and editable anytime in Settings.
+    final incomeText = _incomeController.text.trim();
+    if (incomeText.isNotEmpty && double.tryParse(incomeText) != null) {
+      await prefs.setString('user_income', incomeText);
+      await prefs.setString('income_frequency', _incomeFrequency);
+    }
+
     // Save spending style (profile preference for future tips)
     await prefs.setString('spending_style', _spendingStyle);
-    
+
     // Save categories
     final allCategories = [..._selectedCategories, ..._customCategories];
     await prefs.setStringList('user_categories', allCategories);
-    
-    // Keep onboarding income + transactions in sync:
-    // - If income > 0: ensure there's an "Onboarding income" transaction
-    //   with that amount (create or update).
-    // - If income is 0 or empty: remove any existing "Onboarding income"
-    //   transactions so old values aren't reused.
-    try {
-      final incomeText = _incomeController.text.trim();
-      final incomeValue = double.tryParse(incomeText) ?? 0.0;
-      if (!mounted) {
-        return;
-      }
 
-      final transactionProvider =
-          Provider.of<TransactionProvider>(context, listen: false);
-      final onboardingTxs = transactionProvider.transactions.where(
-        (t) =>
-            t.type == TransactionType.income &&
-            t.description == 'Onboarding income',
-      );
-
-      if (incomeValue > 0) {
-        if (onboardingTxs.isNotEmpty) {
-          // Update existing onboarding income transaction(s) to the new value
-          for (final tx in onboardingTxs) {
-            final updated = tx.copyWith(amount: incomeValue);
-            transactionProvider.updateTransaction(updated);
-          }
-        } else {
-          // No onboarding income transaction yet – create one
-          final onboardingIncome = Transaction(
-            id: 'onboarding_${DateTime.now().millisecondsSinceEpoch}',
-            type: TransactionType.income,
-            category: Category.income,
-            amount: incomeValue,
-            description: 'Onboarding income',
-            date: DateTime.now(),
-            account: AccountType.mobileMoney,
-            reason: null,
-          );
-          transactionProvider.addTransaction(onboardingIncome);
-        }
-      } else {
-        // incomeValue is 0 or invalid → remove any previous onboarding income
-        for (final tx in onboardingTxs.toList()) {
-          transactionProvider.removeTransaction(tx.id);
-        }
-      }
-    } catch (_) {
-      // If anything goes wrong here, we just skip creating the auto transaction.
-      // The app will still work; the user can always add income manually.
-    }
-    
     // Mark questionnaire and onboarding as complete
     await prefs.setBool('questionnaire_complete', true);
     await prefs.setBool('onboarding_complete', true);
@@ -236,19 +203,9 @@ class _FinancialQuestionnaireScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Step ${_currentStep + 1} of 3'),
+        title: const Text('Set up FinWise'),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
-        leading: _currentStep > 0
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  setState(() {
-                    _currentStep--;
-                  });
-                },
-              )
-            : null,
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -261,28 +218,6 @@ class _FinancialQuestionnaireScreenState
         child: SafeArea(
           child: Column(
             children: [
-              // Progress Indicator
-              Container(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: List.generate(3, (index) {
-                    return Expanded(
-                      child: Container(
-                        margin: EdgeInsets.only(
-                          right: index < 2 ? 8 : 0,
-                        ),
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: index <= _currentStep
-                              ? Colors.white
-                              : Colors.white.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-              ),
               // Content
               Expanded(
                 child: SingleChildScrollView(
@@ -343,9 +278,9 @@ class _FinancialQuestionnaireScreenState
                           ),
                           elevation: 0,
                         ),
-                        child: Text(
-                          _currentStep == 2 ? 'Complete' : 'Next',
-                          style: const TextStyle(
+                        child: const Text(
+                          'Get Started',
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -370,6 +305,8 @@ class _FinancialQuestionnaireScreenState
         return _buildSpendingStep();
       case 2:
         return _buildCategoriesStep();
+      case 3:
+        return _buildAutoTrackStep();
       default:
         return const SizedBox();
     }
@@ -425,9 +362,9 @@ class _FinancialQuestionnaireScreenState
               ),
               const SizedBox(height: 8),
               Text(
-                '• Your name: Personalizes your dashboard\n'
-                '• Income: Calculates your financial health score and helps set realistic budgets\n'
-                '• Frequency: Converts your income to monthly for accurate analysis',
+                '• Your name personalizes your dashboard\n'
+                '• Your currency is used across the whole app\n'
+                '• Add an income target later in Settings (optional)',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.white.withValues(alpha: 0.85),
@@ -463,48 +400,26 @@ class _FinancialQuestionnaireScreenState
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: TextFormField(
-            controller: _incomeController,
-            keyboardType: TextInputType.number,
+          child: DropdownButtonFormField<AppCurrency>(
+            value: context.watch<CurrencyProvider>().currency,
             decoration: InputDecoration(
-              labelText: 'Income Amount (RWF)',
-              prefixIcon: const Icon(Icons.attach_money),
+              labelText: 'Currency',
+              prefixIcon: const Icon(Icons.language),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               filled: true,
               fillColor: Colors.white,
             ),
-          ),
-        ),
-        const SizedBox(height: 24),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: DropdownButtonFormField<String>(
-            value: _incomeFrequency,
-            decoration: InputDecoration(
-              labelText: 'Income Frequency',
-              prefixIcon: const Icon(Icons.calendar_today),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-            items: ['Daily', 'Weekly', 'Monthly', 'Yearly']
-                .map((freq) => DropdownMenuItem(
-                      value: freq,
-                      child: Text(freq),
+            items: AppCurrency.values
+                .map((c) => DropdownMenuItem(
+                      value: c,
+                      child: Text('${c.symbol}  ${c.label} (${c.code})'),
                     ))
                 .toList(),
             onChanged: (value) {
               if (value != null) {
-                setState(() {
-                  _incomeFrequency = value;
-                });
+                context.read<CurrencyProvider>().setCurrency(value);
               }
             },
           ),
@@ -522,7 +437,7 @@ class _FinancialQuestionnaireScreenState
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Tip: Start with approximate numbers — FinWise will learn from your real transactions and adjust automatically.',
+                  'That\'s all we need to get started. You can set an income target and more anytime in Settings.',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.white.withValues(alpha: 0.9),
@@ -917,25 +832,217 @@ class _FinancialQuestionnaireScreenState
   bool _canProceed() {
     switch (_currentStep) {
       case 0:
-        return _nameController.text.trim().isNotEmpty &&
-            _incomeController.text.trim().isNotEmpty &&
-            double.tryParse(_incomeController.text.trim()) != null;
+        // Only the name is required now. Income moved to Settings as an
+        // optional, editable target.
+        return _nameController.text.trim().isNotEmpty;
       case 1:
         return true; // spending step is optional (style has a default)
       case 2:
-        return _selectedCategories.isNotEmpty || _customCategories.isNotEmpty;
+        return true; // categories are optional — no forced taps
+      case 3:
+        return true; // auto-track is optional (can enable later in Settings)
       default:
         return false;
     }
   }
 
   void _handleNext() {
-    if (_currentStep < 2) {
+    if (_currentStep < _lastStep) {
       setState(() {
         _currentStep++;
       });
     } else {
       _saveQuestionnaire();
     }
+  }
+
+  Future<void> _enableAutoTrack() async {
+    setState(() => _enablingAutoTrack = true);
+    final granted = await SmsListenerService.requestPermissionAndEnable();
+    if (!mounted) return;
+    setState(() {
+      _enablingAutoTrack = false;
+      _autoTrackEnabled = granted;
+    });
+    if (!granted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Permission not granted. You can turn on auto-tracking later in Settings.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildAutoTrackStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '⚡ Track money automatically',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'This is what makes FinWise different. It reads your Mobile Money '
+          'SMS and records every payment and deposit for you — no manual '
+          'typing.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.white.withValues(alpha: 0.9),
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              _buildAutoTrackFeature(
+                Icons.bolt,
+                'Instant',
+                'New MoMo transactions appear on your balance within seconds.',
+              ),
+              const SizedBox(height: 16),
+              _buildAutoTrackFeature(
+                Icons.lock_outline,
+                'Private',
+                'Everything stays on your phone. Nothing is uploaded or shared.',
+              ),
+              const SizedBox(height: 16),
+              _buildAutoTrackFeature(
+                Icons.auto_awesome,
+                'Automatic',
+                'Amount, direction and category are filled in for you.',
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        if (_autoTrackEnabled)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.check_circle, color: AppTheme.primaryColor),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Auto-tracking is on. Tap Complete to finish.',
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _enablingAutoTrack ? null : _enableAutoTrack,
+              icon: _enablingAutoTrack
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                      ),
+                    )
+                  : const Icon(Icons.sms_outlined),
+              label: Text(_enablingAutoTrack
+                  ? 'Requesting permission…'
+                  : 'Enable auto-tracking'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: AppTheme.primaryColor,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        const SizedBox(height: 12),
+        Text(
+          _autoTrackEnabled
+              ? 'You can turn this off anytime in Settings.'
+              : 'Optional — you can skip and turn it on later in Settings.',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.white.withValues(alpha: 0.85),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAutoTrackFeature(IconData icon, String title, String subtitle) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: 0.85),
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }

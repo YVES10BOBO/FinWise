@@ -6,8 +6,8 @@ import '../providers/transaction_provider.dart';
 import '../services/budget_recommendation_service.dart';
 import '../services/categorization_service.dart';
 import '../widgets/spending_chart.dart';
+import '../providers/currency_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:intl/intl.dart';
 
 class CategoriesScreen extends StatelessWidget {
   const CategoriesScreen({super.key});
@@ -146,6 +146,7 @@ class CategoriesScreen extends StatelessWidget {
                             BudgetRecommendationService.generateInsight(
                               monthlyIncome > 0 ? monthlyIncome : 300000,
                               provider.transactions,
+                              currency: context.watch<CurrencyProvider>().currency,
                             ),
                             style: const TextStyle(
                               fontSize: 14,
@@ -198,7 +199,7 @@ class _CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formatter = NumberFormat('#,###');
+    final currencyProvider = context.watch<CurrencyProvider>();
     final percentage = budget.percentage.clamp(0.0, 100.0);
     final isOver = budget.isOverBudget;
 
@@ -241,7 +242,7 @@ class _CategoryCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${formatter.format(budget.spent)} / ${formatter.format(budget.allocated)} RWF',
+                      '${currencyProvider.formatCompact(budget.spent)} / ${currencyProvider.formatCompact(budget.allocated)}',
                       style: TextStyle(
                         fontSize: 14,
                         color: isOver ? AppTheme.expenseColor : AppTheme.textSecondary,

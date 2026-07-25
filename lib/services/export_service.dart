@@ -2,16 +2,20 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/transaction.dart';
+import '../models/currency.dart';
 import 'package:intl/intl.dart';
 
 class ExportService {
   /// Export transactions to CSV
-  static Future<void> exportToCSV(List<Transaction> transactions) async {
+  static Future<void> exportToCSV(
+    List<Transaction> transactions, {
+    AppCurrency currency = AppCurrency.rwf,
+  }) async {
     try {
       final StringBuffer csv = StringBuffer();
-      
+
       // CSV Header
-      csv.writeln('Date,Type,Category,Description,Amount (RWF)');
+      csv.writeln('Date,Type,Category,Description,Amount (${currency.code})');
       
       // CSV Data
       final dateFormatter = DateFormat('yyyy-MM-dd');
@@ -42,16 +46,20 @@ class ExportService {
   }
 
   /// Export transactions to PDF (simplified text format)
-  static Future<void> exportToPDF(List<Transaction> transactions) async {
+  static Future<void> exportToPDF(
+    List<Transaction> transactions, {
+    AppCurrency currency = AppCurrency.rwf,
+  }) async {
     try {
       final StringBuffer pdf = StringBuffer();
-      
+      final currencySuffix = currency.symbol;
+
       // PDF Header
       pdf.writeln('FINWISE TRANSACTION REPORT');
       pdf.writeln('Generated: ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}');
       pdf.writeln('=' * 50);
       pdf.writeln('');
-      
+
       // Summary
       final income = transactions
           .where((t) => t.type == TransactionType.income)
@@ -59,28 +67,28 @@ class ExportService {
       final expenses = transactions
           .where((t) => t.type == TransactionType.expense)
           .fold(0.0, (sum, t) => sum + t.amount);
-      
+
       pdf.writeln('SUMMARY');
-      pdf.writeln('Total Income: ${NumberFormat('#,###').format(income)} RWF');
-      pdf.writeln('Total Expenses: ${NumberFormat('#,###').format(expenses)} RWF');
-      pdf.writeln('Balance: ${NumberFormat('#,###').format(income - expenses)} RWF');
+      pdf.writeln('Total Income: ${NumberFormat('#,###').format(income)} $currencySuffix');
+      pdf.writeln('Total Expenses: ${NumberFormat('#,###').format(expenses)} $currencySuffix');
+      pdf.writeln('Balance: ${NumberFormat('#,###').format(income - expenses)} $currencySuffix');
       pdf.writeln('');
       pdf.writeln('=' * 50);
       pdf.writeln('');
-      
+
       // Transactions
       pdf.writeln('TRANSACTIONS');
       pdf.writeln('');
-      
+
       final dateFormatter = DateFormat('yyyy-MM-dd');
       final formatter = NumberFormat('#,###');
-      
+
       for (var transaction in transactions) {
         pdf.writeln('Date: ${dateFormatter.format(transaction.date)}');
         pdf.writeln('Type: ${transaction.type.name.toUpperCase()}');
         pdf.writeln('Category: ${transaction.category.name}');
         pdf.writeln('Description: ${transaction.description}');
-        pdf.writeln('Amount: ${formatter.format(transaction.amount)} RWF');
+        pdf.writeln('Amount: ${formatter.format(transaction.amount)} $currencySuffix');
         pdf.writeln('-' * 30);
       }
       

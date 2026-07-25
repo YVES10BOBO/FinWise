@@ -38,6 +38,7 @@ class FirestoreUserProfileService {
     List<String>? categories,
     bool? onboardingComplete,
     String? profileImageUrl,
+    String? currencyCode,
   }) async {
     await _doc(uid).set(
       {
@@ -51,6 +52,7 @@ class FirestoreUserProfileService {
         if (onboardingComplete != null)
           'onboardingComplete': onboardingComplete,
         if (profileImageUrl != null) 'profileImageUrl': profileImageUrl,
+        if (currencyCode != null) 'currencyCode': currencyCode,
         'updatedAt': FieldValue.serverTimestamp(),
       },
       SetOptions(merge: true),

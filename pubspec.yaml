@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.0.4+6
 
 environment:
   sdk: ^3.6.2
@@ -49,6 +49,23 @@ dependencies:
   firebase_auth: ^4.16.0
   cloud_firestore: ^4.14.0
   firebase_storage: ^11.6.0
+
+  # SMS auto-detection (Android only, free/open-source — no paid API).
+  # Reads incoming Mobile Money SMS to auto-detect transactions.
+  # Using `another_telephony` (the maintained fork of the now-discontinued
+  # `telephony` package) because the original only delivers the FIRST
+  # background SMS and then stops — this fork fixes incoming-SMS listening.
+  # Same API and same Android receiver, so it's a drop-in replacement.
+  another_telephony: ^0.4.1
+
+  # Keeps FinWise's process alive (with a persistent notification) while
+  # SMS auto-detect is on, so Android is far less likely to kill it before
+  # it can react to an incoming Mobile Money SMS. Free/open-source.
+  flutter_foreground_task: ^9.2.2
+
+  # Heads-up notification confirming each auto-detected transaction, so the
+  # user sees "Money received/sent" even when the app is closed. Free/OSS.
+  flutter_local_notifications: ^17.2.4
 
 dev_dependencies:
   flutter_test:

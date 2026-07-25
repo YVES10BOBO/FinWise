@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../providers/currency_provider.dart';
 
 class FinancialHealthScore extends StatelessWidget {
   final double income;
@@ -135,6 +137,7 @@ class FinancialHealthScore extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayIncome = income.clamp(0, double.infinity);
+    final currencyProvider = context.watch<CurrencyProvider>();
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -244,7 +247,7 @@ class FinancialHealthScore extends StatelessWidget {
                 ),
               ),
               child: Text(
-                'Profile income used: ${displayIncome.toStringAsFixed(0)} RWF per month',
+                'Profile income used: ${currencyProvider.formatCompact(displayIncome.toDouble())} per month',
                 style: TextStyle(
                   fontSize: 11,
                   color: healthColor,

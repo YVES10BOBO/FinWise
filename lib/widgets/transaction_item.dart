@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/transaction.dart';
 import '../theme/app_theme.dart';
+import '../providers/currency_provider.dart';
 import 'package:intl/intl.dart';
 
 class TransactionItem extends StatefulWidget {
@@ -48,7 +50,7 @@ class _TransactionItemState extends State<TransactionItem>
     final onEdit = widget.onEdit;
     final onDelete = widget.onDelete;
     
-    final formatter = NumberFormat('#,###');
+    final currencyProvider = context.watch<CurrencyProvider>();
     final dateFormatter = DateFormat('MMM d, yyyy');
     final isToday = transaction.date.day == DateTime.now().day &&
         transaction.date.month == DateTime.now().month &&
@@ -151,13 +153,53 @@ class _TransactionItemState extends State<TransactionItem>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            transaction.description,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.textPrimary,
-                              fontSize: 15,
-                            ),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  transaction.description,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.textPrimary,
+                                    fontSize: 15,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (transaction.isAutoDetected) ...[
+                                const SizedBox(width: 6),
+                                Tooltip(
+                                  message:
+                                      'Auto-detected from Mobile Money SMS — tap to review',
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primaryColor
+                                          .withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.sms_outlined,
+                                            size: 10,
+                                            color: AppTheme.primaryColor),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          'Auto',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppTheme.primaryColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                           const SizedBox(height: 3),
                           Text(
@@ -176,7 +218,7 @@ class _TransactionItemState extends State<TransactionItem>
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '${transaction.type == TransactionType.income ? '+' : '-'}${formatter.format(transaction.amount)}',
+                          '${transaction.type == TransactionType.income ? '+' : '-'}${currencyProvider.formatCompact(transaction.amount)}',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,

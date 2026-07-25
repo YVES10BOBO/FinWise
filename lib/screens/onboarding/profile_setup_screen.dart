@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 import 'financial_questionnaire_screen.dart';
 import '../../theme/app_theme.dart';
+import '../../models/currency.dart';
+import '../../providers/currency_provider.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -15,6 +18,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _nameController = TextEditingController();
   final _incomeController = TextEditingController();
   String _incomeFrequency = 'Monthly';
+  AppCurrency _selectedCurrency = AppCurrency.rwf;
 
   @override
   void dispose() {
@@ -30,6 +34,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       await prefs.setString('income', _incomeController.text);
       await prefs.setString('income_frequency', _incomeFrequency);
       await prefs.setBool('onboarding_complete', true);
+
+      // Save the chosen currency so every amount in the app (dashboard,
+      // transactions, budgets, goals, exports) displays in it.
+      if (mounted) {
+        await context.read<CurrencyProvider>().setCurrency(_selectedCurrency);
+      }
 
       if (mounted) {
         Navigator.of(context).pushReplacement(
@@ -93,12 +103,38 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   },
                 ),
                 const SizedBox(height: 24),
+                // Currency
+                DropdownButtonFormField<AppCurrency>(
+                  value: _selectedCurrency,
+                  decoration: InputDecoration(
+                    labelText: 'Currency',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    prefixIcon: const Icon(Icons.language),
+                    helperText: 'Wherever you are — FinWise adapts to it',
+                  ),
+                  items: AppCurrency.values
+                      .map((c) => DropdownMenuItem(
+                            value: c,
+                            child: Text('${c.symbol}  ${c.label} (${c.code})'),
+                          ))
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _selectedCurrency = value;
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 24),
                 // Income
                 TextFormField(
                   controller: _incomeController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    labelText: 'Monthly Income (RWF)',
+                    labelText: 'Monthly Income (${_selectedCurrency.code})',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
