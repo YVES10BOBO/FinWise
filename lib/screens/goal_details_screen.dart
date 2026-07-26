@@ -504,13 +504,19 @@ class GoalDetailsScreen extends StatelessWidget {
                     labelText: 'Paid from',
                     prefixIcon: Icon(Icons.account_balance_wallet_outlined),
                   ),
-                  items: AccountType.values
-                      .map((a) => DropdownMenuItem(
-                            value: a,
-                            child: Text(accountLabel(a),
-                                style: const TextStyle(fontSize: 13)),
-                          ))
-                      .toList(),
+                  items: AccountType.values.map((a) {
+                    final bal = Provider.of<TransactionProvider>(context,
+                                listen: false)
+                            .accountBalances[a] ??
+                        0;
+                    return DropdownMenuItem(
+                      value: a,
+                      child: Text(
+                        '${accountLabel(a)} · ${currency.formatCompact(bal)}',
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    );
+                  }).toList(),
                   onChanged: (v) {
                     if (v != null) setLocal(() => account = v);
                   },
@@ -524,13 +530,46 @@ class GoalDetailsScreen extends StatelessWidget {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 final actual = double.tryParse(amountController.text.trim());
                 if (actual == null || actual <= 0) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Enter the actual price')),
                   );
                   return;
+                }
+
+                // Warn — never block. If the purchase really happened it must
+                // be recordable; a shortfall usually just means some income
+                // hasn't been entered yet. The user decides.
+                final txProvider =
+                    Provider.of<TransactionProvider>(context, listen: false);
+                final accountBalance =
+                    txProvider.accountBalances[account] ?? 0;
+                if (actual > accountBalance) {
+                  final proceed = await showDialog<bool>(
+                    context: ctx,
+                    builder: (warnCtx) => AlertDialog(
+                      title: const Text('More than this account holds'),
+                      content: Text(
+                        '${accountLabel(account)} shows ${currency.formatCompact(accountBalance)}, '
+                        'but you are recording ${currency.formatCompact(actual)}.\n\n'
+                        'That will leave it negative. If the purchase really happened, '
+                        'record it anyway — you may just need to add some missing income.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(warnCtx, false),
+                          child: const Text('Go back'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(warnCtx, true),
+                          child: const Text('Record anyway'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (proceed != true) return;
                 }
 
                 final txId = 'goalbuy_${DateTime.now().millisecondsSinceEpoch}';

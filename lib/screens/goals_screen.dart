@@ -739,11 +739,18 @@ void showReserveDialog(BuildContext context, Goal goal) {
                 note: noteController.text.trim(),
               );
               Navigator.pop(ctx);
+
+              // Reserving beyond the target is allowed (you may have decided
+              // the thing costs more), but say so plainly rather than
+              // silently showing over 100%.
+              final over = (goal.currentAmount + value) - goal.targetAmount;
+              final msg = over > 0
+                  ? 'Reserved ${currency.formatCompact(value)} — that is ${currency.formatCompact(over)} more than this goal needs. Release it any time.'
+                  : 'Reserved ${currency.formatCompact(value)} from ${_accountLabel(selected)}';
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(
-                    'Reserved ${currency.formatCompact(value)} from ${_accountLabel(selected)}',
-                  ),
+                  content: Text(msg),
+                  duration: Duration(seconds: over > 0 ? 5 : 3),
                 ),
               );
             },
