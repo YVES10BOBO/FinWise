@@ -42,9 +42,10 @@ class GoalDetailsScreen extends StatelessWidget {
                 onSelected: (v) {
                   if (v == 'edit') showGoalDialog(context, existing: goal);
                   if (v == 'delete') _confirmDelete(context, goal);
+                  if (v == 'undo') _confirmUndoPurchase(context, goal);
                 },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(
+                itemBuilder: (_) => [
+                  const PopupMenuItem(
                     value: 'edit',
                     child: Row(children: [
                       Icon(Icons.edit_outlined, size: 18),
@@ -52,10 +53,20 @@ class GoalDetailsScreen extends StatelessWidget {
                       Text('Edit goal'),
                     ]),
                   ),
-                  PopupMenuItem(
+                  if (purchased)
+                    const PopupMenuItem(
+                      value: 'undo',
+                      child: Row(children: [
+                        Icon(Icons.undo, size: 18),
+                        SizedBox(width: 8),
+                        Text('Undo purchase'),
+                      ]),
+                    ),
+                  const PopupMenuItem(
                     value: 'delete',
                     child: Row(children: [
-                      Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                      Icon(Icons.delete_outline,
+                          size: 18, color: AppTheme.accentDark),
                       SizedBox(width: 8),
                       Text('Delete goal'),
                     ]),
@@ -443,8 +454,19 @@ class GoalDetailsScreen extends StatelessWidget {
     );
   }
 
+  /// Marking a goal purchased has TWO jobs: record the expense, and close the
+  /// goal. They must be separable, because the expense often already exists —
+  /// Mobile Money purchases are auto-recorded from SMS, and users sometimes
+  /// enter a cash purchase by hand before remembering the goal.
+  ///
+  /// So instead of blindly creating an expense (which double-counts), the user
+  /// either LINKS the real transaction or CREATES a new one. The app never
+  /// guesses which transaction belongs to a goal — an amount match could
+  /// easily be a different purchase entirely.
   void _showPurchaseDialog(BuildContext context, Goal goal) {
     final currency = Provider.of<CurrencyProvider>(context, listen: false);
+    final txProvider = Provider.of<TransactionProvider>(context, listen: false);
+
     final amountController =
         TextEditingController(text: goal.currentAmount.toStringAsFixed(0));
     Category category = Category.shopping;
@@ -452,76 +474,205 @@ class GoalDetailsScreen extends StatelessWidget {
         ? goal.reservedByAccount.keys.first
         : AccountType.cash;
 
+    // Candidate expenses from the last 60 days that aren't already tied to a
+    // goal. Sorted newest first; nothing is pre-selected.
+    final cutoff = DateTime.now().subtract(const Duration(days: 60));
+    final linkedIds = Provider.of<GoalProvider>(context, listen: false)
+        .goals
+        .map((g) => g.purchaseTransactionId)
+        .whereType<String>()
+        .toSet();
+    final candidates = txProvider.transactions
+        .where((t) =>
+            t.type == TransactionType.expense &&
+            t.category != Category.savings &&
+            t.date.isAfter(cutoff) &&
+            !linkedIds.contains(t.id))
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    // Smart default: Mobile Money purchases are almost certainly already
+    // recorded by SMS detection, so start on "link". Cash isn't detectable,
+    // so start on "create". Both remain available either way.
+    bool linkMode =
+        account == AccountType.mobileMoney && candidates.isNotEmpty;
+    Transaction? selected;
+
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
           title: const Text('Mark as purchased'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Records the real expense and frees the reserved money. '
-                  'Anything left over returns to your available balance.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: amountController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: 'Actual price (${currency.code})',
-                    prefixIcon: const Icon(Icons.shopping_bag_outlined),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Did you already record this purchase?',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w600),
                   ),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<Category>(
-                  value: category,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Expense category',
-                    prefixIcon: Icon(Icons.category_outlined),
-                  ),
-                  items: Category.values
-                      .where((c) => c != Category.income)
-                      .map((c) => DropdownMenuItem(
-                            value: c,
-                            child: Text('${c.emoji} ${c.name}',
-                                style: const TextStyle(fontSize: 13)),
-                          ))
-                      .toList(),
-                  onChanged: (v) {
-                    if (v != null) setLocal(() => category = v);
-                  },
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<AccountType>(
-                  value: account,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Paid from',
-                    prefixIcon: Icon(Icons.account_balance_wallet_outlined),
-                  ),
-                  items: AccountType.values.map((a) {
-                    final bal = Provider.of<TransactionProvider>(context,
-                                listen: false)
-                            .accountBalances[a] ??
-                        0;
-                    return DropdownMenuItem(
-                      value: a,
-                      child: Text(
-                        '${accountLabel(a)} · ${currency.formatCompact(bal)}',
-                        style: const TextStyle(fontSize: 13),
+                  const SizedBox(height: 10),
+                  // Mode switch
+                  SegmentedButton<bool>(
+                    segments: const [
+                      ButtonSegment(
+                        value: true,
+                        label: Text('Link existing',
+                            style: TextStyle(fontSize: 12)),
+                        icon: Icon(Icons.link, size: 16),
                       ),
-                    );
-                  }).toList(),
-                  onChanged: (v) {
-                    if (v != null) setLocal(() => account = v);
-                  },
-                ),
-              ],
+                      ButtonSegment(
+                        value: false,
+                        label: Text('Create new',
+                            style: TextStyle(fontSize: 12)),
+                        icon: Icon(Icons.add, size: 16),
+                      ),
+                    ],
+                    selected: {linkMode},
+                    onSelectionChanged: (s) =>
+                        setLocal(() => linkMode = s.first),
+                  ),
+                  const SizedBox(height: 14),
+
+                  if (linkMode) ...[
+                    Text(
+                      candidates.isEmpty
+                          ? 'No recent expenses found to link. Switch to "Create new".'
+                          : 'Pick the expense that was this purchase. Nothing new will be created.',
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 10),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 240),
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: candidates.map((t) {
+                          final isSel = selected?.id == t.id;
+                          // Highlight amounts close to what was reserved —
+                          // a hint only, never an automatic choice.
+                          final close =
+                              (t.amount - goal.currentAmount).abs() <=
+                                  goal.currentAmount * 0.15;
+                          return Card(
+                            elevation: 0,
+                            margin: const EdgeInsets.only(bottom: 6),
+                            color: isSel
+                                ? AppTheme.primaryColor.withValues(alpha: 0.1)
+                                : Colors.grey.withValues(alpha: 0.05),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              side: BorderSide(
+                                color: isSel
+                                    ? AppTheme.primaryColor
+                                    : Colors.transparent,
+                              ),
+                            ),
+                            child: ListTile(
+                              dense: true,
+                              onTap: () => setLocal(() => selected = t),
+                              leading: Icon(
+                                isSel
+                                    ? Icons.check_circle
+                                    : Icons.circle_outlined,
+                                size: 20,
+                                color: isSel
+                                    ? AppTheme.primaryColor
+                                    : Colors.grey,
+                              ),
+                              title: Text(
+                                t.description,
+                                style: const TextStyle(fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                '${accountLabel(t.account)} · ${DateFormat('MMM d').format(t.date)}'
+                                '${close ? '  ·  matches amount' : ''}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: close
+                                      ? AppTheme.primaryColor
+                                      : AppTheme.textLight,
+                                ),
+                              ),
+                              trailing: Text(
+                                currency.formatCompact(t.amount),
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ] else ...[
+                    Text(
+                      'A new expense will be recorded for this purchase.',
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: amountController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Actual price (${currency.code})',
+                        prefixIcon: const Icon(Icons.shopping_bag_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<Category>(
+                      value: category,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Expense category',
+                        prefixIcon: Icon(Icons.category_outlined),
+                      ),
+                      items: Category.values
+                          .where((c) => c != Category.income)
+                          .map((c) => DropdownMenuItem(
+                                value: c,
+                                child: Text('${c.emoji} ${c.name}',
+                                    style: const TextStyle(fontSize: 13)),
+                              ))
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) setLocal(() => category = v);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<AccountType>(
+                      value: account,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Paid from',
+                        prefixIcon:
+                            Icon(Icons.account_balance_wallet_outlined),
+                      ),
+                      items: AccountType.values.map((a) {
+                        final bal = txProvider.accountBalances[a] ?? 0;
+                        return DropdownMenuItem(
+                          value: a,
+                          child: Text(
+                            '${accountLabel(a)} · ${currency.formatCompact(bal)}',
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (v) {
+                        if (v != null) setLocal(() => account = v);
+                      },
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
           actions: [
@@ -531,6 +682,39 @@ class GoalDetailsScreen extends StatelessWidget {
             ),
             TextButton(
               onPressed: () async {
+                final goalProvider =
+                    Provider.of<GoalProvider>(context, listen: false);
+
+                // ---- Link an existing transaction (no new expense) -------
+                if (linkMode) {
+                  if (selected == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Pick the expense for this purchase'),
+                      ),
+                    );
+                    return;
+                  }
+                  final tx = selected!;
+                  goalProvider.markPurchased(
+                    goal.id,
+                    actualAmount: tx.amount,
+                    transactionId: tx.id,
+                  );
+                  Navigator.pop(ctx);
+
+                  final leftover = goal.currentAmount - tx.amount;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(leftover > 0
+                          ? 'Linked to your existing expense. ${currency.formatCompact(leftover)} returned to available.'
+                          : 'Linked to your existing expense — nothing was double-counted.'),
+                    ),
+                  );
+                  return;
+                }
+
+                // ---- Create a new expense --------------------------------
                 final actual = double.tryParse(amountController.text.trim());
                 if (actual == null || actual <= 0) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -539,11 +723,8 @@ class GoalDetailsScreen extends StatelessWidget {
                   return;
                 }
 
-                // Warn — never block. If the purchase really happened it must
-                // be recordable; a shortfall usually just means some income
-                // hasn't been entered yet. The user decides.
-                final txProvider =
-                    Provider.of<TransactionProvider>(context, listen: false);
+                // Warn — never block. A shortfall usually just means some
+                // income hasn't been entered yet. The user decides.
                 final accountBalance =
                     txProvider.accountBalances[account] ?? 0;
                 if (actual > accountBalance) {
@@ -572,10 +753,9 @@ class GoalDetailsScreen extends StatelessWidget {
                   if (proceed != true) return;
                 }
 
-                final txId = 'goalbuy_${DateTime.now().millisecondsSinceEpoch}';
-                // One real expense for what was actually paid.
-                Provider.of<TransactionProvider>(context, listen: false)
-                    .addTransaction(
+                final txId =
+                    'goalbuy_${DateTime.now().millisecondsSinceEpoch}';
+                txProvider.addTransaction(
                   Transaction(
                     id: txId,
                     type: TransactionType.expense,
@@ -587,8 +767,7 @@ class GoalDetailsScreen extends StatelessWidget {
                   ),
                 );
 
-                // Goal keeps its history; it just stops reserving money.
-                Provider.of<GoalProvider>(context, listen: false).markPurchased(
+                goalProvider.markPurchased(
                   goal.id,
                   actualAmount: actual,
                   transactionId: txId,
@@ -597,16 +776,71 @@ class GoalDetailsScreen extends StatelessWidget {
                 Navigator.pop(ctx);
 
                 final leftover = goal.currentAmount - actual;
-                final msg = leftover > 0
-                    ? 'Purchase recorded. ${currency.formatCompact(leftover)} returned to available.'
-                    : 'Purchase recorded.';
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text(msg)));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(leftover > 0
+                        ? 'Purchase recorded. ${currency.formatCompact(leftover)} returned to available.'
+                        : 'Purchase recorded.'),
+                  ),
+                );
               },
               child: const Text('Confirm'),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Undo a purchase. The expense is only deleted if FinWise created it
+  /// (id starts with `goalbuy_`); an expense that already existed and was
+  /// merely linked is kept and simply unlinked — deleting it would destroy a
+  /// real record the user entered or SMS detected.
+  void _confirmUndoPurchase(BuildContext context, Goal goal) {
+    final currency = Provider.of<CurrencyProvider>(context, listen: false);
+    final txId = goal.purchaseTransactionId;
+    final appCreated = txId != null && txId.startsWith('goalbuy_');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Undo purchase'),
+        content: Text(
+          appCreated
+              ? 'Reopen "${goal.name}" and delete the expense FinWise created '
+                  '(${currency.formatCompact(goal.purchasedAmount ?? 0)})? '
+                  'Your ${currency.formatCompact(goal.currentAmount)} will be reserved again.'
+              : 'Reopen "${goal.name}"? The linked expense stays in your history '
+                  '(it was already recorded) — it is just unlinked. '
+                  'Your ${currency.formatCompact(goal.currentAmount)} will be reserved again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (appCreated) {
+                Provider.of<TransactionProvider>(context, listen: false)
+                    .removeTransaction(txId);
+              }
+              Provider.of<GoalProvider>(context, listen: false)
+                  .undoPurchase(goal.id);
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    appCreated
+                        ? 'Purchase undone and the expense removed.'
+                        : 'Purchase undone. The expense was kept in your history.',
+                  ),
+                ),
+              );
+            },
+            child: const Text('Undo'),
+          ),
+        ],
       ),
     );
   }

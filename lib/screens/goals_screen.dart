@@ -188,12 +188,8 @@ class _GoalsDashboard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        // Same brand gradient used across the app, instead of a one-off purple.
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
-        ),
+        // Shared brand gradient — one definition, used app-wide.
+        gradient: AppTheme.primaryGradient,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(

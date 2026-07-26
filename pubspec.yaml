@@ -67,6 +67,12 @@ dependencies:
   # user sees "Money received/sent" even when the app is closed. Free/OSS.
   flutter_local_notifications: ^17.2.4
 
+  # App lock. `local_auth` asks Android to verify the user with
+  # fingerprint/face — biometric data never reaches the app, it only returns
+  # true/false. `crypto` hashes the PIN so it is never stored in plain text.
+  local_auth: ^2.3.0
+  crypto: ^3.0.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

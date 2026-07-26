@@ -145,6 +145,32 @@ class GoalProvider with ChangeNotifier {
     _syncGoal(updated, 'purchase');
   }
 
+  /// Reverse a purchase: the goal becomes active again and its contributions
+  /// reserve money once more. Any expense the app created is deleted by the
+  /// caller (a linked pre-existing expense is simply unlinked and kept).
+  void undoPurchase(String goalId) {
+    final index = _goals.indexWhere((g) => g.id == goalId);
+    if (index == -1) return;
+
+    final goal = _goals[index];
+    final reopened = Goal(
+      id: goal.id,
+      name: goal.name,
+      iconKey: goal.iconKey,
+      targetAmount: goal.targetAmount,
+      targetDate: goal.targetDate,
+      createdAt: goal.createdAt,
+      contributions: goal.contributions,
+      status: GoalStatus.active,
+      // Purchase details intentionally dropped.
+    );
+
+    _goals[index] = reopened;
+    _saveGoals();
+    notifyListeners();
+    _syncGoal(reopened, 'undo purchase');
+  }
+
   void _persist(int index, List<GoalContribution> contributions) {
     final updated = _goals[index].copyWith(contributions: contributions);
     _goals[index] = updated;

@@ -18,6 +18,8 @@ import 'providers/goal_provider.dart';
 import 'providers/category_provider.dart';
 import 'providers/currency_provider.dart';
 import 'providers/income_provider.dart';
+import 'providers/app_lock_provider.dart';
+import 'screens/lock/pin_screen.dart';
 import 'theme/theme_provider.dart';
 import 'widgets/add_transaction_dialog.dart';
 import 'services/firestore_user_profile_service.dart';
@@ -53,6 +55,7 @@ class FinWiseApp extends StatelessWidget {
           ChangeNotifierProvider(create: (_) => GoalProvider()),
           ChangeNotifierProvider(create: (_) => CurrencyProvider()),
           ChangeNotifierProvider(create: (_) => IncomeProvider()),
+          ChangeNotifierProvider(create: (_) => AppLockProvider()),
         ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
@@ -61,10 +64,76 @@ class FinWiseApp extends StatelessWidget {
             title: 'FinWise',
             theme: themeProvider.currentTheme,
             debugShowCheckedModeBanner: false,
-            home: const InitialScreen(),
+            home: const AppLockGate(child: InitialScreen()),
           );
         },
       ),
+    );
+  }
+}
+
+/// Wraps the whole app in the PIN/biometric lock.
+///
+/// Firebase sign-in keeps you logged in indefinitely, which means anyone
+/// holding an already-unlocked phone could otherwise read every balance and
+/// transaction. This gate re-verifies the person on cold start and after the
+/// app has been away for longer than the configured timeout.
+class AppLockGate extends StatefulWidget {
+  final Widget child;
+
+  const AppLockGate({super.key, required this.child});
+
+  @override
+  State<AppLockGate> createState() => _AppLockGateState();
+}
+
+class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final lock = context.read<AppLockProvider>();
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      lock.onPaused();
+    } else if (state == AppLifecycleState.resumed) {
+      lock.onResumed();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AppLockProvider>(
+      builder: (context, lock, child) {
+        // Wait for stored settings before deciding — avoids a flash of the
+        // dashboard before the lock appears.
+        if (!lock.isLoaded) {
+          return const Scaffold(
+            backgroundColor: AppTheme.primaryColor,
+            body: Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+          );
+        }
+
+        if (lock.isEnabled && lock.isLocked) {
+          return const PinScreen(mode: PinMode.unlock);
+        }
+
+        return widget.child;
+      },
     );
   }
 }

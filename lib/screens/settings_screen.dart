@@ -16,7 +16,9 @@ import '../providers/currency_provider.dart';
 import '../providers/income_provider.dart';
 import '../widgets/currency_picker_dialog.dart';
 import '../widgets/sms_auto_detect_tile.dart';
+import '../widgets/app_lock_tile.dart';
 import '../screens/sms_parser_test_screen.dart';
+import 'legal_screen.dart';
 import '../main.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -124,6 +126,12 @@ class SettingsScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
+          // Security
+          const _SettingsSection(
+            title: 'Security',
+            children: [AppLockTile()],
+          ),
+          const SizedBox(height: 20),
           // Automation Section (Beta)
           _SettingsSection(
             title: 'Automation (Beta)',
@@ -202,6 +210,15 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () {
                   _showPrivacyPolicy(context);
                 },
+              ),
+              _SettingsTile(
+                icon: Icons.gavel_outlined,
+                title: 'Terms & Conditions',
+                subtitle: 'The agreement you accepted at sign-up',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => LegalScreen.terms()),
+                ),
               ),
               _SettingsTile(
                 icon: Icons.star_outline,

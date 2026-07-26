@@ -174,11 +174,11 @@ class Goal {
         'createdAt': createdAt.toIso8601String(),
         'contributions': contributions.map((c) => c.toJson()).toList(),
         'status': status.name,
-        if (purchasedAmount != null) 'purchasedAmount': purchasedAmount,
-        if (purchasedDate != null)
-          'purchasedDate': purchasedDate!.toIso8601String(),
-        if (purchaseTransactionId != null)
-          'purchaseTransactionId': purchaseTransactionId,
+        // Always written (even as null) so a merged Firestore write CLEARS
+        // these when a purchase is undone, instead of leaving stale values.
+        'purchasedAmount': purchasedAmount,
+        'purchasedDate': purchasedDate?.toIso8601String(),
+        'purchaseTransactionId': purchaseTransactionId,
       };
 
   factory Goal.fromJson(Map<String, dynamic> json) {

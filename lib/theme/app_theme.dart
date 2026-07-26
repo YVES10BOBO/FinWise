@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Teal/Cyan Color Scheme (from Claude AI design)
+  // Brand palette, taken from the FinWise app icon: a shield that runs from
+  // deep teal into a natural green, with a yellow/amber arrow.
+  //
+  // `secondaryColor` used to be a neon cyan (#14FFEC) which appeared nowhere
+  // in the icon and made every gradient look harsh. It's now the icon's green
+  // end, so the greeting header, This Month card, goals header and onboarding
+  // all match the brand automatically.
   static const Color primaryColor = Color(0xFF0D7377);
-  static const Color secondaryColor = Color(0xFF14FFEC);
+  static const Color secondaryColor = Color(0xFF2FA84F);
   static const Color accentColor = Color(0xFFFFB700);
   static const Color accentDark = Color(0xFFFFA000);
   

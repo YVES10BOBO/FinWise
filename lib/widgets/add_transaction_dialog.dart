@@ -136,11 +136,17 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
         ? [Category.income]
         : allExpenseCategories;
 
+    final screen = MediaQuery.of(context).size;
+
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      contentPadding: const EdgeInsets.all(24),
-      content: Container(
-        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
+      contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      content: SizedBox(
+        width: 420,
+        // Use most of the screen height so the form has room to breathe and
+        // the single scroll view has somewhere to go.
+        height: screen.height * 0.75,
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
@@ -289,32 +295,42 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  // Category Chips - Scrollable container for all 23 categories
-                  Container(
-                    constraints: const BoxConstraints(maxHeight: 200),
-                    child: SingleChildScrollView(
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: availableCategories.map((category) {
+                  // Categories flow inline — NO nested scroll view. A scroller
+                  // inside a scroller steals the drag gesture and makes the
+                  // dialog feel stuck, so the whole form is one smooth scroll.
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: availableCategories.map((category) {
                       final isSelected = _selectedCategory == category;
                       return FilterChip(
+                        showCheckmark: false,
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 8),
                         label: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               category.icon,
-                              size: 18,
-                              color: isSelected ? Colors.white : AppTheme.textPrimary,
+                              size: 16,
+                              color: isSelected
+                                  ? Colors.white
+                                  : AppTheme.textSecondary,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               category.name,
                               style: TextStyle(
-                                color: isSelected ? Colors.white : AppTheme.textPrimary,
-                                fontWeight:
-                                    isSelected ? FontWeight.bold : FontWeight.normal,
-                                fontSize: 14,
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppTheme.textPrimary,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                                fontSize: 13,
                               ),
                             ),
                           ],
@@ -327,19 +343,18 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                         },
                         selectedColor: AppTheme.primaryColor,
                         backgroundColor: Colors.grey[100],
-                        checkmarkColor: Colors.white,
-                        side: BorderSide(
-                          color: isSelected
-                              ? AppTheme.primaryColor
-                              : Colors.grey[300]!,
-                          width: isSelected ? 2 : 1,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(
+                            color: isSelected
+                                ? AppTheme.primaryColor
+                                : Colors.grey[300]!,
+                          ),
                         ),
                       );
                     }).toList(),
-                      ),
-                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   // Add Custom Category Button
                   if (!_showAddCategory)
                     OutlinedButton.icon(
