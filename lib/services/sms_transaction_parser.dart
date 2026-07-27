@@ -20,6 +20,11 @@ class ParsedSmsTransaction {
   /// just the short counterparty description.
   final String messageBody;
 
+  /// Provider fee charged on this transaction, when the SMS states one.
+  /// For expenses it is already INCLUDED in [amount], because the fee really
+  /// does leave the account. Kept separately so it can be shown to the user.
+  final double? fee;
+
   ParsedSmsTransaction({
     required this.type,
     required this.amount,
@@ -29,6 +34,7 @@ class ParsedSmsTransaction {
     required this.rawSnippet,
     required this.messageBody,
     this.txId,
+    this.fee,
   });
 }
 
@@ -48,32 +54,66 @@ class SmsTransactionParser {
   /// This keeps the app from ever reading or acting on personal SMS —
   /// required both for good behavior and for Play Store's Spyware policy,
   /// which prohibits exfiltrating/using non-financial SMS content.
+  /// Currency tokens the parser recognises in message text. Covers every
+  /// currency the app supports plus the local spellings providers actually
+  /// use (e.g. "Frw" in Rwanda, "Ksh" in Kenya, "USh" in Uganda).
+  static const List<String> currencyTokens = [
+    'RWF', 'FRW',
+    'KES', 'KSH', 'KSHS',
+    'UGX', 'USH',
+    'TZS', 'TSH',
+    'NGN',
+    'GHS', 'GHC',
+    'ZAR',
+    'XAF', 'FCFA', 'CFA',
+    'USD',
+    'EUR',
+    'GBP',
+    'CAD',
+    'INR',
+  ];
+
   static bool looksLikeMomoMessage(String sender, String body) {
     final normalizedSender = sender.toLowerCase();
     final normalizedBody = body.toLowerCase();
 
+    // Mobile Money / bank senders across the markets the app supports.
     final trustedSenderHints = [
-      'mtn',
-      'momo',
-      'm-money',
-      'airtel',
-      'mobile money',
-      'bk',
-      'bank of kigali',
+      // Rwanda
+      'mtn', 'momo', 'm-money', 'airtel', 'bk', 'bank of kigali', 'equity',
+      // Kenya
+      'm-pesa', 'mpesa', 'safaricom',
+      // Uganda / Tanzania
+      'tigo', 'vodacom', 'halopesa', 'azampesa',
+      // Nigeria / Ghana
+      'opay', 'palmpay', 'kuda', 'mtn momo', 'telecel',
+      // Generic
+      'mobile money', 'wallet', 'bank',
     ];
     final senderLooksTrusted =
         trustedSenderHints.any((hint) => normalizedSender.contains(hint));
 
-    final bodyLooksFinancial = (normalizedBody.contains('rwf') ||
-            normalizedBody.contains('frw')) &&
-        (normalizedBody.contains('balance') ||
-            normalizedBody.contains('transaction') ||
-            normalizedBody.contains('txid') ||
-            normalizedBody.contains('tx id') ||
-            normalizedBody.contains('received') ||
-            normalizedBody.contains('payment') ||
-            normalizedBody.contains('paid') ||
-            normalizedBody.contains('completed'));
+    // Or: the body mentions any supported currency AND reads like a
+    // transaction notification.
+    final mentionsCurrency = currencyTokens
+        .any((c) => normalizedBody.contains(c.toLowerCase()));
+
+    const financialWords = [
+      // English
+      'balance', 'transaction', 'txid', 'tx id', 'received', 'payment',
+      'paid', 'sent', 'withdraw', 'deposit', 'completed', 'confirmed',
+      // Kinyarwanda
+      'umutungo', // balance / assets
+      'asigaye', // remaining
+      'ubu ufite', // you now have
+      'wakiriye', 'wishyuye', 'wohereje', 'watanze', 'wahawe',
+      'amafaranga', // money
+      'ikiguzi', // cost / fee
+      'serivisi', // service (fee)
+    ];
+
+    final bodyLooksFinancial =
+        mentionsCurrency && financialWords.any(normalizedBody.contains);
 
     return senderLooksTrusted || bodyLooksFinancial;
   }
@@ -91,10 +131,24 @@ class SmsTransactionParser {
     if (amount == null || amount <= 0) return null;
 
     final type = _extractDirection(body);
-    final description = _extractCounterparty(body) ??
+
+    // Transaction fees genuinely leave the account, so an expense of 1,000
+    // with a 20 fee reduces the balance by 1,020. Counting only the headline
+    // amount would make the tracked balance drift from the real one.
+    // Fees are added to expenses; for incoming money the provider normally
+    // states the net amount already, so nothing is added.
+    final fee = _extractFee(body) ?? 0;
+    final total = type == TransactionType.expense ? amount + fee : amount;
+
+    final counterparty = _extractCounterparty(body);
+    var description = counterparty ??
         (type == TransactionType.income
             ? 'Mobile Money received'
             : 'Mobile Money payment');
+    // Make the fee visible so the figure is never a mystery.
+    if (fee > 0 && type == TransactionType.expense) {
+      description = '$description (incl. ${_trimAmount(fee)} fee)';
+    }
 
     // Preview only the first ~80 chars for the confirmation UI — enough
     // context for the user to recognize it, without dumping the whole SMS.
@@ -102,15 +156,60 @@ class SmsTransactionParser {
 
     return ParsedSmsTransaction(
       type: type,
-      amount: amount,
+      amount: total,
       description: description,
       account: AccountType.mobileMoney,
       detectedAt: receivedAt ?? DateTime.now(),
       rawSnippet: snippet,
       messageBody: body,
       txId: _extractTransactionId(body),
+      fee: fee > 0 ? fee : null,
     );
   }
+
+  /// Pull a transaction fee out of the message.
+  ///
+  /// Providers word this several ways:
+  ///   "Fee 0 RWF" · "with access fee 9 RWF" · "charge: 20 RWF"
+  ///   "Transaction cost, Ksh 23.00" (M-Pesa)
+  static double? _extractFee(String body) {
+    final tokens = [...currencyTokens]
+      ..sort((a, b) => b.length.compareTo(a.length));
+    final codes = tokens.join('|');
+
+    const feeWords = r'access\s+fee|transaction\s+cost|fee|charge|cost'
+        r'|commission|ikiguzi|serivisi';
+    const number = r'([\d,]+(?:\.\d{1,2})?)';
+
+    final patterns = [
+      // "fee 9 RWF" / "charge 20 RWF" / "transaction cost Ksh 23.00"
+      // plus Kinyarwanda: "ikiguzi 20 RWF", "amafaranga ya serivisi 20"
+      RegExp(
+        '(?:$feeWords)[:\\s]*(?:of\\s+|cya\\s+|ya\\s+)?(?:$codes)?\\s?$number',
+        caseSensitive: false,
+      ),
+      // "fee of RWF 20" — currency before the number
+      RegExp(
+        '(?:fee|charge|cost|ikiguzi)[:\\s]*(?:of\\s+)?$number\\s?(?:$codes)',
+        caseSensitive: false,
+      ),
+    ];
+
+    for (final pattern in patterns) {
+      final match = pattern.firstMatch(body);
+      if (match != null) {
+        final raw = match.group(1)?.replaceAll(',', '');
+        final value = double.tryParse(raw ?? '');
+        // A "fee" larger than most transactions is a mis-parse — ignore it.
+        if (value != null && value > 0 && value < 1000000) return value;
+      }
+    }
+    return null;
+  }
+
+  /// 20 → "20", 23.5 → "23.5" (no trailing ".0")
+  static String _trimAmount(double v) =>
+      v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toString();
 
   /// Pull the provider's unique transaction reference out of the SMS. MoMo
   /// messages always include one, under labels like "TxId", "FT Id",
@@ -138,10 +237,20 @@ class SmsTransactionParser {
   }
 
   static double? _extractAmount(String body) {
-    // Matches "12,500 RWF", "RWF 12,500", "Frw12500", "12500.00 FRW", etc.
+    // Build one alternation from every supported currency token, longest
+    // first so "KSHS" wins over "KSH". Matches both orders and an optional
+    // symbol form: "12,500 RWF", "KSh 1,200", "Frw12500", "$45.99".
+    final tokens = [...currencyTokens]
+      ..sort((a, b) => b.length.compareTo(a.length));
+    final codes = tokens.join('|');
+
     final patterns = [
-      RegExp(r'(?:RWF|FRW|Frw)\s?([\d,]+(?:\.\d+)?)', caseSensitive: false),
-      RegExp(r'([\d,]+(?:\.\d+)?)\s?(?:RWF|FRW|Frw)', caseSensitive: false),
+      RegExp(r'(?:' + codes + r')\s?([\d,]+(?:\.\d{1,2})?)',
+          caseSensitive: false),
+      RegExp(r'([\d,]+(?:\.\d{1,2})?)\s?(?:' + codes + r')',
+          caseSensitive: false),
+      // Symbol-prefixed amounts for currencies written with a sign.
+      RegExp(r'[\$£€₦₹]\s?([\d,]+(?:\.\d{1,2})?)'),
     ];
 
     for (final pattern in patterns) {
@@ -157,22 +266,46 @@ class SmsTransactionParser {
 
   static TransactionType _extractDirection(String body) {
     final lower = body.toLowerCase();
+    // Wording varies by provider, country AND language, so the lists stay
+    // broad. Kinyarwanda terms are included because MTN/Airtel Rwanda send
+    // messages in the subscriber's chosen language — without these, a
+    // Kinyarwanda "money received" message would fall through to the default
+    // and be recorded as an expense.
     const incomingHints = [
+      // English
       'you have received',
       'received from',
+      'you received',
       'deposit',
       'credited',
       'has been credited',
+      'added to your',
+      // Kinyarwanda
+      'wakiriye', // you have received
+      'wahawe', // you were given
+      'woherejwe', // was sent to you
+      'yakiriwe', // was received
+      'winjijwe', // was deposited
     ];
     const outgoingHints = [
+      // English
       'you have paid',
       'payment of',
       'sent to',
+      'you have sent',
       'withdraw',
       'debited',
       'purchase of',
       'transfer of',
-      'you have used', // e.g. MoMoAdvance/overdraft usage messages
+      'you have used', // MoMoAdvance / overdraft usage messages
+      'paid to',
+      'bought',
+      // Kinyarwanda
+      'wishyuye', // you have paid
+      'wohereje', // you have sent
+      'watanze', // you gave / paid out
+      'wakuye', // you withdrew
+      'wagurishije', // you bought
     ];
 
     if (incomingHints.any((h) => lower.contains(h))) {

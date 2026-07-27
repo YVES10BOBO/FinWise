@@ -35,7 +35,7 @@ class SavingsRateCard extends StatelessWidget {
   }
 
   String get savingsRateLabel {
-    if (savingsRate >= 20) return 'Excellent! 🎉';
+    if (savingsRate >= 20) return 'Excellent';
     if (savingsRate >= 10) return 'Good! 👍';
     if (savingsRate >= 0) return 'Fair';
     return 'Spending more than income';

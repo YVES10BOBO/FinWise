@@ -6,6 +6,8 @@ import '../widgets/stats_card.dart';
 import '../widgets/transaction_item.dart';
 import '../widgets/add_transaction_dialog.dart';
 import '../widgets/expense_trend_chart.dart';
+import '../widgets/cash_flow_chart.dart';
+import '../widgets/spending_reason_chart.dart';
 import '../widgets/personalized_header.dart';
 import '../widgets/monthly_overview_card.dart';
 import '../widgets/category_donut_chart.dart';
@@ -37,7 +39,6 @@ class HomeScreen extends StatelessWidget {
         // money aside raises your savings rate instead of looking like spending.
         final consumption = transactionProvider.totalConsumption;
         final categorySpending = transactionProvider.getCategorySpending();
-        final spendingByReason = transactionProvider.spendingByReason;
 
         // Show default message if no transactions
         if (transactionProvider.transactions.isEmpty) {
@@ -143,14 +144,15 @@ class HomeScreen extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                // Why you spent this month (necessity / enjoyment / etc.)
-                if (spendingByReason.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: _SpendingReasonSummaryCard(totals: spendingByReason),
+                // Why you spent — FinWise's differentiator, now a real chart
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: SpendingReasonChart(
+                    transactions: transactionProvider.transactions,
                   ),
+                ),
 
-                if (spendingByReason.isNotEmpty) const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
                 // Smart tip based on your spending
                 Padding(
@@ -160,7 +162,18 @@ class HomeScreen extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                // Expense trend (last 4 weeks, consumption only)
+                // Money in vs out by month — the "am I living within my
+                // means?" chart.
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: CashFlowChart(
+                    transactions: transactionProvider.transactions,
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Weekly spending trend (now with real axes)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: ExpenseTrendChart(
@@ -204,9 +217,28 @@ class HomeScreen extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
+                // Swipe-to-delete and tap-to-edit, same as the History screen.
+                // Both go through TransactionProvider, which is the single
+                // source of truth — so removing one here updates the balance,
+                // history, charts and accounts everywhere at once.
                 ...recentTransactions.map((transaction) => Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: TransactionItem(transaction: transaction),
+                      child: TransactionItem(
+                        transaction: transaction,
+                        onEdit: () =>
+                            _editTransaction(context, transaction),
+                        onDelete: () {
+                          Provider.of<TransactionProvider>(context,
+                                  listen: false)
+                              .removeTransaction(transaction.id);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Transaction deleted'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                      ),
                     )),
 
                 const SizedBox(height: 100), // Space for FAB
@@ -238,7 +270,7 @@ class HomeScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
                 Text(
-                  '👋 Hello!',
+                  'Hello',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -332,6 +364,21 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 100),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Edit an existing transaction from the dashboard. Saving updates it in
+  /// place (same id), so the balance and every screen stay consistent.
+  void _editTransaction(BuildContext context, Transaction transaction) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AddTransactionDialog(
+        existingTransaction: transaction,
+        onSave: (updated) {
+          Provider.of<TransactionProvider>(context, listen: false)
+              .updateTransaction(updated);
+        },
       ),
     );
   }
@@ -594,22 +641,45 @@ class _AccountBalanceChip extends StatelessWidget {
             ),
             if (reserved > 0) ...[
               const SizedBox(height: 3),
-              Text(
-                '🔒 ${currency.formatCompact(reserved)}',
-                style: const TextStyle(
-                    fontSize: 10, color: AppTheme.textSecondary),
-                overflow: TextOverflow.ellipsis,
+              Row(
+                children: [
+                  const Icon(Icons.lock_outline,
+                      size: 10, color: AppTheme.textSecondary),
+                  const SizedBox(width: 3),
+                  Flexible(
+                    child: Text(
+                      currency.formatCompact(reserved),
+                      style: const TextStyle(
+                          fontSize: 10, color: AppTheme.textSecondary),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                underFunded
-                    ? 'short ${currency.formatCompact(-available)}'
-                    : '✓ ${currency.formatCompact(available)}',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: underFunded ? warn : AppTheme.primaryColor,
-                ),
-                overflow: TextOverflow.ellipsis,
+              Row(
+                children: [
+                  Icon(
+                    underFunded
+                        ? Icons.error_outline
+                        : Icons.check_circle_outline,
+                    size: 10,
+                    color: underFunded ? warn : AppTheme.primaryColor,
+                  ),
+                  const SizedBox(width: 3),
+                  Flexible(
+                    child: Text(
+                      underFunded
+                          ? 'short ${currency.formatCompact(-available)}'
+                          : currency.formatCompact(available),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: underFunded ? warn : AppTheme.primaryColor,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ],
           ],
@@ -619,124 +689,7 @@ class _AccountBalanceChip extends StatelessWidget {
   }
 }
 
-class _SpendingReasonSummaryCard extends StatelessWidget {
-  final Map<SpendingReason, double> totals;
-
-  const _SpendingReasonSummaryCard({required this.totals});
-
-  @override
-  Widget build(BuildContext context) {
-    final totalAmount = totals.values
-        .fold<double>(0.0, (sum, v) => sum + v)
-        .clamp(0.0, double.infinity);
-    if (totalAmount == 0) return const SizedBox.shrink();
-
-    double pct(SpendingReason r) =>
-        ((totals[r] ?? 0) / totalAmount * 100).clamp(0, 100);
-
-    String formatPct(double v) => v.toStringAsFixed(0);
-
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Why you spent this month',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Most of your expenses are ${_dominantReasonLabel()}',
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppTheme.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _ReasonPill(
-                  label: 'Necessity',
-                  percent: formatPct(pct(SpendingReason.necessity)),
-                ),
-                _ReasonPill(
-                  label: 'Business',
-                  percent: formatPct(pct(SpendingReason.business)),
-                ),
-                _ReasonPill(
-                  label: 'Enjoyment',
-                  percent: formatPct(pct(SpendingReason.enjoyment)),
-                ),
-                _ReasonPill(
-                  label: 'Emergency',
-                  percent: formatPct(pct(SpendingReason.emergency)),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _dominantReasonLabel() {
-    if (totals.isEmpty) return 'mixed';
-    final sorted = totals.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    final top = sorted.first.key;
-    switch (top) {
-      case SpendingReason.necessity:
-        return 'on necessities';
-      case SpendingReason.business:
-        return 'for business';
-      case SpendingReason.enjoyment:
-        return 'for enjoyment';
-      case SpendingReason.emergency:
-        return 'on emergencies';
-    }
-  }
-}
-
-class _ReasonPill extends StatelessWidget {
-  final String label;
-  final String percent;
-
-  const _ReasonPill({
-    required this.label,
-    required this.percent,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '$label · $percent%',
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// The old text-only "why you spent" card and its pills were replaced by
+// SpendingReasonChart (lib/widgets/spending_reason_chart.dart), which shows
+// the same data as a proportional bar with amounts and percentages.
 

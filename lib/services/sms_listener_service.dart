@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/widgets.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -82,30 +83,29 @@ Future<String?> _resolveUid() async {
 /// THE one and only recording path — used by both the foreground and the
 /// background handler, so behaviour can never diverge between them.
 ///
-/// Steps, each with visible feedback so nothing is a black box:
-///  1. Parse. If it isn't a Mobile Money message, stop quietly. If it LOOKS
-///     like one but can't be parsed, show a diagnostic notification.
+///  1. Parse. If it isn't a Mobile Money message, stop quietly.
 ///  2. Save to a per-item key (`detected_sms_tx_<id>`) — race-free even when
 ///     several SMS arrive together — which the open app drains into the list.
 ///  3. Sync to Firestore when logged in (idempotent, offline-safe).
-///  4. Show a "Money received/sent — recorded" notification on success, or a
-///     clear error notification if anything above threw.
+///  4. Show a "Money received/sent" notification.
+///
+/// NOTE: message contents are never logged. Printing SMS bodies to logcat
+/// would expose the user's financial messages to any app able to read logs.
 Future<void> _processSms(String sender, String body, {DateTime? receivedAt}) async {
-  debugPrint('>>> FINWISE _processSms sender="$sender" body="$body"');
   Transaction? built;
   try {
     final prefs = await SharedPreferences.getInstance();
     final enabled = prefs.getBool(kSmsAutoDetectEnabledKey) ?? true;
-    debugPrint('>>> FINWISE enabled=$enabled');
     if (!enabled) return;
-    final debug = prefs.getBool(kSmsDebugKey) ?? true;
+    // Diagnostic notifications are OFF by default — they were a development
+    // aid and would be noise for real users.
+    final debug = prefs.getBool(kSmsDebugKey) ?? false;
 
     final looksMomo = SmsTransactionParser.looksLikeMomoMessage(sender, body);
     // Use the SMS's own timestamp (when available) so the id is identical no
     // matter which path saw the message (foreground poll, foreground
     // callback, or background isolate) → never double-recorded.
     final parsed = SmsTransactionParser.parse(sender, body, receivedAt: receivedAt);
-    debugPrint('>>> FINWISE looksLikeMomo=$looksMomo parsed=${parsed != null}');
     if (parsed == null) {
       // Only warn if it looked financial — avoids nagging on personal SMS.
       if (debug && looksMomo) {
@@ -119,39 +119,36 @@ Future<void> _processSms(String sender, String body, {DateTime? receivedAt}) asy
 
     final transaction = _buildTransaction(parsed);
     built = transaction;
-    debugPrint(
-        '>>> FINWISE built tx id=${transaction.id} type=${transaction.type} amount=${transaction.amount} desc=${transaction.description}');
 
     // 2. Per-item slot (race-free).
     await prefs.setString(
       '$kDetectedSmsTxPrefix${transaction.id}',
       json.encode(transaction.toJson()),
     );
-    debugPrint('>>> FINWISE saved to per-item slot');
 
     // 3. Cloud sync when logged in.
     final uid = await _resolveUid();
-    debugPrint('>>> FINWISE uid=$uid');
     if (uid != null) {
       try {
         await FirestoreTransactionService().upsertTransaction(uid, transaction);
-        debugPrint('>>> FINWISE firestore upsert ok');
-      } catch (e) {
-        debugPrint('>>> FINWISE firestore upsert FAILED: $e');
+      } catch (_) {
         // Offline/permission — the per-item slot still has it; syncs later.
       }
     }
 
     // 4. Success confirmation.
     await TransactionNotifier.showDetected(transaction);
-    debugPrint('>>> FINWISE showed success notification');
-  } catch (e, st) {
-    debugPrint('>>> FINWISE _processSms ERROR: $e\n$st');
-    // Make failures visible instead of silent, so issues are traceable.
-    await TransactionNotifier.showError(
-      'Transaction NOT recorded',
-      built == null ? e.toString() : '${built.description}: $e',
-    );
+  } catch (e) {
+    // Only in debug builds, and never with message contents.
+    if (kDebugMode) debugPrint('FinWise: SMS processing failed: $e');
+    // Tell the user only if something was actually detected but couldn't be
+    // saved — a silent loss of a real transaction would be worse.
+    if (built != null) {
+      await TransactionNotifier.showError(
+        'Transaction not saved',
+        'Could not record "${built.description}". Please add it manually.',
+      );
+    }
   }
 }
 
@@ -160,7 +157,6 @@ Future<void> _processSms(String sender, String body, {DateTime? receivedAt}) asy
 @pragma('vm:entry-point')
 Future<void> smsBackgroundMessageHandler(SmsMessage message) async {
   WidgetsFlutterBinding.ensureInitialized();
-  debugPrint('>>> FINWISE BACKGROUND handler fired from ${message.address}');
   await _processSms(
     message.address ?? '',
     message.body ?? '',
@@ -222,18 +218,15 @@ class SmsListenerService {
   static Future<void> ensureAutoDetectRunning() async {
     final prefs = await SharedPreferences.getInstance();
     final enabled = prefs.getBool(kSmsAutoDetectEnabledKey) ?? true;
-    debugPrint('>>> FINWISE ensureAutoDetectRunning enabled=$enabled');
     if (!enabled) return;
 
     final granted = await _telephony.requestSmsPermissions ?? false;
-    debugPrint('>>> FINWISE SMS permission granted=$granted');
     if (!granted) return;
 
     await prefs.setBool(kSmsAutoDetectEnabledKey, true);
     _listen();
     await ForegroundServiceHandler.requestPermissions();
     await ForegroundServiceHandler.start();
-    debugPrint('>>> FINWISE ensureAutoDetectRunning complete');
   }
 
   /// Reliable FOREGROUND detection: while the app is open, actively read the
@@ -265,12 +258,11 @@ class SmsListenerService {
         sortOrder: [OrderBy(SmsColumn.DATE, sort: Sort.DESC)],
       );
     } catch (e) {
-      debugPrint('>>> FINWISE pollInbox error: $e');
+      if (kDebugMode) debugPrint('FinWise: inbox poll failed: $e');
       return;
     }
 
     if (messages.isEmpty) return;
-    debugPrint('>>> FINWISE pollInbox found ${messages.length} new SMS');
 
     var newest = lastDate;
     // Oldest first so they land in chronological order.
@@ -288,17 +280,12 @@ class SmsListenerService {
   }
 
   static void _listen() {
-    if (_listening) {
-      debugPrint('>>> FINWISE _listen: already listening, skipping');
-      return;
-    }
+    // Registering the listener twice can stop callbacks firing altogether.
+    if (_listening) return;
     _listening = true;
-    debugPrint('>>> FINWISE _listen: registering telephony listener');
 
     _telephony.listenIncomingSms(
       onNewMessage: (SmsMessage message) async {
-        debugPrint(
-            '>>> FINWISE FOREGROUND onNewMessage fired from ${message.address}');
         // App is (usually) in the foreground here. Record via the same single
         // path as the background, then immediately drain the new item into
         // the live list so it shows on the balance right away.
@@ -309,8 +296,10 @@ class SmsListenerService {
               ? DateTime.fromMillisecondsSinceEpoch(message.date!)
               : null,
         );
+        // Read the navigator context AFTER the await, so it reflects the
+        // widget tree as it is now rather than before processing started.
         final context = navigatorKey.currentContext;
-        if (context != null) {
+        if (context != null && context.mounted) {
           await Provider.of<TransactionProvider>(context, listen: false)
               .refreshFromCache();
         }

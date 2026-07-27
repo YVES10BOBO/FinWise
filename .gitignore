@@ -43,3 +43,27 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# ---------------------------------------------------------------------------
+# SECRETS — never commit these
+# ---------------------------------------------------------------------------
+# The upload keystore signs every Play Store release. If it leaks, anyone can
+# publish an APK that Android trusts as this app. If it is ever exposed,
+# assume it is compromised.
+*.jks
+*.keystore
+android/key.properties
+
+# Firebase project configuration (contains project identifiers and API keys).
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+lib/firebase_options.dart
+
+# Local machine paths
+android/local.properties
+.env
+*.pem
+
+# Crash dumps produced by failed Gradle builds
+android/hs_err_pid*.log
+replay_pid*.log

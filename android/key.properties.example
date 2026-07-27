@@ -1,0 +1,16 @@
+# Template for android/key.properties — copy this file to `key.properties`
+# and fill in your own values. The real file is git-ignored because it holds
+# the password to the release signing key.
+#
+# To generate a keystore:
+#   keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA \
+#           -keysize 2048 -validity 10000 -alias upload
+#
+# Keep the .jks file and these passwords backed up somewhere safe. Google Play
+# requires every update to be signed with the SAME key — losing it means you
+# can never update the app again.
+
+storePassword=YOUR_KEYSTORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=upload
+storeFile=upload-keystore.jks

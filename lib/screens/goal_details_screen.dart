@@ -85,6 +85,8 @@ class GoalDetailsScreen extends StatelessWidget {
               _reservedByAccount(context, goal, currency),
               const SizedBox(height: 20),
               _history(context, goal, currency),
+              const SizedBox(height: 20),
+              _manageActions(context, goal, purchased),
             ],
           ),
         );
@@ -236,6 +238,56 @@ class GoalDetailsScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// Manage actions shown plainly at the bottom instead of hidden behind the
+  /// ⋮ menu, so editing, undoing and deleting are easy to find.
+  Widget _manageActions(BuildContext context, Goal goal, bool purchased) {
+    return Container(
+      decoration: _cardDecoration(),
+      child: Column(
+        children: [
+          ListTile(
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14)),
+            leading: const Icon(Icons.edit_outlined,
+                color: AppTheme.primaryColor, size: 20),
+            title: const Text('Edit goal', style: TextStyle(fontSize: 14)),
+            subtitle: const Text('Name, target amount, date or icon',
+                style: TextStyle(fontSize: 11)),
+            trailing: const Icon(Icons.chevron_right, size: 18),
+            onTap: () => showGoalDialog(context, existing: goal),
+          ),
+          if (purchased) ...[
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            ListTile(
+              leading: const Icon(Icons.undo,
+                  color: AppTheme.accentDark, size: 20),
+              title: const Text('Undo purchase',
+                  style: TextStyle(fontSize: 14)),
+              subtitle: const Text('Reopen this goal and reserve again',
+                  style: TextStyle(fontSize: 11)),
+              trailing: const Icon(Icons.chevron_right, size: 18),
+              onTap: () => _confirmUndoPurchase(context, goal),
+            ),
+          ],
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          ListTile(
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14)),
+            leading: const Icon(Icons.delete_outline,
+                color: AppTheme.expenseColor, size: 20),
+            title: const Text('Delete goal',
+                style: TextStyle(
+                    fontSize: 14, color: AppTheme.expenseColor)),
+            subtitle: const Text('Reserved money returns to available',
+                style: TextStyle(fontSize: 11)),
+            trailing: const Icon(Icons.chevron_right, size: 18),
+            onTap: () => _confirmDelete(context, goal),
+          ),
+        ],
+      ),
     );
   }
 
@@ -622,6 +674,7 @@ class GoalDetailsScreen extends StatelessWidget {
                     TextField(
                       controller: amountController,
                       keyboardType: TextInputType.number,
+                      onChanged: (_) => setLocal(() {}), // refresh warning
                       decoration: InputDecoration(
                         labelText: 'Actual price (${currency.code})',
                         prefixIcon: const Icon(Icons.shopping_bag_outlined),
@@ -639,8 +692,16 @@ class GoalDetailsScreen extends StatelessWidget {
                           .where((c) => c != Category.income)
                           .map((c) => DropdownMenuItem(
                                 value: c,
-                                child: Text('${c.emoji} ${c.name}',
-                                    style: const TextStyle(fontSize: 13)),
+                                child: Row(
+                                  children: [
+                                    Icon(c.icon,
+                                        size: 16,
+                                        color: AppTheme.textSecondary),
+                                    const SizedBox(width: 8),
+                                    Text(c.name,
+                                        style: const TextStyle(fontSize: 13)),
+                                  ],
+                                ),
                               ))
                           .toList(),
                       onChanged: (v) {
@@ -670,6 +731,34 @@ class GoalDetailsScreen extends StatelessWidget {
                         if (v != null) setLocal(() => account = v);
                       },
                     ),
+                    // Live warning so a shortfall is obvious BEFORE confirming.
+                    Builder(builder: (_) {
+                      final typed =
+                          double.tryParse(amountController.text.trim()) ?? 0;
+                      final bal = txProvider.accountBalances[account] ?? 0;
+                      if (typed <= 0 || typed <= bal) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.warning_amber_rounded,
+                                size: 15, color: AppTheme.accentDark),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                '${accountLabel(account)} only has ${currency.formatCompact(bal)} — this will leave it negative.',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppTheme.accentDark,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
                   ],
                 ],
               ),
@@ -773,9 +862,13 @@ class GoalDetailsScreen extends StatelessWidget {
                   transactionId: txId,
                 );
 
+                // The shortfall dialog above is awaited, so the user may have
+                // navigated away by now — check before touching context.
+                if (!ctx.mounted) return;
                 Navigator.pop(ctx);
 
                 final leftover = goal.currentAmount - actual;
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(leftover > 0

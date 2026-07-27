@@ -1,8 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-    <!-- Permissions for image picker (camera and gallery) -->
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <!--
+      Camera and photo permissions removed along with the profile-picture
+      feature. Requesting fewer permissions means a simpler Play review and
+      a clearer Data Safety declaration — the app now collects no photos.
+      The tools:node="remove" entries stay so any transitive dependency
+      cannot silently re-add broad photo access.
+    -->
     <uses-permission
         android:name="android.permission.READ_MEDIA_IMAGES"
         tools:node="remove" />

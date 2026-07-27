@@ -1,0 +1,56 @@
+rules_version = '2';
+
+// FinWise Firestore security rules.
+//
+// CRITICAL: these must be published in the Firebase Console
+// (Firestore Database → Rules → Paste → Publish).
+//
+// Firebase projects often start in "test mode", which allows ANY request to
+// read and write ALL data — meaning every user's financial records would be
+// readable by anyone who knows the project id. Test mode also expires after
+// 30 days, at which point the app silently stops syncing.
+//
+// The model below is simple and strict: a signed-in user can read and write
+// ONLY documents underneath their own /users/{uid} node. Nothing else is
+// reachable, and nobody can list other users.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---- Everything a user owns lives under their own uid ----------------
+    match /users/{userId} {
+
+      // The profile document: name, email, currency, income target,
+      // onboarding state.
+      allow read, write: if isOwner(userId);
+
+      // Transactions: amount, description, category, date, account.
+      match /transactions/{transactionId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Goals, including their contribution history.
+      match /goals/{goalId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Any future per-user subcollection inherits the same rule rather
+      // than accidentally defaulting to open.
+      match /{subcollection}/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // ---- Deny everything else by default ---------------------------------
+    // Without this, a new top-level collection added later would be
+    // unprotected until someone remembered to write a rule for it.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+
+  // Signed in AND acting on their own data.
+  function isOwner(userId) {
+    return request.auth != null && request.auth.uid == userId;
+  }
+}

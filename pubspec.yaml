@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.4+6
+version: 1.1.0+7
 
 environment:
   sdk: ^3.6.2
@@ -42,13 +42,14 @@ dependencies:
   path_provider: ^2.1.1
   share_plus: ^7.2.1
   font_awesome_flutter: ^10.7.0
-  image_picker: ^1.0.7
+  # image_picker and firebase_storage removed with the profile-picture
+  # feature: Storage requires the paid Blaze plan, and photo collection was
+  # flagged in Play review. Users get an initial-letter avatar instead.
 
   # Firebase
   firebase_core: ^2.27.0
   firebase_auth: ^4.16.0
   cloud_firestore: ^4.14.0
-  firebase_storage: ^11.6.0
 
   # SMS auto-detection (Android only, free/open-source — no paid API).
   # Reads incoming Mobile Money SMS to auto-detect transactions.
@@ -77,19 +78,15 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_launcher_icons: ^0.13.1
-
+  # Recommended lints, activated via analysis_options.yaml. This was
+  # previously nested inside the flutter_launcher_icons block by mistake, so
+  # it was never installed and `flutter analyze` couldn't find its ruleset.
+  flutter_lints: ^5.0.0
 
 flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icons/FinWise_Icon.png"
-
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
-  flutter_lints: ^5.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

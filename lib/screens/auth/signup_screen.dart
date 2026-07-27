@@ -99,6 +99,9 @@ class _SignupScreenState extends State<SignupScreen> {
         // Sign out the user so they can log in with their new account
         await FirebaseAuth.instance.signOut();
 
+        // Re-check after the await — the user may have left this screen.
+        if (!mounted) return;
+
         // Navigate directly to LoginScreen
         Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -145,6 +148,7 @@ class _SignupScreenState extends State<SignupScreen> {
           if (mounted) {
             // Sign out the user so they can log in with their new account
             await FirebaseAuth.instance.signOut();
+            if (!mounted) return;
             Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
               MaterialPageRoute(builder: (context) => const LoginScreen()),
               (route) => false,

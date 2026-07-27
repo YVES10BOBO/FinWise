@@ -6,18 +6,15 @@ import '../theme/app_theme.dart';
 import '../theme/theme_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/goal_provider.dart';
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
 import '../screens/onboarding/financial_questionnaire_screen.dart';
 import '../services/export_service.dart';
-import '../services/profile_picture_service.dart';
+import '../services/account_deletion_service.dart';
 import '../screens/calendar_view_screen.dart';
 import '../providers/currency_provider.dart';
 import '../providers/income_provider.dart';
 import '../widgets/currency_picker_dialog.dart';
 import '../widgets/sms_auto_detect_tile.dart';
 import '../widgets/app_lock_tile.dart';
-import '../screens/sms_parser_test_screen.dart';
 import 'legal_screen.dart';
 import '../main.dart';
 
@@ -65,16 +62,19 @@ class SettingsScreen extends StatelessWidget {
                 },
               ),
               _SettingsTile(
-                icon: Icons.camera_alt,
-                title: 'Change Profile Picture',
-                subtitle: 'Update your profile photo',
-                onTap: () => _changeProfilePicture(context),
-              ),
-              _SettingsTile(
                 icon: Icons.logout,
                 title: 'Logout',
                 subtitle: 'Sign out and return to login',
                 onTap: () => _showLogoutDialog(context),
+                iconColor: AppTheme.expenseColor,
+              ),
+              // Required by Google Play for any app with user accounts, and
+              // promised in our privacy policy.
+              _SettingsTile(
+                icon: Icons.person_remove_outlined,
+                title: 'Delete account',
+                subtitle: 'Permanently erase your account and all data',
+                onTap: () => _showDeleteAccountDialog(context),
                 iconColor: AppTheme.expenseColor,
               ),
             ],
@@ -133,23 +133,13 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           // Automation Section (Beta)
-          _SettingsSection(
-            title: 'Automation (Beta)',
+          const _SettingsSection(
+            title: 'Automation',
             children: [
-              const SmsAutoDetectTile(),
-              _SettingsTile(
-                icon: Icons.bug_report_outlined,
-                title: 'Test SMS Parser',
-                subtitle: 'Paste a sample SMS to see what gets detected',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SmsParserTestScreen(),
-                    ),
-                  );
-                },
-              ),
+              SmsAutoDetectTile(),
+              // The "Test SMS Parser" developer tool lives at
+              // screens/sms_parser_test_screen.dart. It is intentionally NOT
+              // linked here — it's a debugging aid, not a user feature.
             ],
           ),
           const SizedBox(height: 20),
@@ -176,7 +166,7 @@ class SettingsScreen extends StatelessWidget {
               Consumer<CurrencyProvider>(
                 builder: (context, currencyProvider, child) {
                   return _SettingsTile(
-                    icon: Icons.attach_money,
+                    icon: Icons.language,
                     title: 'Currency',
                     subtitle:
                         '${currencyProvider.currency.label} (${currencyProvider.currency.code})',
@@ -206,10 +196,11 @@ class SettingsScreen extends StatelessWidget {
               _SettingsTile(
                 icon: Icons.description,
                 title: 'Privacy Policy',
-                subtitle: 'How we handle your data',
-                onTap: () {
-                  _showPrivacyPolicy(context);
-                },
+                subtitle: 'What we collect and what stays on your phone',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => LegalScreen.privacy()),
+                ),
               ),
               _SettingsTile(
                 icon: Icons.gavel_outlined,
@@ -220,18 +211,10 @@ class SettingsScreen extends StatelessWidget {
                   MaterialPageRoute(builder: (_) => LegalScreen.terms()),
                 ),
               ),
-              _SettingsTile(
-                icon: Icons.star_outline,
-                title: 'Rate App',
-                subtitle: 'Love FinWise? Rate us!',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Thank you! Rating feature coming soon.'),
-                    ),
-                  );
-                },
-              ),
+              // "Rate App" removed until the app is live on Play — a button
+              // that says "coming soon" looks unfinished to reviewers. Once
+              // published, point it at:
+              // https://play.google.com/store/apps/details?id=com.yves.finwise
             ],
           ),
         ],
@@ -489,181 +472,155 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  void _showPrivacyPolicy(BuildContext context) {
+  /// Two-step account deletion: an explicit warning, then password
+  /// confirmation. Deliberately high-friction — this is irreversible.
+  void _showDeleteAccountDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Privacy Policy'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'FinWise Privacy Policy',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  height: 1.6,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _PrivacySection(
-                title: '1. Information We Collect',
-                content:
-                    '• Account Information: Email address, name\n'
-                    '• Financial Data: Transactions, income, spending categories, financial goals\n'
-                    '• Profile Data: Profile picture (optional)\n'
-                    '• Device Data: Cached data stored locally for offline access',
-              ),
-              const SizedBox(height: 12),
-              _PrivacySection(
-                title: '2. How We Use Your Information',
-                content:
-                    '• Provide financial tracking and budgeting features\n'
-                    '• Sync your data across devices when logged in\n'
-                    '• Generate financial insights and reports\n'
-                    '• Improve app functionality and user experience',
-              ),
-              const SizedBox(height: 12),
-              _PrivacySection(
-                title: '3. Data Storage & Security',
-                content:
-                    '• Your data is stored securely using Firebase (Google Cloud Platform)\n'
-                    '• All data is encrypted in transit and at rest\n'
-                    '• Each user account is private and isolated\n'
-                    '• We use Firebase Authentication and security rules to protect your data',
-              ),
-              const SizedBox(height: 12),
-              _PrivacySection(
-                title: '4. Third-Party Services',
-                content:
-                    '• We use Firebase (Google) for authentication, database, and storage\n'
-                    '• Firebase\'s privacy policy applies to their services\n'
-                    '• We do not share your data with other third parties\n'
-                    '• We do not sell your personal information',
-              ),
-              const SizedBox(height: 12),
-              _PrivacySection(
-                title: '5. Your Rights',
-                content:
-                    '• Access: View all your data within the app\n'
-                    '• Export: Download your transactions as CSV or PDF\n'
-                    '• Delete: Remove transactions, goals, or your entire account\n'
-                    '• Control: Logout anytime to stop cloud sync',
-              ),
-              const SizedBox(height: 12),
-              _PrivacySection(
-                title: '6. Data Retention',
-                content:
-                    '• Your data is retained until you delete it\n'
-                    '• When you delete your account, all data is permanently removed\n'
-                    '• Local cached data is cleared when you logout',
-              ),
-              const SizedBox(height: 12),
-              _PrivacySection(
-                title: '7. Children\'s Privacy',
-                content:
-                    'FinWise is not intended for users under 13 years of age. We do not knowingly collect personal information from children.',
-              ),
-              const SizedBox(height: 12),
-              _PrivacySection(
-                title: '8. Changes to This Policy',
-                content:
-                    'We may update this privacy policy from time to time. The "Last Updated" date will reflect the most recent changes.',
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Last Updated: January 2026\n\n'
-                'For questions or concerns about your privacy, please contact us through the app\'s Help & Support section.',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ),
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete your account?'),
+        content: const Text(
+          'This permanently deletes:\n\n'
+          '• All your transactions\n'
+          '• All your goals and reserved money\n'
+          '• Your profile and settings\n'
+          '• Your sign-in account\n\n'
+          'This cannot be undone. Consider exporting your data first '
+          '(Data Management → Export).',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+                foregroundColor: AppTheme.expenseColor),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _confirmDeleteWithPassword(context);
+            },
+            child: const Text('Continue'),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _changeProfilePicture(BuildContext context) async {
-    try {
-      // Show dialog to choose source
-      final ImageSource? source = await showDialog<ImageSource>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Select Profile Picture'),
+  void _confirmDeleteWithPassword(BuildContext context) {
+    final passwordController = TextEditingController();
+    bool busy = false;
+    String? error;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('Confirm it\'s you'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Choose from Gallery'),
-                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              Text(
+                'Enter the password you use to sign in to FinWise'
+                '${FirebaseAuth.instance.currentUser?.email != null ? ' (${FirebaseAuth.instance.currentUser!.email})' : ''}.',
+                style: const TextStyle(fontSize: 13),
               ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Take a Photo'),
-                onTap: () => Navigator.pop(context, ImageSource.camera),
+              const SizedBox(height: 6),
+              const Text(
+                'This is not your app-lock PIN.',
+                style: TextStyle(fontSize: 11, color: AppTheme.textLight),
               ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                enabled: !busy,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'Sign-in password',
+                  prefixIcon: Icon(Icons.lock_outline),
+                ),
+              ),
+              if (error != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  error!,
+                  style: const TextStyle(
+                      color: AppTheme.expenseColor, fontSize: 12),
+                ),
+              ],
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: busy ? null : () => Navigator.pop(ctx),
               child: const Text('Cancel'),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.expenseColor),
+              onPressed: busy
+                  ? null
+                  : () async {
+                      if (passwordController.text.isEmpty) {
+                        setLocal(() => error = 'Please enter your password');
+                        return;
+                      }
+                      setLocal(() {
+                        busy = true;
+                        error = null;
+                      });
+
+                      final result = await AccountDeletionService()
+                          .deleteAccount(
+                              password: passwordController.text);
+
+                      if (result != null) {
+                        setLocal(() {
+                          busy = false;
+                          error = result;
+                        });
+                        return;
+                      }
+
+                      // Deleted — return to the login screen.
+                      if (ctx.mounted) Navigator.pop(ctx);
+                      if (context.mounted) {
+                        Navigator.of(context, rootNavigator: true)
+                            .pushAndRemoveUntil(
+                          MaterialPageRoute(
+                              builder: (_) => const InitialScreen()),
+                          (route) => false,
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Your account has been deleted'),
+                          ),
+                        );
+                      }
+                    },
+              child: busy
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Delete forever'),
             ),
           ],
         ),
-      );
-
-      if (source == null) return;
-
-      // Pick image
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: source,
-        imageQuality: 85,
-        maxWidth: 512,
-        maxHeight: 512,
-      );
-
-      if (image == null) return;
-
-      // Upload image to backend (Firebase Storage) and update Firestore profile
-      final service = ProfilePictureService();
-      await service.uploadProfilePicture(File(image.path));
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile picture updated!'),
-            backgroundColor: AppTheme.primaryColor,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: AppTheme.expenseColor,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    }
+      ),
+    );
   }
+
+  // The old privacy-policy dialog was replaced by LegalScreen.privacy(), which
+  // accurately covers SMS reading, notifications, the app lock and what stays
+  // on-device. That text must stay in sync with the Play Data Safety form.
+
+  // Profile picture upload removed — Firebase Storage requires the paid Blaze
+  // plan, and photo collection was flagged by Play Store review. Users get an
+  // initial-letter avatar instead.
 
   void _showLogoutDialog(BuildContext context) {
     showDialog(
@@ -816,38 +773,6 @@ class _HelpSection extends StatelessWidget {
                 ],
               ),
             )),
-      ],
-    );
-  }
-}
-
-class _PrivacySection extends StatelessWidget {
-  final String title;
-  final String content;
-
-  const _PrivacySection({required this.title, required this.content});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            height: 1.6,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          content,
-          style: const TextStyle(
-            fontSize: 13,
-            height: 1.6,
-          ),
-        ),
       ],
     );
   }

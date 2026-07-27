@@ -23,6 +23,16 @@ class AppLockProvider with ChangeNotifier {
   static const _enabledKey = 'app_lock_enabled';
   static const _biometricKey = 'app_lock_biometric';
   static const _timeoutKey = 'app_lock_timeout_minutes';
+  static const _failedAttemptsKey = 'app_lock_failed_attempts';
+  static const _lockoutUntilKey = 'app_lock_lockout_until';
+
+  /// Wrong guesses allowed before a cooldown starts. Five are permitted; the
+  /// sixth wrong PIN begins the 30-second wait.
+  static const int freeAttempts = 5;
+
+  /// Escalating cooldowns. Someone guessing at random needs ~5,000 tries for
+  /// a 4-digit PIN, so even the first 30s penalty makes brute force useless.
+  static const List<int> _cooldownSeconds = [30, 60, 120, 300];
 
   final LocalAuthentication _auth = LocalAuthentication();
 
@@ -32,12 +42,32 @@ class AppLockProvider with ChangeNotifier {
   bool _loaded = false;
   int _timeoutMinutes = 0; // 0 = lock immediately on leaving
   DateTime? _backgroundedAt;
+  int _failedAttempts = 0;
+  DateTime? _lockoutUntil;
 
   bool get isEnabled => _isEnabled;
   bool get biometricEnabled => _biometricEnabled;
   bool get isLocked => _isLocked;
   bool get isLoaded => _loaded;
   int get timeoutMinutes => _timeoutMinutes;
+  int get failedAttempts => _failedAttempts;
+
+  /// True while the user must wait before trying another PIN.
+  bool get isInCooldown =>
+      _lockoutUntil != null && DateTime.now().isBefore(_lockoutUntil!);
+
+  /// Seconds left on the current cooldown (0 when not cooling down).
+  int get cooldownSecondsLeft {
+    if (_lockoutUntil == null) return 0;
+    final left = _lockoutUntil!.difference(DateTime.now()).inSeconds;
+    return left > 0 ? left : 0;
+  }
+
+  /// Wrong guesses remaining before the next cooldown kicks in.
+  int get attemptsRemaining {
+    final left = freeAttempts - _failedAttempts;
+    return left > 0 ? left : 0;
+  }
 
   AppLockProvider() {
     _load();
@@ -49,6 +79,14 @@ class AppLockProvider with ChangeNotifier {
       _isEnabled = prefs.getBool(_enabledKey) ?? false;
       _biometricEnabled = prefs.getBool(_biometricKey) ?? false;
       _timeoutMinutes = prefs.getInt(_timeoutKey) ?? 0;
+      // Failed attempts and any active cooldown are PERSISTED, otherwise
+      // force-quitting the app would reset the counter and defeat the limit.
+      _failedAttempts = prefs.getInt(_failedAttemptsKey) ?? 0;
+      final until = prefs.getInt(_lockoutUntilKey);
+      if (until != null) {
+        final when = DateTime.fromMillisecondsSinceEpoch(until);
+        if (DateTime.now().isBefore(when)) _lockoutUntil = when;
+      }
       // Start locked whenever the feature is on — a cold start must always
       // require verification.
       _isLocked = _isEnabled;
@@ -101,12 +139,57 @@ class AppLockProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Check a PIN and track failed attempts. Returns false while a cooldown
+  /// is active, without even testing the PIN.
   Future<bool> verifyPin(String pin) async {
+    if (isInCooldown) return false;
+
     final prefs = await SharedPreferences.getInstance();
     final salt = prefs.getString(_pinSaltKey);
     final stored = prefs.getString(_pinHashKey);
     if (salt == null || stored == null) return false;
-    return _hash(pin, salt) == stored;
+
+    final ok = _hash(pin, salt) == stored;
+    if (ok) {
+      await _resetAttempts(prefs);
+    } else {
+      await _recordFailure(prefs);
+    }
+    return ok;
+  }
+
+  Future<void> _recordFailure(SharedPreferences prefs) async {
+    _failedAttempts++;
+    await prefs.setInt(_failedAttemptsKey, _failedAttempts);
+
+    if (_failedAttempts > freeAttempts) {
+      // Pick an escalating penalty, capped at the longest one.
+      final index = (_failedAttempts - freeAttempts - 1)
+          .clamp(0, _cooldownSeconds.length - 1);
+      final seconds = _cooldownSeconds[index];
+      _lockoutUntil = DateTime.now().add(Duration(seconds: seconds));
+      await prefs.setInt(
+          _lockoutUntilKey, _lockoutUntil!.millisecondsSinceEpoch);
+    }
+    notifyListeners();
+  }
+
+  Future<void> _resetAttempts(SharedPreferences prefs) async {
+    _failedAttempts = 0;
+    _lockoutUntil = null;
+    await prefs.remove(_failedAttemptsKey);
+    await prefs.remove(_lockoutUntilKey);
+    notifyListeners();
+  }
+
+  /// Clear a finished cooldown so the UI updates when the timer runs out.
+  Future<void> refreshCooldown() async {
+    if (_lockoutUntil != null && DateTime.now().isAfter(_lockoutUntil!)) {
+      final prefs = await SharedPreferences.getInstance();
+      _lockoutUntil = null;
+      await prefs.remove(_lockoutUntilKey);
+      notifyListeners();
+    }
   }
 
   /// Disable the lock entirely (requires the current PIN at the UI layer).
@@ -164,16 +247,36 @@ class AppLockProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Set while the app deliberately shows a system UI (permission prompts,
+  /// the biometric sheet, a settings screen). Android reports these as the
+  /// app leaving the foreground, but the user never actually left — locking
+  /// them out mid-flow makes the app look broken.
+  bool _suppressLock = false;
+
+  /// Wrap any action that hands control to a system dialog.
+  Future<T> withoutLocking<T>(Future<T> Function() action) async {
+    _suppressLock = true;
+    try {
+      return await action();
+    } finally {
+      // Stay suppressed briefly after returning, so the resume event that
+      // follows the dialog is ignored too.
+      Future.delayed(const Duration(milliseconds: 1200), () {
+        _suppressLock = false;
+      });
+    }
+  }
+
   /// Called when the app goes to the background — start the timeout clock.
   void onPaused() {
-    if (!_isEnabled) return;
+    if (!_isEnabled || _suppressLock) return;
     _backgroundedAt = DateTime.now();
   }
 
   /// Called when the app returns. Re-locks if the configured grace period
   /// has elapsed (0 minutes = always lock).
   void onResumed() {
-    if (!_isEnabled || _isLocked) return;
+    if (!_isEnabled || _isLocked || _suppressLock) return;
     final since = _backgroundedAt;
     if (since == null) return;
 

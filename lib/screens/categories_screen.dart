@@ -69,7 +69,7 @@ class CategoriesScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: const [
                           Row(
-                            children: const [
+                            children: [
                               Icon(Icons.category_outlined,
                                   size: 22, color: AppTheme.primaryColor),
                               SizedBox(width: 8),

@@ -257,7 +257,10 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    prefixIcon: const Icon(Icons.attach_money),
+                    // Neutral icon — a dollar sign would be wrong for the 12
+                    // non-dollar currencies the app supports.
+                    prefixIcon:
+                        const Icon(Icons.account_balance_wallet_outlined),
                     filled: true,
                     fillColor: Colors.grey[50],
                   ),

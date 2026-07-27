@@ -35,7 +35,13 @@ enum Category {
   other('Other', '💸', 0xFFECEFF1);
 
   final String name;
+
+  /// Legacy field, no longer displayed anywhere. The UI uses [icon] instead —
+  /// Material icons render consistently across devices and Android versions,
+  /// whereas emoji appearance varies by vendor font and can look unpolished.
+  /// Kept only so existing enum entries don't need rewriting.
   final String emoji;
+
   final int colorValue;
 
   const Category(this.name, this.emoji, this.colorValue);

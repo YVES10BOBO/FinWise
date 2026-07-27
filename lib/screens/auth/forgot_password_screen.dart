@@ -156,6 +156,40 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               ),
                               textAlign: TextAlign.center,
                             ),
+                            const SizedBox(height: 14),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppTheme.accentColor
+                                    .withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Row(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Icon(Icons.info_outline,
+                                      size: 16,
+                                      color: AppTheme.accentDark),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    // Reset mail is sent by Firebase and very
+                                    // often lands in spam — saying so up front
+                                    // avoids most "it never arrived" reports.
+                                    child: Text(
+                                      'Can\'t find it? Check your spam or '
+                                      'promotions folder. The email may take '
+                                      'a few minutes to arrive.',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppTheme.textSecondary,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -166,6 +200,23 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           MaterialPageRoute(
                             builder: (context) => const LoginScreen(),
                           ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: _isLoading
+                            ? null
+                            : () {
+                                setState(() => _emailSent = false);
+                                _handleResetPassword();
+                              },
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppTheme.primaryColor,
+                        ),
+                        child: const Text(
+                          'Send it again',
+                          style: TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],

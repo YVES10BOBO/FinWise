@@ -74,6 +74,132 @@ class LegalScreen extends StatelessWidget {
         ],
       );
 
+  /// Privacy Policy — must accurately describe every permission and data
+  /// flow, especially SMS. Google rejects apps whose policy omits sensitive
+  /// permissions, and the Data Safety form must match this text.
+  static LegalScreen privacy() => LegalScreen(
+        title: 'Privacy Policy',
+        intro:
+            'FinWise helps you track your money. This policy explains exactly '
+            'what we collect, what stays on your phone, and what we never do.',
+        sections: const [
+          LegalSection(
+            title: '1. What Stays Only On Your Phone',
+            content:
+                'The following NEVER leaves your device and is never uploaded:\n\n'
+                '• SMS message content. Mobile Money and bank messages are read and '
+                'analysed entirely on your phone. We never upload, store or transmit '
+                'message text.\n'
+                '• Your app lock PIN. Stored only as a salted, irreversible hash.\n'
+                '• Fingerprint / face data. Android verifies you in secure hardware '
+                'and tells the app only "yes" or "no". FinWise never receives, sees '
+                'or stores biometric data.',
+          ),
+          LegalSection(
+            title: '2. Mobile Money SMS Detection (Optional)',
+            content:
+                'If you enable auto-detection, FinWise uses SMS permissions to '
+                'record your transactions automatically.\n\n'
+                '• Purpose: to read financial alerts from Mobile Money providers and '
+                'banks so transactions are recorded without manual typing.\n'
+                '• Only financial messages are used. Personal messages are ignored.\n'
+                '• Only the extracted amount, direction, date and counterparty name '
+                'are saved as a transaction — never the raw message.\n'
+                '• Processing happens on your device, offline.\n'
+                '• You can turn this off at any time in Settings, and revoke the '
+                'permission in your phone settings.\n\n'
+                'This use complies with Google Play\'s permitted use for SMS-based '
+                'money management.',
+          ),
+          LegalSection(
+            title: '3. Information We Collect',
+            content:
+                '• Account: email address and name (for sign-in and personalisation)\n'
+                '• Financial records: transactions you add or that are detected — '
+                'amount, description, category, date and account type\n'
+                '• Goals: names, targets, dates and contribution history\n'
+                '• Preferences: currency, optional income target, app settings\n\n'
+                'We do NOT collect photos. FinWise has no photo upload and does '
+                'not request camera or gallery access — your avatar is simply '
+                'the first letter of your name.',
+          ),
+          LegalSection(
+            title: '4. Where Your Data Is Stored',
+            content:
+                '• On your device: a local copy of your transactions and settings, '
+                'so the app works offline and starts quickly.\n'
+                '• In the cloud (Firebase, operated by Google): your account details, '
+                'transactions and goals — so your data survives a lost phone and '
+                'syncs across devices.\n\n'
+                'Cloud data is encrypted in transit and at rest. Security rules '
+                'ensure only your signed-in account can read your records.',
+          ),
+          LegalSection(
+            title: '5. Notifications & Background Activity',
+            content:
+                '• FinWise shows a notification when a transaction is detected.\n'
+                '• While auto-detection is on, a persistent notification indicates '
+                'that FinWise is monitoring for transactions. Android requires this '
+                'for any app doing background work, and it keeps detection reliable.\n'
+                '• Background activity is used only to detect transactions. We do '
+                'not track your location or usage of other apps.',
+          ),
+          LegalSection(
+            title: '6. What We Never Do',
+            content:
+                '• We never sell your personal information.\n'
+                '• We never share your financial data with advertisers or data brokers.\n'
+                '• We never upload SMS content.\n'
+                '• We do not move money, access your bank or Mobile Money account, '
+                'or ask for your PIN or banking credentials.\n'
+                '• We show no advertising.',
+          ),
+          LegalSection(
+            title: '7. Third-Party Services',
+            content:
+                'We use Firebase (Google) for sign-in, database and file storage. '
+                'Google\'s privacy policy applies to their handling of that data: '
+                'https://policies.google.com/privacy\n\n'
+                'No other third-party service receives your data.',
+          ),
+          LegalSection(
+            title: '8. Your Rights & Control',
+            content:
+                '• Access: view all of your data inside the app\n'
+                '• Export: download your transactions as CSV or PDF\n'
+                '• Delete: remove individual records, clear all data, or delete your '
+                'account entirely\n'
+                '• Withdraw consent: turn off SMS detection at any time\n'
+                '• Sign out: stops cloud sync on that device',
+          ),
+          LegalSection(
+            title: '9. Data Retention',
+            content:
+                'Your data is kept until you delete it. Deleting a record removes it '
+                'from your device and the cloud. Deleting your account removes your '
+                'stored data permanently.',
+          ),
+          LegalSection(
+            title: '10. Children\'s Privacy',
+            content:
+                'FinWise is not intended for anyone under 13. We do not knowingly '
+                'collect information from children.',
+          ),
+          LegalSection(
+            title: '11. Changes To This Policy',
+            content:
+                'If this policy changes, the date below is updated. Significant '
+                'changes affecting how your data is used will be announced in the app.',
+          ),
+          LegalSection(
+            title: '12. Contact',
+            content:
+                'For any privacy question or to request deletion of your data, '
+                'contact us through Help & Support in the app.',
+          ),
+        ],
+      );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'sms_listener_service.dart';
 
@@ -73,35 +74,73 @@ class ForegroundServiceHandler {
     );
   }
 
-  /// Requests notification permission (required on Android 13+ to show the
-  /// foreground service notification at all) and, separately, asks the
-  /// user to exempt FinWise from battery optimization — this is the same
-  /// "Unrestricted" setting discussed earlier, just requested in-app
-  /// instead of navigating Settings by hand.
+  /// Notification permission only — an ordinary in-app dialog on Android 13+.
+  /// Safe to call during startup.
+  ///
+  /// Battery-optimization exemption is deliberately NOT requested here: it
+  /// launches a system settings screen, which throws the user out of the app
+  /// mid-onboarding and looks like a crash. It's offered separately from
+  /// Settings instead — see [requestBatteryExemption].
   static Future<void> requestPermissions() async {
-    final notificationPermission =
-        await FlutterForegroundTask.checkNotificationPermission();
-    if (notificationPermission != NotificationPermission.granted) {
-      await FlutterForegroundTask.requestNotificationPermission();
-    }
-
-    if (Platform.isAndroid) {
-      if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
-        await FlutterForegroundTask.requestIgnoreBatteryOptimization();
+    try {
+      final notificationPermission =
+          await FlutterForegroundTask.checkNotificationPermission();
+      if (notificationPermission != NotificationPermission.granted) {
+        await FlutterForegroundTask.requestNotificationPermission();
+        // Give Android time to deliver the result and resume the activity
+        // before anything else runs.
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('FinWise: notification permission request failed: $e');
       }
     }
   }
 
-  static Future<ServiceRequestResult> start() async {
-    if (await FlutterForegroundTask.isRunningService) {
-      return FlutterForegroundTask.restartService();
+  /// True when Android won't throttle the app in the background.
+  static Future<bool> get isBatteryOptimized async {
+    if (!Platform.isAndroid) return false;
+    return !(await FlutterForegroundTask.isIgnoringBatteryOptimizations);
+  }
+
+  /// Opens the system screen where the user can mark FinWise "Unrestricted".
+  /// Only call this from an explicit user action — it leaves the app.
+  static Future<void> requestBatteryExemption() async {
+    if (!Platform.isAndroid) return;
+    if (await FlutterForegroundTask.isIgnoringBatteryOptimizations) return;
+    await FlutterForegroundTask.requestIgnoreBatteryOptimization();
+  }
+
+  /// Start the monitoring service.
+  ///
+  /// Never throws. Starting a foreground service immediately after a
+  /// permission dialog is dismissed can fail (Android is mid-transition, or
+  /// the notification permission state hasn't propagated yet) — and an
+  /// uncaught error here took the whole app down on first run. A short settle
+  /// delay plus swallowing failures keeps the app alive; detection still works
+  /// through the in-app poll even if the service didn't start.
+  static Future<void> start() async {
+    try {
+      // Let any permission dialog finish dismissing before Android is asked
+      // to promote us to a foreground service.
+      await Future.delayed(const Duration(milliseconds: 400));
+
+      if (await FlutterForegroundTask.isRunningService) return;
+
+      await FlutterForegroundTask.startService(
+        serviceId: 257,
+        notificationTitle: 'FinWise is monitoring for transactions',
+        notificationText:
+            'Mobile Money SMS auto-detect is on. Tap to open FinWise.',
+        callback: smsMonitorServiceCallback,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('FinWise: foreground service failed to start: $e');
+      }
+      // Non-fatal — the app keeps working without it.
     }
-    return FlutterForegroundTask.startService(
-      serviceId: 257,
-      notificationTitle: 'FinWise is monitoring for transactions',
-      notificationText: 'Mobile Money SMS auto-detect is on. Tap to open FinWise.',
-      callback: smsMonitorServiceCallback,
-    );
   }
 
   static Future<ServiceRequestResult> stop() {

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import '../services/sms_listener_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/sms_listener_service.dart';
+import '../services/foreground_service_handler.dart';
+import '../theme/app_theme.dart';
 
 /// Settings toggle for the SMS auto-detection Beta feature.
 /// Off by default. Turning it on triggers the Android SMS permission
@@ -53,17 +55,53 @@ class _SmsAutoDetectTileState extends State<SmsAutoDetectTile> {
     }
   }
 
+  /// Optional: send the user to the system screen where FinWise can be marked
+  /// "Unrestricted". This LEAVES the app, so it is only ever triggered by an
+  /// explicit tap — never automatically during onboarding.
+  Future<void> _openBatterySettings() async {
+    await ForegroundServiceHandler.requestBatteryExemption();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) return const SizedBox.shrink();
 
+    return Column(
+      children: [
+        _buildToggle(context),
+        if (_enabled)
+          FutureBuilder<bool>(
+            future: ForegroundServiceHandler.isBatteryOptimized,
+            builder: (context, snapshot) {
+              // Only surface this when Android is actually throttling us.
+              if (snapshot.data != true) return const SizedBox.shrink();
+              return ListTile(
+                leading: const Icon(Icons.battery_saver,
+                    color: AppTheme.accentDark),
+                title: const Text('Improve background detection'),
+                subtitle: const Text(
+                  'Android may delay detection to save battery. Tap to mark '
+                  'FinWise as "Unrestricted" — this opens phone settings.',
+                  style: TextStyle(fontSize: 12),
+                ),
+                trailing: const Icon(Icons.open_in_new, size: 18),
+                onTap: _openBatterySettings,
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildToggle(BuildContext context) {
     return SwitchListTile(
       title: const Text('Auto-detect Mobile Money transactions'),
       subtitle: const Text(
-        'Beta — reads MoMo/Airtel SMS on this device and saves transactions '
-        'straight to your balance and history automatically. Nothing leaves '
-        'your phone. Shows a persistent notification while on, so Android '
-        'keeps watching for SMS even when you\'re in another app.',
+        'Reads MoMo and bank SMS on this device and records transactions '
+        'automatically. Message content never leaves your phone. A permanent '
+        'notification is shown while this is on, so Android keeps detecting '
+        'even when you\'re in another app.',
+        style: TextStyle(fontSize: 12),
       ),
       value: _enabled,
       onChanged: _onChanged,

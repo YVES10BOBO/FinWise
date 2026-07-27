@@ -20,6 +20,7 @@ import 'providers/currency_provider.dart';
 import 'providers/income_provider.dart';
 import 'providers/app_lock_provider.dart';
 import 'screens/lock/pin_screen.dart';
+import 'widgets/app_lock_prompt.dart';
 import 'theme/theme_provider.dart';
 import 'widgets/add_transaction_dialog.dart';
 import 'services/firestore_user_profile_service.dart';
@@ -103,8 +104,14 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final lock = context.read<AppLockProvider>();
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
+
+    // ONLY `paused` counts as leaving the app.
+    //
+    // `inactive` also fires for things that happen *inside* the app — system
+    // permission dialogs, the notification shade, an incoming call banner.
+    // Treating those as "user left" meant granting a permission instantly
+    // re-locked the app, which looked exactly like a crash and restart.
+    if (state == AppLifecycleState.paused) {
       lock.onPaused();
     } else if (state == AppLifecycleState.resumed) {
       lock.onResumed();
@@ -309,10 +316,30 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // Turn on auto-detect by default (asks for SMS permission the first
-      // time) and start the monitoring service — no toggle-hunting needed.
-      await SmsListenerService.ensureAutoDetectRunning();
+      // First-run permission flow, deliberately sequenced.
+      //
+      // Firing the SMS prompt, the notification prompt and the app-lock
+      // dialog back-to-back made the app appear to close: system dialogs
+      // fought each other and one of them used to launch an external
+      // settings screen. Now each step waits for the previous one to settle,
+      // and nothing navigates away from the app.
+      // Permission prompts make Android report the app as backgrounded.
+      // Suppress the auto-lock across them so granting a permission doesn't
+      // bounce the user to the PIN screen.
+      final lock = context.read<AppLockProvider>();
+      await lock.withoutLocking(
+        () => SmsListenerService.ensureAutoDetectRunning(),
+      );
+      if (!mounted) return;
+
       await _drainDetectedTransactions();
+      if (!mounted) return;
+
+      // Let the permission dialogs fully dismiss before showing our own.
+      await Future.delayed(const Duration(milliseconds: 600));
+      if (!mounted) return;
+
+      await AppLockPrompt.maybeShow(context);
     });
     _startCacheRefreshTimer();
   }

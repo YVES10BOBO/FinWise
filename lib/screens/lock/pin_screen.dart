@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_lock_provider.dart';
 import '../../theme/app_theme.dart';
@@ -41,8 +43,8 @@ class _PinScreenState extends State<PinScreen> {
   String _entry = '';
   String? _firstEntry; // setup: the PIN awaiting confirmation
   String? _error;
-  int _attempts = 0;
   bool _busy = false;
+  Timer? _cooldownTimer;
 
   @override
   void initState() {
@@ -51,6 +53,22 @@ class _PinScreenState extends State<PinScreen> {
       // Offer biometrics immediately so the common case is one touch.
       WidgetsBinding.instance.addPostFrameCallback((_) => _tryBiometrics());
     }
+    // Ticks once a second so the "try again in Xs" countdown stays live.
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      final lock = context.read<AppLockProvider>();
+      if (lock.isInCooldown) {
+        setState(() {}); // redraw the countdown
+      } else if (lock.cooldownSecondsLeft == 0) {
+        lock.refreshCooldown();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _cooldownTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _tryBiometrics() async {
@@ -58,7 +76,8 @@ class _PinScreenState extends State<PinScreen> {
     if (!lock.biometricEnabled) return;
     if (!await lock.canUseBiometrics()) return;
 
-    final ok = await lock.authenticateWithBiometrics();
+    // The biometric sheet is system UI — don't let it re-trigger the lock.
+    final ok = await lock.withoutLocking(lock.authenticateWithBiometrics);
     if (ok && mounted) {
       lock.unlock();
     }
@@ -66,6 +85,8 @@ class _PinScreenState extends State<PinScreen> {
 
   void _onDigit(String d) {
     if (_busy || _entry.length >= _pinLength) return;
+    // Ignore input entirely while cooling down.
+    if (context.read<AppLockProvider>().isInCooldown) return;
     HapticFeedback.selectionClick();
     setState(() {
       _entry += d;
@@ -119,10 +140,12 @@ class _PinScreenState extends State<PinScreen> {
             widget.onSuccess?.call(entered);
             Navigator.of(context).pop(true);
           }
+        } else if (lock.isInCooldown) {
+          _fail('Too many attempts. Please wait.');
         } else {
-          _attempts++;
-          _fail(_attempts >= 3
-              ? 'Incorrect PIN. $_attempts failed attempts.'
+          final left = lock.attemptsRemaining;
+          _fail(left <= 2
+              ? 'Incorrect PIN. $left ${left == 1 ? 'try' : 'tries'} left before a wait.'
               : 'Incorrect PIN. Try again.');
         }
         break;
@@ -166,6 +189,10 @@ class _PinScreenState extends State<PinScreen> {
   @override
   Widget build(BuildContext context) {
     final lock = context.watch<AppLockProvider>();
+    final cooling = lock.isInCooldown;
+    // Fingerprint stays available during a cooldown: it can't be brute-forced,
+    // so blocking it would only punish the real owner while doing nothing for
+    // security. Only PIN typing is rate-limited.
     final showBiometricButton =
         widget.mode == PinMode.unlock && lock.biometricEnabled;
 
@@ -245,59 +272,137 @@ class _PinScreenState extends State<PinScreen> {
                 }),
               ),
 
+              // Single plain error line — same style whether it's a wrong
+              // PIN or the wait countdown.
               SizedBox(
-                height: 34,
-                child: _error == null
-                    ? null
-                    : Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Text(
-                          _error!,
-                          style: const TextStyle(
-                            color: AppTheme.expenseColor,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
+                height: 40,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 14),
+                  child: Text(
+                    cooling
+                        ? 'Too many attempts. Try again in ${_formatCountdown(lock.cooldownSecondsLeft)}'
+                        : (_error ?? ''),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AppTheme.expenseColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ),
 
               const Spacer(flex: 1),
 
-              // Keypad
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40),
                 child: Column(
                   children: [
-                    for (final row in const [
-                      ['1', '2', '3'],
-                      ['4', '5', '6'],
-                      ['7', '8', '9'],
-                    ])
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: row.map(_digitKey).toList(),
+                    // Digits dim and stop responding while cooling down; the
+                    // fingerprint key stays fully active below.
+                    Opacity(
+                      opacity: cooling ? 0.35 : 1,
+                      child: Column(
+                        children: [
+                          for (final row in const [
+                            ['1', '2', '3'],
+                            ['4', '5', '6'],
+                            ['7', '8', '9'],
+                          ])
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceEvenly,
+                              children: row.map(_digitKey).toList(),
+                            ),
+                        ],
                       ),
+                    ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        // Biometric shortcut, or a blank spacer
                         showBiometricButton
                             ? _iconKey(Icons.fingerprint, _tryBiometrics)
                             : const SizedBox(width: 72, height: 72),
-                        _digitKey('0'),
-                        _iconKey(Icons.backspace_outlined, _onBackspace),
+                        Opacity(
+                          opacity: cooling ? 0.35 : 1,
+                          child: _digitKey('0'),
+                        ),
+                        Opacity(
+                          opacity: cooling ? 0.35 : 1,
+                          child: _iconKey(
+                              Icons.backspace_outlined, _onBackspace),
+                        ),
                       ],
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 20),
+              // Forgot PIN — only on the unlock screen.
+              if (widget.mode == PinMode.unlock)
+                TextButton(
+                  onPressed: () => _forgotPin(context),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.textSecondary,
+                  ),
+                  child: const Text(
+                    'Forgot PIN?',
+                    style: TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                )
+              else
+                const SizedBox(height: 20),
             ],
           ),
         ),
       ),
     );
+  }
+
+  /// The only safe reset: prove you own the account. Signing out clears the
+  /// lock, and signing back in needs the Firebase email + password (which can
+  /// itself be recovered by email). Your data is untouched — it syncs back.
+  Future<void> _forgotPin(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Forgot your PIN?'),
+        content: const Text(
+          'To reset it, sign in again with your email and password.\n\n'
+          'You will be signed out and the app lock removed. Your transactions '
+          'and goals are safe — they sync back as soon as you sign in.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+                foregroundColor: AppTheme.expenseColor),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Sign out & reset'),
+          ),
+        ],
+      ),
+    );
+
+    // Check the passed-in context, not just State.mounted — they can differ.
+    if (confirmed != true || !context.mounted) return;
+
+    final lock = context.read<AppLockProvider>();
+    await lock.disableLock();
+    await FirebaseAuth.instance.signOut();
+    lock.unlock();
+  }
+
+  /// "45s" or "2:05" for longer waits.
+  String _formatCountdown(int seconds) {
+    if (seconds < 60) return '${seconds}s';
+    final m = seconds ~/ 60;
+    final s = (seconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
   }
 
   Widget _digitKey(String d) {

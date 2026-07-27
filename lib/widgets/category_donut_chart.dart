@@ -92,7 +92,7 @@ class CategoryDonutChart extends StatelessWidget {
     for (var i = 0; i < top.length; i++) {
       slices.add(_Slice(
         label: top[i].key.name,
-        emoji: top[i].key.emoji,
+        icon: top[i].key.icon,
         amount: top[i].value,
         color: _palette[i % _palette.length],
       ));
@@ -100,7 +100,7 @@ class CategoryDonutChart extends StatelessWidget {
     if (otherTotal > 0) {
       slices.add(_Slice(
         label: 'Other',
-        emoji: '•',
+        icon: Icons.more_horiz,
         amount: otherTotal,
         color: _palette.last,
       ));
@@ -170,9 +170,11 @@ class CategoryDonutChart extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
+                    Icon(s.icon, size: 13, color: AppTheme.textSecondary),
+                    const SizedBox(width: 5),
                     Expanded(
                       child: Text(
-                        '${s.emoji} ${s.label}',
+                        s.label,
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppTheme.textPrimary,
@@ -201,12 +203,12 @@ class CategoryDonutChart extends StatelessWidget {
 
 class _Slice {
   final String label;
-  final String emoji;
+  final IconData icon;
   final double amount;
   final Color color;
   _Slice({
     required this.label,
-    required this.emoji,
+    required this.icon,
     required this.amount,
     required this.color,
   });

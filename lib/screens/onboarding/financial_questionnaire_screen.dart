@@ -3,8 +3,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../../theme/app_theme.dart';
 import '../../main.dart';
-import '../../providers/transaction_provider.dart';
-import '../../models/transaction.dart';
+// transaction_provider / transaction models are no longer imported here:
+// onboarding used to create a fake "Onboarding income" transaction, which
+// inflated the balance with money the user didn't have. Income is now stored
+// as a planning target only (see IncomeProvider).
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/firestore_user_profile_service.dart';
 import '../../providers/currency_provider.dart';
@@ -630,7 +632,7 @@ class _FinancialQuestionnaireScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          '📂 What do you spend on?',
+          'What do you spend on?',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -880,7 +882,7 @@ class _FinancialQuestionnaireScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          '⚡ Track money automatically',
+          'Track money automatically',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
