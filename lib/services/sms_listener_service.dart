@@ -101,6 +101,7 @@ Future<void> _processSms(String sender, String body, {DateTime? receivedAt}) asy
     // aid and would be noise for real users.
     final debug = prefs.getBool(kSmsDebugKey) ?? false;
 
+
     final looksMomo = SmsTransactionParser.looksLikeMomoMessage(sender, body);
     // Use the SMS's own timestamp (when available) so the id is identical no
     // matter which path saw the message (foreground poll, foreground
@@ -120,11 +121,40 @@ Future<void> _processSms(String sender, String body, {DateTime? receivedAt}) asy
     final transaction = _buildTransaction(parsed);
     built = transaction;
 
+    // Catch repeats and both-sides-of-one-transfer before storing anything.
+    final outcome = await _classifyAgainstRecent(prefs, transaction);
+    if (outcome != _PairOutcome.none) {
+      // Either a repeat of a message we already have, or the second half of a
+      // movement between the user's own accounts (the first half has been
+      // rewritten as a Transfer). Nothing more to record.
+      return;
+    }
+
     // 2. Per-item slot (race-free).
     await prefs.setString(
       '$kDetectedSmsTxPrefix${transaction.id}',
       json.encode(transaction.toJson()),
     );
+
+    // A transfer moves money between the user's own accounts, so it is not a
+    // loss — but any FEE charged on it genuinely is. Record that separately
+    // as a real expense so the balance stays accurate.
+    if (parsed.type == TransactionType.transfer && (parsed.fee ?? 0) > 0) {
+      final feeTx = Transaction(
+        id: '${transaction.id}_fee',
+        type: TransactionType.expense,
+        category: Category.fees,
+        amount: parsed.fee!,
+        description: 'Transfer fee',
+        date: transaction.date,
+        account: parsed.account,
+        isAutoDetected: true,
+      );
+      await prefs.setString(
+        '$kDetectedSmsTxPrefix${feeTx.id}',
+        json.encode(feeTx.toJson()),
+      );
+    }
 
     // 3. Cloud sync when logged in.
     final uid = await _resolveUid();
@@ -150,6 +180,140 @@ Future<void> _processSms(String sender, String body, {DateTime? receivedAt}) asy
       );
     }
   }
+}
+
+/// How close together two messages must be to describe the same real event.
+const Duration _pairWindow = Duration(minutes: 5);
+
+/// Tighter window for suppressing a stray receive/payment message that
+/// follows a transfer that's ALREADY been recorded. Mobile Money sometimes
+/// fires a second, contradictory SMS about one transfer between the user's
+/// own accounts (many of the user's accounts share the same registered
+/// name, so a transfer often shows up first, then a "received"/"paid" SMS
+/// about the very same money seconds later). Kept short and separate from
+/// the general 5-minute pairing window so it only catches genuine near-
+/// instant follow-ups, not unrelated transactions that happen to match.
+const Duration _transferNoiseWindow = Duration(minutes: 1);
+
+enum _PairOutcome {
+  /// Nothing similar nearby — record normally.
+  none,
+
+  /// The same message arrived twice — ignore this one.
+  duplicate,
+
+  /// Two halves of one movement between the user's own accounts. The earlier
+  /// entry has been converted to a Transfer; ignore this one.
+  transferPair,
+}
+
+/// Strip a description down to the counterparty name for comparison, e.g.
+/// "To Yves RUTEMBEZA (incl. 20 fee)" → "yves rutembeza".
+String _counterpartyKey(String description) {
+  var s = description.toLowerCase();
+  s = s.replaceAll(RegExp(r'\(.*?\)'), ' '); // bracketed extras
+  s = s.replaceAll(
+      RegExp(r'^(transfer:|to|from)\s+', caseSensitive: false), ' ');
+  s = s.replaceAll(RegExp(r'[^a-z ]'), ' '); // digits, punctuation
+  return s.replaceAll(RegExp(r'\s+'), ' ').trim();
+}
+
+/// Decide whether [candidate] duplicates, or pairs with, something recorded
+/// moments ago.
+///
+/// Mobile Money reports ONE movement between the user's own accounts as TWO
+/// messages — "2000 transferred to X" from the sending account and "received
+/// 2000 from X" on the receiving one. Matching on amount + counterparty +
+/// time means we don't need to know the user's name, works for company names,
+/// and works across MTN, Airtel and banks alike.
+Future<_PairOutcome> _classifyAgainstRecent(
+    SharedPreferences prefs, Transaction candidate) async {
+  final candidateKey = _counterpartyKey(candidate.description);
+
+  bool isNear(Transaction other) =>
+      other.date.difference(candidate.date).abs() <= _pairWindow;
+
+  bool sameParty(Transaction other) {
+    final k = _counterpartyKey(other.description);
+    if (k.isEmpty || candidateKey.isEmpty) return true; // can't tell — be safe
+    return k == candidateKey || k.contains(candidateKey) || candidateKey.contains(k);
+  }
+
+  // ---- 1. Pending slots (detected, not yet drained into the list) --------
+  for (final key in prefs.getKeys()) {
+    if (!key.startsWith(kDetectedSmsTxPrefix)) continue;
+    final raw = prefs.getString(key);
+    if (raw == null) continue;
+    try {
+      final other = Transaction.fromJson(json.decode(raw));
+      if (other.id == candidate.id) return _PairOutcome.duplicate;
+      if (other.amount != candidate.amount) continue;
+      if (!sameParty(other)) continue;
+
+      // The earlier message was ALREADY recorded as a transfer, and this one
+      // arrived moments later claiming the same money was received or paid.
+      // That's Mobile Money re-announcing the same transfer, not a new
+      // transaction — drop it, and leave the transfer entry untouched.
+      if (other.type == TransactionType.transfer &&
+          candidate.type != TransactionType.transfer &&
+          other.date.difference(candidate.date).abs() <= _transferNoiseWindow) {
+        return _PairOutcome.duplicate;
+      }
+
+      if (!isNear(other)) continue;
+      if (other.type == candidate.type) return _PairOutcome.duplicate;
+
+      // Opposite directions, same money, same moment → self-transfer.
+      // Rewrite the earlier entry as a Transfer and drop this one.
+      final asTransfer = other.copyWith(
+        type: TransactionType.transfer,
+        description: 'Transfer between accounts',
+      );
+      await prefs.setString(key, json.encode(asTransfer.toJson()));
+      return _PairOutcome.transferPair;
+    } catch (_) {}
+  }
+
+  // ---- 2. Already-saved transactions ------------------------------------
+  for (final key in prefs.getKeys()) {
+    if (!key.startsWith('transactions_')) continue;
+    final raw = prefs.getString(key);
+    if (raw == null) continue;
+    try {
+      final list = json.decode(raw) as List<dynamic>;
+      // Only the newest entries can fall inside the time window.
+      for (var i = 0; i < list.length && i < 25; i++) {
+        final other = Transaction.fromJson(list[i] as Map<String, dynamic>);
+        if (other.id == candidate.id) return _PairOutcome.duplicate;
+        if (other.amount != candidate.amount) continue;
+        if (!sameParty(other)) continue;
+
+        // Same reasoning as the pending-slots check above: a transfer
+        // already on record, followed within a minute by a same-amount,
+        // same-party receive/payment message, is Mobile Money re-announcing
+        // that transfer — not a second transaction.
+        if (other.type == TransactionType.transfer &&
+            candidate.type != TransactionType.transfer &&
+            other.date.difference(candidate.date).abs() <= _transferNoiseWindow) {
+          return _PairOutcome.duplicate;
+        }
+
+        if (!isNear(other)) continue;
+        if (other.type == candidate.type) return _PairOutcome.duplicate;
+
+        list[i] = other
+            .copyWith(
+              type: TransactionType.transfer,
+              description: 'Transfer between accounts',
+            )
+            .toJson();
+        await prefs.setString(key, json.encode(list));
+        return _PairOutcome.transferPair;
+      }
+    } catch (_) {}
+  }
+
+  return _PairOutcome.none;
 }
 
 /// Background handler — required by `telephony`. Runs in its own isolate when
@@ -215,6 +379,11 @@ class SmsListenerService {
   /// permission dialog can appear). On by default → asks the first time,
   /// then starts everything. Safe to call every launch; the guard makes the
   /// listener registration a no-op if it's already running.
+  ///
+  /// Deliberately does NOT ask for notification permission here — that's
+  /// already asked once during onboarding (`requestPermissionAndEnable`).
+  /// Asking again here made users see "Allow notifications" twice: once
+  /// during setup, once on first reaching the main screen.
   static Future<void> ensureAutoDetectRunning() async {
     final prefs = await SharedPreferences.getInstance();
     final enabled = prefs.getBool(kSmsAutoDetectEnabledKey) ?? true;
@@ -225,7 +394,6 @@ class SmsListenerService {
 
     await prefs.setBool(kSmsAutoDetectEnabledKey, true);
     _listen();
-    await ForegroundServiceHandler.requestPermissions();
     await ForegroundServiceHandler.start();
   }
 
