@@ -73,6 +73,65 @@ class SmsTransactionParser {
     'INR',
   ];
 
+  /// Promotional / service messages that mention money but describe no
+  /// transaction. "Your pack has expired, buy another for 1,000 RWF" would
+  /// otherwise be recorded as a 1,000 expense that never happened.
+  static const List<String> _promoWords = [
+    // English
+    'expired', 'expires', 'offer', 'buy now', 'promo', 'promotion',
+    'subscribe', 'dial ', 'renew', 'bundle expired', 'win ', 'congratulations',
+    'click', 'download', 'sale', 'discount', 'advertis',
+    // Kinyarwanda
+    'rangura', 'gura ', 'urangura', 'byarangiye', 'ongera', 'igurishwa',
+    'kanda', 'andika', 'serivisi nshya',
+  ];
+
+  /// True when the message is an advert or service notice rather than a
+  /// record of money actually moving.
+  static bool looksPromotional(String body) {
+    final lower = body.toLowerCase();
+    return _promoWords.any(lower.contains);
+  }
+
+  /// Words indicating money moved between the user's OWN accounts (wallet to
+  /// bank, bank to wallet) rather than to another person or merchant.
+  static const List<String> _transferHints = [
+    // English
+    'to your bank', 'from your bank', 'to your account', 'from your account',
+    'to your wallet', 'from your wallet', 'bank transfer', 'own account',
+    'to bank account', 'from bank account', 'mocash', 'mo cash',
+    // Kinyarwanda — saving to / withdrawing from a sub-wallet like MoCash is
+    // still the user's own money moving between their own accounts.
+    'kuri konti yawe', 'konti yawe ya banki', 'muri banki yawe',
+    'kubika', 'kubitse', 'gukuramo', 'kubikuza',
+  ];
+
+  /// Words meaning a message is actually about a LOAN — borrowing or
+  /// repaying — not an ordinary same-account save/withdraw. A loan genuinely
+  /// changes what the user has or owes, so even a MoCash loan message (e.g.
+  /// "inguzanyo") must still be recorded as income (received) or expense
+  /// (repaid), unlike a plain MoCash deposit/withdrawal.
+  static const List<String> _loanWords = ['loan', 'inguzanyo'];
+
+  static bool _looksLikeLoan(String body) {
+    final lower = body.toLowerCase();
+    return _loanWords.any(lower.contains);
+  }
+
+  /// Weak hint that a message describes movement between the user's own
+  /// accounts, based on wording alone.
+  ///
+  /// This is only a supplement. The RELIABLE detection happens after parsing,
+  /// by pairing two messages that share an amount and counterparty within a
+  /// few minutes but point in opposite directions — see
+  /// `_classifyAgainstRecent` in sms_listener_service.dart. That approach
+  /// needs no configuration, works for company names, and doesn't depend on
+  /// the user's profile name matching their Mobile Money registration.
+  static bool looksLikeOwnTransfer(String body) {
+    final lower = body.toLowerCase();
+    return _transferHints.any(lower.contains);
+  }
+
   static bool looksLikeMomoMessage(String sender, String body) {
     final normalizedSender = sender.toLowerCase();
     final normalizedBody = body.toLowerCase();
@@ -127,10 +186,29 @@ class SmsTransactionParser {
   }) {
     if (!looksLikeMomoMessage(sender, body)) return null;
 
+    // Adverts and service notices mention money but record no transaction.
+    if (looksPromotional(body)) return null;
+
     final amount = _extractAmount(body);
     if (amount == null || amount <= 0) return null;
 
-    final type = _extractDirection(body);
+    // Money moved between the user's own accounts (including MoCash
+    // save/withdraw) is a transfer, not a gain or a loss — see
+    // TransactionType.transfer. A LOAN is the exception: borrowing or
+    // repaying from MoCash really does change what the user has, so it's
+    // recorded as income/expense like any other loan even though the
+    // message also mentions "MoCash".
+    final isTransfer = looksLikeOwnTransfer(body) && !_looksLikeLoan(body);
+    final type =
+        isTransfer ? TransactionType.transfer : _extractDirection(body);
+
+    final txId = _extractTransactionId(body);
+
+    // A reference number is REQUIRED for income and expenses, because a false
+    // one corrupts the balance and every chart. Transfers are exempt: they're
+    // financially neutral, so recording one without a reference is harmless,
+    // and some providers omit the id on the transfer confirmation.
+    if (txId == null && !isTransfer) return null;
 
     // Transaction fees genuinely leave the account, so an expense of 1,000
     // with a 20 fee reduces the balance by 1,020. Counting only the headline
@@ -138,13 +216,27 @@ class SmsTransactionParser {
     // Fees are added to expenses; for incoming money the provider normally
     // states the net amount already, so nothing is added.
     final fee = _extractFee(body) ?? 0;
+    // Transfers keep their face value — the money isn't lost, it moved. Any
+    // fee on a transfer is handled separately (see [feeAsExpense] below),
+    // because the fee IS a genuine loss even though the transfer isn't.
     final total = type == TransactionType.expense ? amount + fee : amount;
 
     final counterparty = _extractCounterparty(body);
     var description = counterparty ??
-        (type == TransactionType.income
-            ? 'Mobile Money received'
-            : 'Mobile Money payment');
+        switch (type) {
+          TransactionType.income => 'Mobile Money received',
+          TransactionType.transfer => 'Transfer between accounts',
+          TransactionType.expense => 'Mobile Money payment',
+        };
+    if (type == TransactionType.transfer) {
+      description = 'Transfer: $description';
+    }
+    // If the message states what the money was for, show it — "To John —
+    // School fees" is more useful on the history screen than "To John" alone.
+    final note = _extractNote(body);
+    if (note != null) {
+      description = '$description — $note';
+    }
     // Make the fee visible so the figure is never a mystery.
     if (fee > 0 && type == TransactionType.expense) {
       description = '$description (incl. ${_trimAmount(fee)} fee)';
@@ -222,18 +314,29 @@ class SmsTransactionParser {
     ).firstMatch(body);
     if (labelled != null) return labelled.group(1);
 
-    // 2. Fallback: the longest run of 9+ digits. Transaction ids are long,
-    //    while amounts/balances are short and phone numbers are masked, so
-    //    the longest digit run is almost always the transaction reference.
+    // 2. Fallback: a long digit run, EXCLUDING phone numbers. Messages often
+    //    contain the counterparty's number (e.g. 250787461999), and picking
+    //    that would give the two halves of one transfer different ids —
+    //    defeating de-duplication.
     final runs = RegExp(r'[0-9]{9,}')
         .allMatches(body)
         .map((m) => m.group(0)!)
+        .where((d) => !_looksLikePhoneNumber(d))
         .toList();
     if (runs.isNotEmpty) {
       runs.sort((a, b) => b.length.compareTo(a.length));
       return runs.first;
     }
     return null;
+  }
+
+  /// Rwandan mobile numbers appear as 2507XXXXXXXX (12 digits) or
+  /// 07XXXXXXXX (10 digits). Transaction references don't look like this.
+  static bool _looksLikePhoneNumber(String digits) {
+    if (digits.length == 12 && digits.startsWith('25')) return true;
+    if (digits.length == 10 && digits.startsWith('07')) return true;
+    if (digits.length == 9 && digits.startsWith('7')) return true;
+    return false;
   }
 
   static double? _extractAmount(String body) {
@@ -324,9 +427,11 @@ class SmsTransactionParser {
     // Best-effort: capture a name after "from"/"to" — stops at the first
     // non-letter character (period, digit, parenthesis), so it grabs just
     // "MoMoAdvance" out of "from MoMoAdvance. Your available..." instead of
-    // running on into the rest of the sentence.
+    // running on into the rest of the sentence. Allows up to 6 words and
+    // apostrophes/hyphens so full names (e.g. "RUTEMBEZA Yves Marie",
+    // "Jean-Paul") come through as-is instead of being cut short.
     final fromMatch = RegExp(
-      r'from\s+([A-Za-z]+(?:\s[A-Za-z]+){0,3})',
+      r"from\s+([A-Za-z][A-Za-z'\-]*(?:\s[A-Za-z][A-Za-z'\-]*){0,5})",
       caseSensitive: false,
     ).firstMatch(body);
     if (fromMatch != null) {
@@ -334,13 +439,48 @@ class SmsTransactionParser {
     }
 
     final toMatch = RegExp(
-      r'to\s+([A-Za-z]+(?:\s[A-Za-z]+){0,3})',
+      r"to\s+([A-Za-z][A-Za-z'\-]*(?:\s[A-Za-z][A-Za-z'\-]*){0,5})",
       caseSensitive: false,
     ).firstMatch(body);
     if (toMatch != null) {
       return 'To ${toMatch.group(1)!.trim()}';
     }
 
+    // Kinyarwanda equivalents — "kuva kuri X" / "bivuye kuri X" (from X),
+    // "yoherejwe kuri X" / "kohereza kuri X" (to X). Multi-word phrases only
+    // (never the bare preposition "kuri" alone), so this doesn't misfire on
+    // unrelated wording like "kuri konti yawe" (to your own account).
+    final fromKinyaMatch = RegExp(
+      r"(?:kuva kuri|bivuye kuri|yavuye kuri)\s+([A-Za-z][A-Za-z'\-]*(?:\s[A-Za-z][A-Za-z'\-]*){0,5})",
+      caseSensitive: false,
+    ).firstMatch(body);
+    if (fromKinyaMatch != null) {
+      return 'From ${fromKinyaMatch.group(1)!.trim()}';
+    }
+
+    final toKinyaMatch = RegExp(
+      r"(?:yoherejwe kuri|kohereza kuri|watanze kuri)\s+([A-Za-z][A-Za-z'\-]*(?:\s[A-Za-z][A-Za-z'\-]*){0,5})",
+      caseSensitive: false,
+    ).firstMatch(body);
+    if (toKinyaMatch != null) {
+      return 'To ${toKinyaMatch.group(1)!.trim()}';
+    }
+
     return null;
+  }
+
+  /// Some providers/banks include a short free-text reason on the
+  /// transaction (e.g. "Narration: School fees", "Reason: Rent"). When
+  /// present, surface it so history shows what the money was for, not just
+  /// who it was with. Best-effort — if nothing matches, the plain
+  /// name-based description is left as-is rather than guessing.
+  static String? _extractNote(String body) {
+    final match = RegExp(
+      r'(?:narration|reason|note|comment|memo)\s*[:#]?\s*([A-Za-z0-9 ,.\-]{3,40})',
+      caseSensitive: false,
+    ).firstMatch(body);
+    final note = match?.group(1)?.trim();
+    if (note == null || note.isEmpty) return null;
+    return note;
   }
 }

@@ -23,6 +23,7 @@ import 'screens/lock/pin_screen.dart';
 import 'widgets/app_lock_prompt.dart';
 import 'theme/theme_provider.dart';
 import 'widgets/add_transaction_dialog.dart';
+import 'widgets/contact_sheet.dart';
 import 'services/firestore_user_profile_service.dart';
 import 'services/sms_listener_service.dart';
 import 'services/foreground_service_handler.dart';
@@ -306,6 +307,11 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
 
+  /// Drives the swipeable tab body, kept in sync with the bottom nav bar in
+  /// both directions: tapping a nav item animates the page, and swiping
+  /// updates which nav item is highlighted.
+  final PageController _pageController = PageController();
+
   /// While the app is on screen, re-read the local cache every few seconds
   /// so transactions the SMS background isolate recorded show up live —
   /// even when the user just sits on the open screen and never leaves it.
@@ -348,7 +354,20 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   void dispose() {
     _cacheRefreshTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
+    _pageController.dispose();
     super.dispose();
+  }
+
+  /// Bottom nav tap → animate the page. Swiping the page itself updates
+  /// [_currentIndex] straight from PageView's onPageChanged, so both ways of
+  /// navigating stay in sync.
+  void _goToTab(int index) {
+    setState(() => _currentIndex = index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
   }
 
   void _startCacheRefreshTimer() {
@@ -395,29 +414,21 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    Widget currentScreen;
-    switch (_currentIndex) {
-      case 0:
-        currentScreen = const HomeScreen();
-        break;
-      case 1:
-        currentScreen = const CategoriesScreen();
-        break;
-      case 2:
-        currentScreen = const GoalsScreen();
-        break;
-      case 3:
-        currentScreen = const TransactionsScreen();
-        break;
-      case 4:
-        currentScreen = const SettingsScreen();
-        break;
-      default:
-        currentScreen = const HomeScreen();
-    }
-
     return Scaffold(
-      body: currentScreen,
+      // Swipeable: dragging left/right moves between tabs, same as tapping
+      // the bottom nav bar. Each tab is wrapped in _KeepAlivePage so its
+      // scroll position and state survive swiping away and back.
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) => setState(() => _currentIndex = index),
+        children: const [
+          _KeepAlivePage(child: HomeScreen()),
+          _KeepAlivePage(child: CategoriesScreen()),
+          _KeepAlivePage(child: GoalsScreen()),
+          _KeepAlivePage(child: TransactionsScreen()),
+          _KeepAlivePage(child: SettingsScreen()),
+        ],
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -431,11 +442,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
+          onTap: _goToTab,
           type: BottomNavigationBarType.fixed,
           selectedItemColor: AppTheme.primaryColor,
           unselectedItemColor: AppTheme.textLight,
@@ -463,22 +470,84 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) => AddTransactionDialog(
-              onSave: (transaction) {
-                Provider.of<TransactionProvider>(context, listen: false)
-                    .addTransaction(transaction);
-              },
-            ),
-          );
-        },
-        backgroundColor: AppTheme.accentColor,
-        child: const Icon(Icons.add, color: Colors.white),
+      // Right side, stacked: the help shortcut sits just above the "Add
+      // transaction" button rather than off on its own on the left.
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _HelpButton(onTap: () => showContactSheet(context)),
+          const SizedBox(height: 12),
+          FloatingActionButton(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AddTransactionDialog(
+                  onSave: (transaction) {
+                    Provider.of<TransactionProvider>(context, listen: false)
+                        .addTransaction(transaction);
+                  },
+                ),
+              );
+            },
+            backgroundColor: AppTheme.accentColor,
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
+        ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+}
+
+/// Keeps a tab's state (scroll position, in-progress input, etc.) alive when
+/// swiped away and back, instead of rebuilding it from scratch every time —
+/// same behavior tapping the bottom nav bar already had.
+class _KeepAlivePage extends StatefulWidget {
+  final Widget child;
+
+  const _KeepAlivePage({required this.child});
+
+  @override
+  State<_KeepAlivePage> createState() => _KeepAlivePageState();
+}
+
+class _KeepAlivePageState extends State<_KeepAlivePage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+}
+
+/// Small "need help?" shortcut, visible on every tab. Opens the FAQ /
+/// email / WhatsApp contact sheet — see [showContactSheet].
+class _HelpButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _HelpButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      shape: const CircleBorder(),
+      elevation: 4,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: const Padding(
+          padding: EdgeInsets.all(12),
+          child: Icon(
+            Icons.help_outline,
+            color: AppTheme.primaryColor,
+            size: 22,
+          ),
+        ),
+      ),
     );
   }
 }

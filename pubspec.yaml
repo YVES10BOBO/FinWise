@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.2.0+12
+version: 1.2.0+17
 
 environment:
   sdk: ^3.6.2
@@ -73,6 +73,11 @@ dependencies:
   # true/false. `crypto` hashes the PIN so it is never stored in plain text.
   local_auth: ^2.3.0
   crypto: ^3.0.3
+
+  # Opens the device's email app / WhatsApp for the in-app "Contact us"
+  # help option — no backend, no ongoing cost, just hands off to apps the
+  # user already has.
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:

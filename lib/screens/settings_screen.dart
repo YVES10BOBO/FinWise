@@ -16,6 +16,7 @@ import '../widgets/currency_picker_dialog.dart';
 import '../widgets/sms_auto_detect_tile.dart';
 import '../widgets/app_lock_tile.dart';
 import 'legal_screen.dart';
+import 'faq_screen.dart';
 import '../main.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -189,9 +190,12 @@ class SettingsScreen extends StatelessWidget {
               ),
               _SettingsTile(
                 icon: Icons.help_outline,
-                title: 'Help & Support',
-                subtitle: 'Get help using FinWise',
-                onTap: () => _showHelpDialog(context),
+                title: 'FAQ & Help',
+                subtitle: 'Common questions, or contact us directly',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const FaqScreen()),
+                ),
               ),
               _SettingsTile(
                 icon: Icons.description,
@@ -404,68 +408,6 @@ class SettingsScreen extends StatelessWidget {
               foregroundColor: AppTheme.expenseColor,
             ),
             child: const Text('Clear All'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showHelpDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Help & Support'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _HelpSection(
-                title: 'Getting Started',
-                items: [
-                  'Add your first transaction using the + button',
-                  'Set up financial goals to track savings',
-                  'View spending by category in Budget tab',
-                  'Check your financial health score on Home',
-                ],
-              ),
-              const SizedBox(height: 16),
-              _HelpSection(
-                title: 'Managing Transactions',
-                items: [
-                  'Tap + button to add income or expense',
-                  'Select category from chips',
-                  'Swipe left on transaction to delete',
-                  'Tap transaction to edit',
-                ],
-              ),
-              const SizedBox(height: 16),
-              _HelpSection(
-                title: 'Categories',
-                items: [
-                  'Add custom categories during onboarding',
-                  'Add more categories when adding transactions',
-                  'View spending by category in Budget tab',
-                  'Delete custom categories anytime',
-                ],
-              ),
-              const SizedBox(height: 16),
-              _HelpSection(
-                title: 'Tips',
-                items: [
-                  'Track all expenses for accurate insights',
-                  'Set realistic financial goals',
-                  'Check AI tips for budget recommendations',
-                  'Export data for backup',
-                ],
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Got it'),
           ),
         ],
       ),
@@ -729,50 +671,6 @@ class _SettingsSection extends StatelessWidget {
             children: children,
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _HelpSection extends StatelessWidget {
-  final String title;
-  final List<String> items;
-
-  const _HelpSection({required this.title, required this.items});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        ...items.map((item) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('• ', style: TextStyle(color: AppTheme.primaryColor)),
-                  Expanded(
-                    child: Text(
-                      item,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppTheme.textSecondary,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            )),
       ],
     );
   }

@@ -118,16 +118,26 @@ Future<void> _processSms(String sender, String body, {DateTime? receivedAt}) asy
       return;
     }
 
-    final transaction = _buildTransaction(parsed);
+    var transaction = _buildTransaction(parsed);
     built = transaction;
 
     // Catch repeats and both-sides-of-one-transfer before storing anything.
     final outcome = await _classifyAgainstRecent(prefs, transaction);
-    if (outcome != _PairOutcome.none) {
+    if (outcome == _PairOutcome.duplicate || outcome == _PairOutcome.transferPair) {
       // Either a repeat of a message we already have, or the second half of a
       // movement between the user's own accounts (the first half has been
       // rewritten as a Transfer). Nothing more to record.
       return;
+    }
+    if (outcome == _PairOutcome.transferEcho) {
+      // Mobile Money re-announcing a transfer already on record. Keep it in
+      // history for a full paper trail, but as a second neutral leg — never
+      // as income/expense, so it can't inflate the totals.
+      transaction = transaction.copyWith(
+        type: TransactionType.transfer,
+        description: 'Transfer confirmation: ${transaction.description}',
+      );
+      built = transaction;
     }
 
     // 2. Per-item slot (race-free).
@@ -205,6 +215,13 @@ enum _PairOutcome {
   /// Two halves of one movement between the user's own accounts. The earlier
   /// entry has been converted to a Transfer; ignore this one.
   transferPair,
+
+  /// A transfer was already recorded, and this message is Mobile Money
+  /// re-announcing that same movement (e.g. MoCash "sent" followed by MoMo
+  /// "received" seconds later). Still worth a line in history for a full
+  /// paper trail, but must be saved as a second, neutral Transfer leg —
+  /// never as income or expense, or it would double-count.
+  transferEcho,
 }
 
 /// Strip a description down to the counterparty name for comparison, e.g.
@@ -253,11 +270,12 @@ Future<_PairOutcome> _classifyAgainstRecent(
       // The earlier message was ALREADY recorded as a transfer, and this one
       // arrived moments later claiming the same money was received or paid.
       // That's Mobile Money re-announcing the same transfer, not a new
-      // transaction — drop it, and leave the transfer entry untouched.
+      // transaction — leave the transfer entry untouched and save this one
+      // as a second, neutral leg (see transferEcho).
       if (other.type == TransactionType.transfer &&
           candidate.type != TransactionType.transfer &&
           other.date.difference(candidate.date).abs() <= _transferNoiseWindow) {
-        return _PairOutcome.duplicate;
+        return _PairOutcome.transferEcho;
       }
 
       if (!isNear(other)) continue;
@@ -291,11 +309,12 @@ Future<_PairOutcome> _classifyAgainstRecent(
         // Same reasoning as the pending-slots check above: a transfer
         // already on record, followed within a minute by a same-amount,
         // same-party receive/payment message, is Mobile Money re-announcing
-        // that transfer — not a second transaction.
+        // that transfer — save it as a second, neutral leg (transferEcho)
+        // rather than a real income/expense.
         if (other.type == TransactionType.transfer &&
             candidate.type != TransactionType.transfer &&
             other.date.difference(candidate.date).abs() <= _transferNoiseWindow) {
-          return _PairOutcome.duplicate;
+          return _PairOutcome.transferEcho;
         }
 
         if (!isNear(other)) continue;
