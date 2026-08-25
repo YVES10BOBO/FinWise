@@ -224,15 +224,39 @@ enum _PairOutcome {
   transferEcho,
 }
 
+/// Words that describe the transaction rather than name the other party.
+/// Descriptions now carry the provider's full sentence ("Your payment of 400
+/// RWF to David was completed"), so pairing the two halves of one transfer
+/// means reducing both sides to just the name — otherwise "…transferred to
+/// Marie…" and "You have received … from Marie…" would never match.
+const Set<String> _descriptionStopWords = {
+  'transfer', 'transferred', 'transfers', 'confirmation', 'between',
+  'accounts', 'account', 'payment', 'payments', 'paid', 'pay',
+  'received', 'receive', 'sent', 'send', 'sending', 'completed', 'complete',
+  'successful', 'successfully', 'you', 'your', 'yours', 'have', 'has', 'was',
+  'were', 'is', 'are', 'been', 'be', 'the', 'a', 'an', 'of', 'to', 'from',
+  'at', 'on', 'in', 'for', 'and', 'with', 'incl', 'fee', 'fees', 'balance',
+  'mobile', 'money', 'wallet', 'bank', 'new', 'now', 'ref',
+  // Kinyarwanda equivalents
+  'umaze', 'kohereza', 'wakiriye', 'wishyuye', 'wohereje', 'watanze',
+  'wahawe', 'amafaranga', 'kuva', 'kuri', 'konti', 'yawe', 'ifiteho',
+  // Currency tokens — they'd otherwise survive the letters-only filter.
+  'rwf', 'frw', 'kes', 'ksh', 'kshs', 'ugx', 'ush', 'tzs', 'tsh', 'ngn',
+  'ghs', 'ghc', 'zar', 'xaf', 'fcfa', 'cfa', 'usd', 'eur', 'gbp', 'cad',
+  'inr',
+};
+
 /// Strip a description down to the counterparty name for comparison, e.g.
-/// "To Yves RUTEMBEZA (incl. 20 fee)" → "yves rutembeza".
+/// both "Your payment of 400 RWF to David was completed" and "You have
+/// received 400 RWF from David" reduce to "david".
 String _counterpartyKey(String description) {
   var s = description.toLowerCase();
   s = s.replaceAll(RegExp(r'\(.*?\)'), ' '); // bracketed extras
-  s = s.replaceAll(
-      RegExp(r'^(transfer:|to|from)\s+', caseSensitive: false), ' ');
   s = s.replaceAll(RegExp(r'[^a-z ]'), ' '); // digits, punctuation
-  return s.replaceAll(RegExp(r'\s+'), ' ').trim();
+  final words = s
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty && !_descriptionStopWords.contains(w));
+  return words.join(' ').trim();
 }
 
 /// Decide whether [candidate] duplicates, or pairs with, something recorded

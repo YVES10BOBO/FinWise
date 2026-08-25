@@ -27,6 +27,18 @@
     <uses-permission android:name="android.permission.READ_SMS" />
 
     <!--
+      Requesting SMS permissions makes Android imply that the device MUST have
+      telephony hardware, which silently removed ~3,900 devices from Play
+      distribution — every Wi-Fi-only tablet, Chromebook and TV.
+      FinWise works perfectly well without a SIM (manual entry, goals, charts,
+      sync), so telephony is explicitly optional. SMS auto-detection simply
+      stays inactive on devices that can't receive messages.
+    -->
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+
+    <!--
       Foreground service — keeps FinWise's process alive (with a visible,
       required notification) while SMS auto-detect is on, so Android is
       much less likely to kill the app before it can react to an incoming

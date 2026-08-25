@@ -14,7 +14,11 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.yves.finwise"
-    compileSdk = flutter.compileSdkVersion
+    // Pinned explicitly rather than inheriting flutter.compileSdkVersion,
+    // which varies with the installed Flutter SDK. Google Play requires apps
+    // to target Android 16 (API 36); an earlier build silently dropped to 35
+    // after a Flutter upgrade and was flagged.
+    compileSdk = 36
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -38,7 +42,9 @@ android {
         // package (SMS auto-detection) which uses APIs not available before
         // Android 6.0. This means FinWise now requires Android 6.0+ to install.
         minSdk = 23
-        targetSdk = flutter.targetSdkVersion
+        // Android 16 — required by Google Play. Pinned for the same reason
+        // as compileSdk above.
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

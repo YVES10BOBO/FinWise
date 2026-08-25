@@ -68,6 +68,12 @@ class TransactionProvider with ChangeNotifier {
     };
 
     for (final t in _transactions) {
+      // Transfers move money between the user's own accounts. We record one
+      // entry per transfer, which can't express "left A, arrived at B", so
+      // treating it as a withdrawal would wrongly shrink the total balance.
+      // It is therefore neutral: the total stays correct.
+      if (t.type == TransactionType.transfer) continue;
+
       final sign = t.type == TransactionType.income ? 1.0 : -1.0;
       balances[t.account] = (balances[t.account] ?? 0.0) + sign * t.amount;
     }

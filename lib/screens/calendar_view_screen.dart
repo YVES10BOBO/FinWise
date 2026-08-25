@@ -69,7 +69,14 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
         final selectedEvents = _getEventsForDay(_selectedDay);
         final dayTotal = selectedEvents.fold<double>(
           0.0,
-          (sum, t) => sum + (t.type == TransactionType.income ? t.amount : -t.amount),
+          // Transfers are excluded — money moving between the user's own
+          // accounts is neither a gain nor a loss for the day's net figure.
+          (sum, t) => sum +
+              switch (t.type) {
+                TransactionType.income => t.amount,
+                TransactionType.expense => -t.amount,
+                TransactionType.transfer => 0.0,
+              },
         );
 
         return Scaffold(

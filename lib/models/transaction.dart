@@ -1,6 +1,22 @@
 import 'package:flutter/material.dart';
 
-enum TransactionType { income, expense }
+enum TransactionType {
+  income,
+  expense,
+
+  /// Money moved between the user's OWN accounts (e.g. Mobile Money to bank).
+  ///
+  /// This is neither a gain nor a loss — the user's total wealth is unchanged,
+  /// the money simply sits somewhere else. Providers send TWO messages for one
+  /// move ("you sent to bank" and "you received from wallet"), which would
+  /// otherwise be recorded as an expense AND an income, inflating both totals
+  /// and corrupting the savings rate.
+  ///
+  /// Transfers are therefore excluded from income totals, expense totals,
+  /// spending charts and the savings rate. Any FEE charged on the transfer is
+  /// recorded separately as a real expense, because that money genuinely left.
+  transfer,
+}
 
 /// Which pot the money comes from / goes to.
 enum AccountType { cash, mobileMoney, bank }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../screens/faq_screen.dart';
 import '../services/support_contact_service.dart';
 import '../theme/app_theme.dart';
+import 'whatsapp_preview_card.dart';
 
 /// Bottom sheet shown by the help icon: browse the FAQ, or reach out
 /// directly. Reusable from anywhere in the app — see [showContactSheet].
@@ -79,19 +81,13 @@ class _ContactSheet extends StatelessWidget {
               },
             ),
             _ContactOption(
-              icon: Icons.chat_outlined,
-              color: AppTheme.accentDark,
+              icon: FontAwesomeIcons.whatsapp,
+              color: whatsAppGreen,
               title: 'WhatsApp us',
               subtitle: 'Chat with us on WhatsApp',
-              onTap: () async {
+              onTap: () {
                 Navigator.pop(context);
-                final ok = await SupportContactService.whatsAppUs();
-                if (!ok && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Could not open WhatsApp')),
-                  );
-                }
+                showWhatsAppPreview(context);
               },
             ),
           ],
@@ -126,7 +122,9 @@ class _ContactOption extends StatelessWidget {
           color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, color: color),
+        // FaIcon renders both Material and FontAwesome glyphs correctly,
+        // so the WhatsApp mark can sit alongside the Material ones.
+        child: FaIcon(icon, color: color, size: 20),
       ),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),

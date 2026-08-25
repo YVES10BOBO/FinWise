@@ -117,9 +117,13 @@ class _TransactionItemState extends State<TransactionItem>
                   borderRadius: BorderRadius.circular(12),
                   border: Border(
                     left: BorderSide(
-                      color: transaction.type == TransactionType.income
-                          ? AppTheme.incomeColor
-                          : AppTheme.expenseColor,
+                      // Transfers are neutral — money moved between the
+                      // user's own accounts, so neither green nor red.
+                      color: switch (transaction.type) {
+                        TransactionType.income => AppTheme.incomeColor,
+                        TransactionType.expense => AppTheme.expenseColor,
+                        TransactionType.transfer => AppTheme.textLight,
+                      },
                       width: 4,
                     ),
                   ),
@@ -218,13 +222,21 @@ class _TransactionItemState extends State<TransactionItem>
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '${transaction.type == TransactionType.income ? '+' : '-'}${currencyProvider.formatCompact(transaction.amount)}',
+                          // Transfers show no sign — the money didn't enter
+                          // or leave, it just moved between own accounts.
+                          '${switch (transaction.type) {
+                            TransactionType.income => '+',
+                            TransactionType.expense => '-',
+                            TransactionType.transfer => '',
+                          }}${currencyProvider.formatCompact(transaction.amount)}',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
-                            color: transaction.type == TransactionType.income
-                                ? AppTheme.incomeColor
-                                : AppTheme.expenseColor,
+                            color: switch (transaction.type) {
+                              TransactionType.income => AppTheme.incomeColor,
+                              TransactionType.expense => AppTheme.expenseColor,
+                              TransactionType.transfer => AppTheme.textSecondary,
+                            },
                           ),
                         ),
                         if (onEdit != null)

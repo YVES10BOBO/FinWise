@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 import '../theme/theme_provider.dart';
@@ -138,9 +139,10 @@ class SettingsScreen extends StatelessWidget {
             title: 'Automation',
             children: [
               SmsAutoDetectTile(),
-              // The "Test SMS Parser" developer tool lives at
-              // screens/sms_parser_test_screen.dart. It is intentionally NOT
-              // linked here — it's a debugging aid, not a user feature.
+              // The old on-device "Test SMS Parser" screen was removed —
+              // parsing is now covered by test/sms_transaction_parser_test.dart,
+              // which checks real provider messages automatically instead of
+              // needing a hidden debug screen in the shipped app.
             ],
           ),
           const SizedBox(height: 20),
@@ -182,11 +184,22 @@ class SettingsScreen extends StatelessWidget {
           _SettingsSection(
             title: 'About',
             children: [
-              _SettingsTile(
-                icon: Icons.info_outline,
-                title: 'App Version',
-                subtitle: '1.0.0 (Build 1)',
-                onTap: null,
+              // Read at runtime — a hardcoded string here had silently drifted
+              // to "1.0.0 (Build 1)" while the app shipped as 1.2.x, which is
+              // misleading for users and useless for support.
+              FutureBuilder<PackageInfo>(
+                future: PackageInfo.fromPlatform(),
+                builder: (context, snapshot) {
+                  final info = snapshot.data;
+                  return _SettingsTile(
+                    icon: Icons.info_outline,
+                    title: 'App Version',
+                    subtitle: info == null
+                        ? 'Loading…'
+                        : '${info.version} (Build ${info.buildNumber})',
+                    onTap: null,
+                  );
+                },
               ),
               _SettingsTile(
                 icon: Icons.help_outline,

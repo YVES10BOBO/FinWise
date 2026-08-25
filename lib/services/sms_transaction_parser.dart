@@ -79,11 +79,16 @@ class SmsTransactionParser {
   static const List<String> _promoWords = [
     // English
     'expired', 'expires', 'offer', 'buy now', 'promo', 'promotion',
-    'subscribe', 'dial ', 'renew', 'bundle expired', 'win ', 'congratulations',
+    'subscribe', 'renew', 'bundle expired', 'win ', 'congratulations',
     'click', 'download', 'sale', 'discount', 'advertis',
     // Kinyarwanda
     'rangura', 'gura ', 'urangura', 'byarangiye', 'ongera', 'igurishwa',
     'kanda', 'andika', 'serivisi nshya',
+    // NOTE: 'dial ' used to be here, but MTN appends a cross-sell footer —
+    // "Dial *182*1*3# and send money abroad" — to plenty of REAL transaction
+    // confirmations, not just adverts. That one word was silently dropping
+    // genuine transfers, so it's gone; the other, more specific promo words
+    // still catch actual adverts.
   ];
 
   /// True when the message is an advert or service notice rather than a
@@ -96,12 +101,22 @@ class SmsTransactionParser {
   /// Words indicating money moved between the user's OWN accounts (wallet to
   /// bank, bank to wallet) rather than to another person or merchant.
   static const List<String> _transferHints = [
-    // English
+    // English — deliberately only wording that names the user's OWN
+    // account/wallet ("your", "own"), or the MoCash product name. Generic
+    // phrases like "bank transfer" or "to bank account" were removed: those
+    // also match ordinary bill/merchant payments (e.g. "payment of 5,000
+    // RWF to bank account 12345 for school fees"), which wrongly turned a
+    // real expense into a neutral Transfer.
     'to your bank', 'from your bank', 'to your account', 'from your account',
-    'to your wallet', 'from your wallet', 'bank transfer', 'own account',
-    'to bank account', 'from bank account', 'mocash', 'mo cash',
-    // Kinyarwanda — saving to / withdrawing from a sub-wallet like MoCash is
-    // still the user's own money moving between their own accounts.
+    'to your wallet', 'from your wallet', 'own account',
+    // MTN Rwanda's actual product spelling is "Mokash" — keep both in case
+    // wording varies, since "mocash" is the more commonly typed spelling
+    // elsewhere but not what the real SMS says.
+    'mocash', 'mo cash', 'mokash', 'mo kash',
+    // Kinyarwanda — "yawe" means "your", so these are unambiguous about
+    // whose account it is. Saving to / withdrawing from a sub-wallet like
+    // MoCash is still the user's own money moving between their own
+    // accounts.
     'kuri konti yawe', 'konti yawe ya banki', 'muri banki yawe',
     'kubika', 'kubitse', 'gukuramo', 'kubikuza',
   ];
@@ -186,11 +201,25 @@ class SmsTransactionParser {
   }) {
     if (!looksLikeMomoMessage(sender, body)) return null;
 
-    // Adverts and service notices mention money but record no transaction.
-    if (looksPromotional(body)) return null;
-
     final amount = _extractAmount(body);
     if (amount == null || amount <= 0) return null;
+
+    final officialTxId = _extractTransactionId(body);
+
+    // Adverts and service notices mention money but record no transaction —
+    // BUT some providers append a promotional footer to a REAL transaction
+    // confirmation (e.g. "...Balance: 4692RWF. Dial *182*1*3# and send money
+    // abroad"). That footer alone shouldn't throw away a genuine payment.
+    // Skip the promo filter when the message already has strong evidence of
+    // a real transaction: either an official reference number, or — since
+    // some real MTN confirmations (the "*165*S*" send-money format) carry no
+    // reference number at all — the combination of a stated fee AND a
+    // resulting balance, which promotional/service texts don't state.
+    final hasFeeAndBalance = RegExp(r'fee\s*[:\s]', caseSensitive: false)
+            .hasMatch(body) &&
+        RegExp(r'balance\s*[:\s]', caseSensitive: false).hasMatch(body);
+    final hasStrongTransactionSignal = officialTxId != null || hasFeeAndBalance;
+    if (!hasStrongTransactionSignal && looksPromotional(body)) return null;
 
     // Money moved between the user's own accounts (including MoCash
     // save/withdraw) is a transfer, not a gain or a loss — see
@@ -202,12 +231,22 @@ class SmsTransactionParser {
     final type =
         isTransfer ? TransactionType.transfer : _extractDirection(body);
 
-    final txId = _extractTransactionId(body);
-
-    // A reference number is REQUIRED for income and expenses, because a false
-    // one corrupts the balance and every chart. Transfers are exempt: they're
-    // financially neutral, so recording one without a reference is harmless,
-    // and some providers omit the id on the transfer confirmation.
+    // A reference number is normally REQUIRED for income/expenses, because a
+    // false one corrupts the balance and every chart. But some genuine
+    // provider messages (again, MTN's "*165*S*" format) never include one at
+    // all — only the transaction's own timestamp ("at 2026-08-25
+    // 10:11:48"). When that's all we have, use it — combined with the
+    // amount — as a synthetic reference. It's pulled straight from the SMS
+    // text, so it comes out identical no matter which code path parses this
+    // exact message, which is exactly what de-duplication needs.
+    var txId = officialTxId;
+    if (txId == null) {
+      final messageTimestamp = _extractMessageTimestamp(body);
+      if (messageTimestamp != null) {
+        txId =
+            'ts${messageTimestamp.millisecondsSinceEpoch}a${amount.toStringAsFixed(0)}';
+      }
+    }
     if (txId == null && !isTransfer) return null;
 
     // Transaction fees genuinely leave the account, so an expense of 1,000
@@ -221,8 +260,13 @@ class SmsTransactionParser {
     // because the fee IS a genuine loss even though the transfer isn't.
     final total = type == TransactionType.expense ? amount + fee : amount;
 
+    // Prefer the provider's own sentence ("Your payment of 400 RWF to David
+    // 1812139 was completed") over a bare "To David" — far easier to
+    // recognise in history weeks later. Falls back to the short
+    // counterparty form when no clean sentence can be pulled out.
     final counterparty = _extractCounterparty(body);
-    var description = counterparty ??
+    var description = _extractSummarySentence(body) ??
+        counterparty ??
         switch (type) {
           TransactionType.income => 'Mobile Money received',
           TransactionType.transfer => 'Transfer between accounts',
@@ -254,7 +298,7 @@ class SmsTransactionParser {
       detectedAt: receivedAt ?? DateTime.now(),
       rawSnippet: snippet,
       messageBody: body,
-      txId: _extractTransactionId(body),
+      txId: txId,
       fee: fee > 0 ? fee : null,
     );
   }
@@ -327,6 +371,19 @@ class SmsTransactionParser {
       runs.sort((a, b) => b.length.compareTo(a.length));
       return runs.first;
     }
+
+    // 3. Fallback: an embedded provider timestamp, e.g.
+    //    "...transferred to X (250789...) at 2026-08-25 10:11:48. Fee: ...".
+    //    Some newer MTN message formats have no labelled reference at all —
+    //    but they DO state the exact second the transaction happened, which
+    //    is provider-generated and precise enough to use as a stable
+    //    de-dup key, same role a TxId would normally play.
+    final timestamp = RegExp(r'(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})')
+        .firstMatch(body);
+    if (timestamp != null) {
+      return timestamp.group(1)!.replaceAll(RegExp(r'[:\s]'), '-');
+    }
+
     return null;
   }
 
@@ -337,6 +394,62 @@ class SmsTransactionParser {
     if (digits.length == 10 && digits.startsWith('07')) return true;
     if (digits.length == 9 && digits.startsWith('7')) return true;
     return false;
+  }
+
+  /// Pull the provider's own description of what happened out of the SMS,
+  /// so history reads "Your payment of 400 RWF to David 1812139 was
+  /// completed" instead of just "To David".
+  ///
+  /// Deliberately keeps only the human-readable clause: the routing prefix
+  /// (`TxId:...*S*`, `*165*S*`), the trailing balance/fee/reference
+  /// bookkeeping, and any "Dial ..." marketing footer are all stripped,
+  /// since none of that helps the user recognise the transaction.
+  static String? _extractSummarySentence(String body) {
+    var s = body;
+
+    // Routing/reference prefixes providers put before the real sentence.
+    s = s.replaceAll(
+        RegExp(r'^\s*\*?\d+\*[A-Za-z]\*', caseSensitive: false), '');
+    s = s.replaceAll(
+        RegExp(r'^\s*TxId\s*:?\s*\d+\s*\*[A-Za-z]\*', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r"^\s*Y'?ello[.,!]?\s*", caseSensitive: false), '');
+
+    // Keep only the first sentence — the rest is balance/fee/marketing.
+    final firstSentence = s.split(RegExp(r'(?<=[.!])\s+|\s*\.(?=[A-Z])')).first;
+    s = firstSentence;
+
+    // Trailing bookkeeping that adds no meaning for the user.
+    s = s.replaceAll(
+        RegExp(r'\s+at\s+\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}:\d{2}.*$',
+            caseSensitive: false),
+        '');
+    s = s.replaceAll(
+        RegExp(r'\s*(tariki|on)\s+\d{1,4}[/-]\d{1,2}[/-]\d{1,4}.*$',
+            caseSensitive: false),
+        '');
+    s = s.replaceAll(RegExp(r'\s*\*EN#.*$', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'\s*Dial\s+\*.*$', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'\s*Ref\s*:?\s*\d+.*$', caseSensitive: false), '');
+
+    s = s.replaceAll(RegExp(r'\s+'), ' ').trim();
+    // Strip dangling punctuation left behind by the removals above.
+    s = s.replaceAll(RegExp(r'^[.,;:\-\s]+|[.,;:\-\s]+$'), '').trim();
+
+    // Too short to be a real sentence, or so long it would be unreadable in
+    // a list row — fall back to the simpler description in both cases.
+    if (s.length < 12) return null;
+    if (s.length > 110) s = '${s.substring(0, 107)}…';
+    return s;
+  }
+
+  /// Pull the message's own stated date/time out of the text (e.g. "at
+  /// 2026-08-25 10:11:48"). Used as a fallback reference when the provider's
+  /// message has no separate transaction id at all.
+  static DateTime? _extractMessageTimestamp(String body) {
+    final match =
+        RegExp(r'(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})').firstMatch(body);
+    if (match == null) return null;
+    return DateTime.tryParse(match.group(1)!.replaceFirst(' ', 'T'));
   }
 
   static double? _extractAmount(String body) {
@@ -383,6 +496,7 @@ class SmsTransactionParser {
       'credited',
       'has been credited',
       'added to your',
+      'transferred from',
       // Kinyarwanda
       'wakiriye', // you have received
       'wahawe', // you were given
@@ -400,6 +514,7 @@ class SmsTransactionParser {
       'debited',
       'purchase of',
       'transfer of',
+      'transferred to',
       'you have used', // MoMoAdvance / overdraft usage messages
       'paid to',
       'bought',

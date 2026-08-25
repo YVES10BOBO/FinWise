@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/support_contact_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/whatsapp_preview_card.dart';
 
 class _Faq {
   final String question;
@@ -250,7 +251,7 @@ class FaqScreen extends StatelessWidget {
                           foregroundColor: Colors.white,
                           side: const BorderSide(color: Colors.white),
                         ),
-                        onPressed: () => SupportContactService.whatsAppUs(),
+                        onPressed: () => showWhatsAppPreview(context),
                         icon: const Icon(Icons.chat_outlined, size: 18),
                         label: const Text('WhatsApp'),
                       ),
