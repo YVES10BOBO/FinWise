@@ -372,13 +372,35 @@ class _GoalCard extends StatelessWidget {
               children: [
                 // ── Header: icon ring + name + status ──────────────────
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _ProgressRing(
-                      progress: progress,
-                      color: accent,
-                      icon: goal.icon,
+                    // Ring + the category name beneath it, so the icon's
+                    // meaning is never left to guesswork.
+                    SizedBox(
+                      width: 62,
+                      child: Column(
+                        children: [
+                          _ProgressRing(
+                            progress: progress,
+                            color: accent,
+                            icon: goal.icon,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            goal.iconLabel,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 9,
+                              height: 1.2,
+                              color: AppTheme.textLight,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

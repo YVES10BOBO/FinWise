@@ -154,13 +154,50 @@ class Goal {
     'laptop': Icons.laptop_mac_outlined,
     'car': Icons.directions_car_outlined,
     'house': Icons.house_outlined,
+    'land': Icons.landscape_outlined,
     'education': Icons.school_outlined,
+    'business': Icons.storefront_outlined,
     'travel': Icons.flight_takeoff_outlined,
-    'ring': Icons.favorite_border,
+    'wedding': Icons.favorite_border,
+    'family': Icons.family_restroom_outlined,
+    'health': Icons.local_hospital_outlined,
+    'emergency': Icons.shield_outlined,
     'phone': Icons.phone_iphone,
+    'furniture': Icons.chair_outlined,
+    'clothes': Icons.checkroom_outlined,
     'gaming': Icons.videogame_asset_outlined,
+    'debt': Icons.receipt_long_outlined,
+    'gift': Icons.card_giftcard_outlined,
     'other': Icons.flag_outlined,
   };
+
+  /// Human-readable name for each icon, shown under it in the picker and on
+  /// the goal card — an icon alone is easy to misread, and users pick the
+  /// right category far more reliably when it's labelled.
+  static const Map<String, String> goalIconLabels = {
+    'savings': 'Savings',
+    'laptop': 'Laptop',
+    'car': 'Car',
+    'house': 'House',
+    'land': 'Land / Plot',
+    'education': 'Education',
+    'business': 'Business',
+    'travel': 'Travel',
+    'wedding': 'Wedding',
+    'family': 'Family',
+    'health': 'Health',
+    'emergency': 'Emergency fund',
+    'phone': 'Phone',
+    'furniture': 'Furniture',
+    'clothes': 'Clothes',
+    'gaming': 'Gaming',
+    'debt': 'Pay off debt',
+    'gift': 'Gift',
+    'other': 'Other',
+  };
+
+  /// Label for the stored key, with the same safe fallback as [icon].
+  String get iconLabel => goalIconLabels[iconKey] ?? 'Other';
 
   Map<String, dynamic> toJson() => {
         'id': id,

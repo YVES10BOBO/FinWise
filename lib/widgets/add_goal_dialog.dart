@@ -118,43 +118,79 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                Wrap(
-                  spacing: 10,
-                  children: _iconOptions.entries.map((entry) {
-                    final key = entry.key;
-                    final icon = entry.value;
-                    final isSelected = _selectedIconKey == key;
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedIconKey = key;
-                        });
-                      },
-                      child: Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppTheme.primaryColor.withValues(alpha: 0.1)
-                              : Colors.grey[200],
-                          border: Border.all(
-                            color: isSelected
-                                ? AppTheme.primaryColor
-                                : Colors.transparent,
-                            width: 2,
+                // Capped height + scroll: the list is long enough now that
+                // letting it grow freely would push the amount/date fields
+                // off screen on smaller phones.
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 210),
+                  child: SingleChildScrollView(
+                    child: Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: _iconOptions.entries.map((entry) {
+                        final key = entry.key;
+                        final icon = entry.value;
+                        final label = Goal.goalIconLabels[key] ?? key;
+                        final isSelected = _selectedIconKey == key;
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedIconKey = key;
+                            });
+                          },
+                          child: SizedBox(
+                            width: 72,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 50,
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? AppTheme.primaryColor
+                                            .withValues(alpha: 0.1)
+                                        : Colors.grey[200],
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? AppTheme.primaryColor
+                                          : Colors.transparent,
+                                      width: 2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Center(
+                                    child: Icon(
+                                      icon,
+                                      size: 24,
+                                      color: AppTheme.primaryColor,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  label,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    height: 1.2,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                    color: isSelected
+                                        ? AppTheme.primaryColor
+                                        : AppTheme.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            icon,
-                            size: 24,
-                            color: AppTheme.primaryColor,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                        );
+                      }).toList(),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 20),
                 // Goal Name
