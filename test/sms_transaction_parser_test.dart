@@ -75,6 +75,28 @@ void main() {
       expect(parsed, isNull);
     });
 
+    test('"buy another one" advert is ignored even with a long number', () {
+      // Regression: adverts carry long numbers and balances too, so treating
+      // those as proof of a real transaction let these through.
+      final parsed = SmsTransactionParser.parse(
+        sender,
+        'Your 500Frw pack expired. Dial *255# to Buy another one. '
+        'Ref 123456789012. Balance: 300 RWF',
+      );
+
+      expect(parsed, isNull);
+    });
+
+    test('"borrow again" loan advert is ignored', () {
+      final parsed = SmsTransactionParser.parse(
+        sender,
+        'You have repaid your loan. You can borrow again up to 100 RWF. '
+        'Dial *182*7# now. Ref 998877665544',
+      );
+
+      expect(parsed, isNull);
+    });
+
     test('a real transaction is NOT discarded just for a marketing footer',
         () {
       // The "Dial *182..." footer alone must not veto a genuine payment.

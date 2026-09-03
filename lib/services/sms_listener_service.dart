@@ -28,6 +28,22 @@ const String kSmsDebugKey = 'sms_auto_detect_debug';
 /// already handled, so it only processes genuinely new messages.
 const String kLastPolledSmsDateKey = 'sms_last_polled_date';
 
+/// When a transaction was last successfully recorded from an SMS.
+///
+/// This is the app's health signal. Detection depends on regex matching
+/// wording the provider controls and can change without notice, on a
+/// permission Android can revoke, and on a background service OEM battery
+/// managers like to kill — and ALL of those fail silently. Every figure in
+/// the app is derived from the transaction list, so silent failure doesn't
+/// show an error, it shows a confidently wrong balance. Recording when
+/// detection last worked is what makes that failure visible.
+const String kLastDetectionAtKey = 'sms_last_detection_at';
+
+/// When the SMS inbox was last successfully scanned, regardless of whether
+/// anything financial was found. Distinguishes "running fine, you just
+/// haven't spent anything" from "not running at all".
+const String kLastScanAtKey = 'sms_last_scan_at';
+
 /// Build a Transaction from a parsed SMS. Same in every isolate so the id is
 /// identical for one message → foreground and background never double-count.
 Transaction _buildTransaction(ParsedSmsTransaction parsed) {
@@ -51,6 +67,9 @@ Transaction _buildTransaction(ParsedSmsTransaction parsed) {
     date: parsed.detectedAt,
     account: parsed.account,
     isAutoDetected: true,
+    // Keep the provider's exact wording so the user can check what was
+    // actually read — the list shows a summary, the detail view the original.
+    smsBody: parsed.messageBody,
   );
 }
 
@@ -95,6 +114,14 @@ Future<void> _processSms(String sender, String body, {DateTime? receivedAt}) asy
   Transaction? built;
   try {
     final prefs = await SharedPreferences.getInstance();
+    // MUST reload before reading the toggle. This runs in several isolates
+    // (background SMS handler, foreground service, UI), and each holds its
+    // OWN in-memory snapshot of SharedPreferences taken when it started.
+    // Turning auto-detect off in Settings writes from the UI isolate only —
+    // without this reload the background isolates keep their stale `true`
+    // and carry on recording, which looked exactly like the switch doing
+    // nothing.
+    await prefs.reload();
     final enabled = prefs.getBool(kSmsAutoDetectEnabledKey) ?? true;
     if (!enabled) return;
     // Diagnostic notifications are OFF by default — they were a development
@@ -178,6 +205,10 @@ Future<void> _processSms(String sender, String body, {DateTime? receivedAt}) asy
 
     // 4. Success confirmation.
     await TransactionNotifier.showDetected(transaction);
+
+    // 5. Health signal — proof the whole pipeline worked end to end.
+    await prefs.setInt(
+        kLastDetectionAtKey, DateTime.now().millisecondsSinceEpoch);
   } catch (e) {
     // Only in debug builds, and never with message contents.
     if (kDebugMode) debugPrint('FinWise: SMS processing failed: $e');
@@ -359,6 +390,50 @@ Future<_PairOutcome> _classifyAgainstRecent(
   return _PairOutcome.none;
 }
 
+/// A snapshot of whether auto-detection is actually working.
+///
+/// Deliberately reports the *causes* separately (off, no permission, being
+/// battery-throttled, nothing found in a long time) because each has a
+/// different fix, and telling the user "it's not working" without telling
+/// them why is barely better than staying silent.
+class SmsDetectionHealth {
+  final bool enabled;
+  final bool permissionGranted;
+  final DateTime? lastDetection;
+  final DateTime? lastScan;
+  final bool batteryOptimized;
+
+  const SmsDetectionHealth({
+    required this.enabled,
+    required this.permissionGranted,
+    required this.lastDetection,
+    required this.lastScan,
+    required this.batteryOptimized,
+  });
+
+  /// Detection has been silent long enough to be worth questioning. Two
+  /// weeks is deliberately generous: a genuinely quiet fortnight is possible,
+  /// and crying wolf would train users to ignore the warning.
+  static const Duration quietThreshold = Duration(days: 14);
+
+  bool get isQuiet {
+    if (!enabled || !permissionGranted) return false;
+    final last = lastDetection;
+    if (last == null) return false; // never detected yet — not a fault
+    return DateTime.now().difference(last) > quietThreshold;
+  }
+
+  /// True when something is definitely wrong rather than merely quiet.
+  bool get isBroken => enabled && !permissionGranted;
+
+  /// Whether the pipeline is confirmed alive, even if no money moved.
+  bool get isScanningRecently {
+    final scan = lastScan;
+    if (scan == null) return false;
+    return DateTime.now().difference(scan) < const Duration(hours: 24);
+  }
+}
+
 /// Background handler — required by `telephony`. Runs in its own isolate when
 /// an SMS arrives while FinWise isn't in the foreground. Records directly.
 @pragma('vm:entry-point')
@@ -389,6 +464,15 @@ class SmsListenerService {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(kSmsAutoDetectEnabledKey, true);
+
+    // Start from NOW, never from wherever the poller left off previously.
+    // A user who turns auto-detect off and records by hand for a fortnight
+    // would otherwise have that whole backlog replayed on re-enabling —
+    // duplicating everything they already entered manually. Messages that
+    // arrived while the feature was deliberately off are not ours to record.
+    await prefs.setInt(
+        kLastPolledSmsDateKey, DateTime.now().millisecondsSinceEpoch);
+
     _listen();
 
     await ForegroundServiceHandler.requestPermissions();
@@ -473,6 +557,10 @@ class SmsListenerService {
       return;
     }
 
+    // The scan itself succeeded — record that even when there was nothing
+    // financial to find, so "quiet" can be told apart from "broken".
+    await prefs.setInt(kLastScanAtKey, DateTime.now().millisecondsSinceEpoch);
+
     if (messages.isEmpty) return;
 
     var newest = lastDate;
@@ -488,6 +576,29 @@ class SmsListenerService {
       if (d > newest) newest = d;
     }
     await prefs.setInt(kLastPolledSmsDateKey, newest);
+  }
+
+  /// How the app is doing at actually detecting transactions — see
+  /// [kLastDetectionAtKey] for why this exists.
+  static Future<SmsDetectionHealth> health() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
+
+    final enabled = prefs.getBool(kSmsAutoDetectEnabledKey) ?? true;
+    final permitted = await _telephony.requestSmsPermissions ?? false;
+
+    DateTime? at(String key) {
+      final ms = prefs.getInt(key);
+      return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+    }
+
+    return SmsDetectionHealth(
+      enabled: enabled,
+      permissionGranted: permitted,
+      lastDetection: at(kLastDetectionAtKey),
+      lastScan: at(kLastScanAtKey),
+      batteryOptimized: await ForegroundServiceHandler.isBatteryOptimized,
+    );
   }
 
   static void _listen() {

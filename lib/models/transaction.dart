@@ -135,6 +135,14 @@ class Transaction {
   /// wrong (amount, category, or direction) in a way manual entry can't.
   final bool isAutoDetected;
 
+  /// The full original SMS text, kept only for auto-detected transactions.
+  ///
+  /// The list shows a short summary, but when the user opens a transaction
+  /// they can read the provider's exact wording — which is the only way to
+  /// check whether an amount, fee or direction was read correctly. Stays on
+  /// the device and in the user's own account, same as every other field.
+  final String? smsBody;
+
   Transaction({
     required this.id,
     required this.type,
@@ -145,6 +153,7 @@ class Transaction {
     required this.account,
     this.reason,
     this.isAutoDetected = false,
+    this.smsBody,
   });
 
   // Convert to JSON for storage
@@ -159,6 +168,7 @@ class Transaction {
       'account': account.name,
       'reason': reason?.name,
       'isAutoDetected': isAutoDetected,
+      'smsBody': smsBody,
     };
   }
 
@@ -190,6 +200,9 @@ class Transaction {
       // Defaults to false for any transaction saved before this field
       // existed, so old local/Firestore data keeps loading correctly.
       isAutoDetected: json['isAutoDetected'] as bool? ?? false,
+      // Null for anything recorded before the full message was kept, and for
+      // every manually-entered transaction.
+      smsBody: json['smsBody'] as String?,
     );
   }
 
@@ -204,6 +217,7 @@ class Transaction {
     AccountType? account,
     SpendingReason? reason,
     bool? isAutoDetected,
+    String? smsBody,
   }) {
     return Transaction(
       id: id ?? this.id,
@@ -215,6 +229,7 @@ class Transaction {
       account: account ?? this.account,
       reason: reason ?? this.reason,
       isAutoDetected: isAutoDetected ?? this.isAutoDetected,
+      smsBody: smsBody ?? this.smsBody,
     );
   }
 }

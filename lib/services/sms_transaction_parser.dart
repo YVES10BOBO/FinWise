@@ -81,9 +81,14 @@ class SmsTransactionParser {
     'expired', 'expires', 'offer', 'buy now', 'promo', 'promotion',
     'subscribe', 'renew', 'bundle expired', 'win ', 'congratulations',
     'click', 'download', 'sale', 'discount', 'advertis',
+    // Invitations to buy/borrow again. A genuine receipt never asks you to
+    // start another transaction — these were being recorded as real
+    // payments ("To buy another one", "To borrow again").
+    'buy another', 'to buy another', 'borrow again', 'to borrow',
+    'you can borrow', 'apply for', 'get a loan', 'top up now',
     // Kinyarwanda
     'rangura', 'gura ', 'urangura', 'byarangiye', 'ongera', 'igurishwa',
-    'kanda', 'andika', 'serivisi nshya',
+    'kanda', 'andika', 'serivisi nshya', 'kwaka inguzanyo', 'saba inguzanyo',
     // NOTE: 'dial ' used to be here, but MTN appends a cross-sell footer —
     // "Dial *182*1*3# and send money abroad" — to plenty of REAL transaction
     // confirmations, not just adverts. That one word was silently dropping
@@ -93,6 +98,12 @@ class SmsTransactionParser {
 
   /// True when the message is an advert or service notice rather than a
   /// record of money actually moving.
+  ///
+  /// This is an unconditional veto: unlike the old behaviour, a message
+  /// containing any of these words is never recorded, even if it also
+  /// happens to contain a long number or a balance. Adverts routinely carry
+  /// both, which is exactly how "pack expired, buy another one" ended up in
+  /// the transaction list.
   static bool looksPromotional(String body) {
     final lower = body.toLowerCase();
     return _promoWords.any(lower.contains);
@@ -206,20 +217,11 @@ class SmsTransactionParser {
 
     final officialTxId = _extractTransactionId(body);
 
-    // Adverts and service notices mention money but record no transaction —
-    // BUT some providers append a promotional footer to a REAL transaction
-    // confirmation (e.g. "...Balance: 4692RWF. Dial *182*1*3# and send money
-    // abroad"). That footer alone shouldn't throw away a genuine payment.
-    // Skip the promo filter when the message already has strong evidence of
-    // a real transaction: either an official reference number, or — since
-    // some real MTN confirmations (the "*165*S*" send-money format) carry no
-    // reference number at all — the combination of a stated fee AND a
-    // resulting balance, which promotional/service texts don't state.
-    final hasFeeAndBalance = RegExp(r'fee\s*[:\s]', caseSensitive: false)
-            .hasMatch(body) &&
-        RegExp(r'balance\s*[:\s]', caseSensitive: false).hasMatch(body);
-    final hasStrongTransactionSignal = officialTxId != null || hasFeeAndBalance;
-    if (!hasStrongTransactionSignal && looksPromotional(body)) return null;
+    // Adverts are vetoed outright — see looksPromotional. This deliberately
+    // runs BEFORE any "but it has a reference number" reasoning: promo texts
+    // often contain long numbers, and treating those as proof of a real
+    // transaction is what let "buy another one" adverts through.
+    if (looksPromotional(body)) return null;
 
     // Money moved between the user's own accounts (including MoCash
     // save/withdraw) is a transfer, not a gain or a loss — see

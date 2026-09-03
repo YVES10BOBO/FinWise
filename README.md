@@ -98,29 +98,28 @@ when the message mentions MoCash.
 
 Layered, with a one-way data flow. UI never talks to storage directly.
 
+```mermaid
+graph TD
+    UI["Screens / Widgets<br/><i>Flutter UI</i>"]
+    P["Providers<br/><i>ChangeNotifier state</i><br/>Transaction · Goal · Currency<br/>Income · AppLock · Category · Theme"]
+    S["Services<br/>SMS pipeline · Firestore · categorise<br/>export · notifications · deletion"]
+    SP[("SharedPreferences<br/><i>offline cache, PIN hash</i>")]
+    FB[("Firebase<br/><i>Auth, Firestore</i>")]
+
+    UI -->|watch / read| P
+    P --> S
+    S --> SP
+    S --> FB
+    P -.->|notifyListeners| UI
+
+    style UI fill:#0D7377,color:#fff
+    style P fill:#2FA84F,color:#fff
+    style S fill:#FFB700,color:#333
 ```
-        ┌──────────────────────────────────────────┐
-        │  Screens / Widgets   (Flutter UI)        │
-        └───────────────┬──────────────────────────┘
-                        │  watch / read
-        ┌───────────────▼──────────────────────────┐
-        │  Providers   (ChangeNotifier state)      │
-        │  Transaction · Goal · Currency · Income  │
-        │  AppLock · Category · Theme              │
-        └───────────────┬──────────────────────────┘
-                        │
-        ┌───────────────▼──────────────────────────┐
-        │  Services                                │
-        │  SMS pipeline · Firestore · categorise   │
-        │  export · notifications · deletion       │
-        └───────┬──────────────────────┬───────────┘
-                │                      │
-        ┌───────▼────────┐    ┌────────▼──────────┐
-        │ SharedPrefs    │    │ Firebase          │
-        │ (offline cache,│    │ (Auth, Firestore) │
-        │  PIN hash)     │    │                   │
-        └────────────────┘    └───────────────────┘
-```
+
+The dotted line is what makes the app feel live: a provider calling
+`notifyListeners()` rebuilds every screen watching it, so one deletion
+corrects the balance, charts, account totals and history at once.
 
 **Why providers matter here:** every screen reads the same
 `TransactionProvider`, so deleting a transaction on the dashboard instantly
@@ -180,20 +179,36 @@ Problems solved during development that shaped the design:
 
 The most intricate part of the app. Four entry points, **one** recording path.
 
-```
-Incoming SMS
-   ├─ telephony onNewMessage        (app in foreground)
-   ├─ telephony onBackgroundMessage (separate isolate)
-   ├─ in-app inbox poll (3s)        (app on screen)
-   └─ foreground-service poll (15s) (app backgrounded / screen off)
-                    │
-                    ▼
-            _processSms()      ← single path, sms_listener_service.dart
-                    │
-      parse → per-item slot → Firestore → notification
-                    │
-                    ▼
-   TransactionProvider.refreshFromCache()  → live UI update
+```mermaid
+sequenceDiagram
+    participant MTN as MTN / Airtel
+    participant E as Entry points<br/>(4 paths)
+    participant P as _processSms()
+    participant Parser as SmsTransactionParser
+    participant Prefs as SharedPreferences
+    participant FS as Firestore
+    participant UI as TransactionProvider → UI
+
+    MTN->>E: SMS arrives
+    Note over E: onNewMessage · background isolate<br/>in-app poll 3s · service poll 15s
+    E->>P: sender + body + timestamp
+
+    P->>Parser: parse(sender, body)
+    Parser->>Parser: financial? promo? amount? direction? fee?
+    Parser-->>P: ParsedSmsTransaction (or null → stop)
+
+    P->>Prefs: _classifyAgainstRecent()
+    Note over P,Prefs: duplicate? second half of a transfer?
+    Prefs-->>P: none / duplicate / transferPair / transferEcho
+
+    alt duplicate or transfer pair
+        P-->>E: discard — nothing recorded
+    else new transaction
+        P->>Prefs: write detected_sms_tx_&lt;id&gt;
+        P->>FS: upsertTransaction (idempotent)
+        P->>UI: notification + refreshFromCache()
+        UI-->>UI: balance, charts, history update live
+    end
 ```
 
 **Why four entry points:** the `telephony` foreground callback doesn't fire
@@ -212,6 +227,50 @@ caused earlier detections to overwrite each other.
 **`prefs.reload()` matters:** the background isolate writes to disk, but the UI
 isolate holds an in-memory snapshot. Without reloading, detections only appeared
 after an app restart.
+
+### How one message becomes income, expense, transfer — or nothing
+
+Every branch below exists because of a real bug. Read this before changing
+`sms_transaction_parser.dart`.
+
+```mermaid
+flowchart TD
+    A[SMS arrives] --> B{From a money sender,<br/>or mentions currency<br/>+ financial words?}
+    B -->|No| X1[Ignore<br/><i>personal messages never read</i>]
+    B -->|Yes| C{Has an amount?}
+    C -->|No| X2[Ignore]
+    C -->|Yes| D{Reference number,<br/>or fee + balance?}
+
+    D -->|No| E{Looks promotional?<br/><i>expired, dial, buy now</i>}
+    E -->|Yes| X3[Ignore<br/><i>pack-expired adverts</i>]
+    E -->|No| F
+    D -->|Yes| F{Names the user's OWN<br/>account or MoCash?}
+
+    F -->|Yes| G{Mentions a loan?<br/><i>inguzanyo</i>}
+    G -->|Yes| H[Income or expense<br/><i>a loan really changes what you have</i>]
+    G -->|No| I[TRANSFER<br/><i>neutral, excluded from totals</i>]
+    F -->|No| J[Direction keywords<br/>→ income or expense]
+
+    I --> K[Fee recorded separately<br/>as a real expense]
+    J --> L{Matches an opposite-direction<br/>message within 5 min?}
+    L -->|Yes| M[Both merged into<br/>ONE transfer]
+    L -->|No| N[Recorded as-is]
+
+    style I fill:#9e9e9e,color:#fff
+    style M fill:#9e9e9e,color:#fff
+    style H fill:#2FA84F,color:#fff
+    style J fill:#2FA84F,color:#fff
+    style N fill:#2FA84F,color:#fff
+```
+
+Key subtleties, each learned the hard way:
+
+- The promo filter is **skipped** when a reference number (or fee + balance)
+  proves the message is real — MTN appends "Dial *182..." to genuine receipts.
+- Transfer pairing never uses the user's profile name; it matches amount +
+  counterparty + timing, so it works for company names too.
+- "Mokash" is MTN's actual spelling. Matching only "mocash" silently recorded
+  every MoCash transfer as an expense.
 
 ### Privacy
 

@@ -99,6 +99,11 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
         date: widget.existingTransaction?.date ?? DateTime.now(),
         account: _selectedAccount,
         reason: _selectedType == TransactionType.expense ? _selectedReason : null,
+        // Carry these through an edit. Without them, correcting an
+        // auto-detected transaction stripped its "Auto" badge and threw away
+        // the original SMS — losing exactly the evidence needed to check it.
+        isAutoDetected: widget.existingTransaction?.isAutoDetected ?? false,
+        smsBody: widget.existingTransaction?.smsBody,
       );
       widget.onSave(transaction);
       Navigator.of(context).pop();
@@ -165,6 +170,49 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                     color: AppTheme.textPrimary,
                   ),
                 ),
+                // For auto-detected entries, let the user read the provider's
+                // exact wording. The list only has room for a summary, but
+                // checking whether an amount or direction was read correctly
+                // needs the original text.
+                if (widget.existingTransaction?.smsBody != null) ...[
+                  const SizedBox(height: 12),
+                  Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      tilePadding: EdgeInsets.zero,
+                      childrenPadding: const EdgeInsets.only(bottom: 8),
+                      leading: const Icon(Icons.sms_outlined,
+                          size: 18, color: AppTheme.primaryColor),
+                      title: const Text(
+                        'Original message',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.primaryColor,
+                        ),
+                      ),
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: SelectableText(
+                            widget.existingTransaction!.smsBody!,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              height: 1.5,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 // Transaction Type
                 Row(
