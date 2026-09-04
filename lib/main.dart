@@ -25,6 +25,7 @@ import 'theme/theme_provider.dart';
 import 'widgets/add_transaction_dialog.dart';
 import 'widgets/contact_sheet.dart';
 import 'services/firestore_user_profile_service.dart';
+import 'services/device_identity_service.dart';
 import 'services/sms_listener_service.dart';
 import 'services/foreground_service_handler.dart';
 import 'navigation_key.dart';
@@ -38,6 +39,10 @@ void main() async {
   // is (re)attached to a running isolate on app restart.
   FlutterForegroundTask.initCommunicationPort();
   ForegroundServiceHandler.init();
+  // Resolve the device name once here, in the main isolate where platform
+  // channels are reliable. The SMS background isolate then just reads the
+  // cached value.
+  unawaited(DeviceIdentityService.ensureResolved());
 
   // Paint the UI FIRST. Restarting the SMS listener involves a permission
   // check and starting a foreground service (which deliberately waits for

@@ -11,6 +11,7 @@ import '../models/transaction.dart';
 import '../navigation_key.dart';
 import '../providers/transaction_provider.dart';
 import 'categorization_service.dart';
+import 'device_identity_service.dart';
 import 'firestore_transaction_service.dart';
 import 'foreground_service_handler.dart';
 import 'sms_transaction_parser.dart';
@@ -47,7 +48,7 @@ const String kLastScanAtKey = 'sms_last_scan_at';
 
 /// Build a Transaction from a parsed SMS. Same in every isolate so the id is
 /// identical for one message → foreground and background never double-count.
-Transaction _buildTransaction(ParsedSmsTransaction parsed) {
+Transaction _buildTransaction(ParsedSmsTransaction parsed, {String? deviceName}) {
   return Transaction(
     // Prefer the provider's own transaction id (bulletproof de-dup: the same
     // real SMS always yields the same id, on any path, in any session). Fall
@@ -71,6 +72,9 @@ Transaction _buildTransaction(ParsedSmsTransaction parsed) {
     // Keep the provider's exact wording so the user can check what was
     // actually read — the list shows a summary, the detail view the original.
     smsBody: parsed.messageBody,
+    // Which phone read this message. Matters when several devices share one
+    // account: each reads its own inbox into the same history.
+    deviceName: deviceName,
   );
 }
 
@@ -125,6 +129,18 @@ Future<void> _processSms(String sender, String body, {DateTime? receivedAt}) asy
     await prefs.reload();
     final enabled = prefs.getBool(kSmsAutoDetectEnabledKey) ?? true;
     if (!enabled) return;
+
+    // Nobody is signed in — don't record anything.
+    //
+    // Transactions detected while signed out went into a local "guest"
+    // bucket that is never synced and never merged into any account when
+    // someone next signs in. So a signed-out phone was quietly building a
+    // pile of records no one would ever see. Worse, on a shared or
+    // handed-on phone those are somebody else's messages being read for no
+    // purpose. Detection resumes automatically on the next sign-in.
+    final signedInUid = await _resolveUid();
+    if (signedInUid == null) return;
+
     // Diagnostic notifications are OFF by default — they were a development
     // aid and would be noise for real users.
     final debug = prefs.getBool(kSmsDebugKey) ?? false;
@@ -146,7 +162,10 @@ Future<void> _processSms(String sender, String body, {DateTime? receivedAt}) asy
       return;
     }
 
-    var transaction = _buildTransaction(parsed);
+    var transaction = _buildTransaction(
+      parsed,
+      deviceName: await DeviceIdentityService.currentName(),
+    );
     built = transaction;
 
     // Catch repeats and both-sides-of-one-transfer before storing anything.
@@ -194,14 +213,14 @@ Future<void> _processSms(String sender, String body, {DateTime? receivedAt}) asy
       );
     }
 
-    // 3. Cloud sync when logged in.
-    final uid = await _resolveUid();
-    if (uid != null) {
-      try {
-        await FirestoreTransactionService().upsertTransaction(uid, transaction);
-      } catch (_) {
-        // Offline/permission — the per-item slot still has it; syncs later.
-      }
+    // 3. Cloud sync. The uid was already resolved above (recording is
+    // skipped entirely when signed out), so no need to resolve it twice —
+    // that meant two auth waits per message.
+    try {
+      await FirestoreTransactionService()
+          .upsertTransaction(signedInUid, transaction);
+    } catch (_) {
+      // Offline/permission — the per-item slot still has it; syncs later.
     }
 
     // 4. Success confirmation.
@@ -576,6 +595,21 @@ class SmsListenerService {
     await prefs.reload();
     final enabled = prefs.getBool(kSmsAutoDetectEnabledKey) ?? true;
     if (!enabled) return;
+
+    // Signed out: don't even read the inbox. Nothing would be recorded
+    // anyway, and reading someone's messages when there's no account to
+    // record them to has no purpose.
+    //
+    // The scan marker is still moved forward, so signing back in doesn't
+    // replay everything that arrived meanwhile — the same rule as
+    // re-enabling the feature after switching it off. On a shared or
+    // handed-on phone, those messages belong to whoever was using it, not
+    // to the account that signs in next.
+    if (FirebaseAuth.instance.currentUser == null) {
+      await prefs.setInt(
+          kLastPolledSmsDateKey, DateTime.now().millisecondsSinceEpoch);
+      return;
+    }
 
     // First run: only look at the last few minutes so we don't replay the
     // whole inbox history the very first time.

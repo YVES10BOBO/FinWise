@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/transaction.dart';
 import '../theme/app_theme.dart';
 import '../services/categorization_service.dart';
+import '../services/device_identity_service.dart';
 import '../providers/category_provider.dart';
 import '../providers/currency_provider.dart';
 
@@ -33,10 +34,16 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
   AccountType _selectedAccount = AccountType.mobileMoney;
   SpendingReason _selectedReason = SpendingReason.necessity;
 
+  /// This phone's name, stamped on transactions created here.
+  String? _deviceName;
+
   @override
   void initState() {
     super.initState();
     _selectedType = widget.initialType ?? TransactionType.expense;
+    DeviceIdentityService.currentName().then((name) {
+      if (mounted) setState(() => _deviceName = name);
+    });
     
     if (widget.existingTransaction != null) {
       _selectedType = widget.existingTransaction!.type;
@@ -104,6 +111,9 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
         // the original SMS — losing exactly the evidence needed to check it.
         isAutoDetected: widget.existingTransaction?.isAutoDetected ?? false,
         smsBody: widget.existingTransaction?.smsBody,
+        // Keep the ORIGINAL device on an edit — it records where the
+        // transaction came from, not who last touched it.
+        deviceName: widget.existingTransaction?.deviceName ?? _deviceName,
       );
       widget.onSave(transaction);
       Navigator.of(context).pop();
@@ -174,6 +184,53 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                 // exact wording. The list only has room for a summary, but
                 // checking whether an amount or direction was read correctly
                 // needs the original text.
+                // Which phone recorded this. ALWAYS shown when known: you may
+                // be reviewing history on a different device than the one you
+                // recorded on, and two phones can share a model name — so
+                // hiding it for "this device" would leave exactly the cases
+                // that need explaining unexplained. Highlighted when it came
+                // from a different phone than the one in your hand.
+                if (widget.existingTransaction?.deviceName != null) ...[
+                  const SizedBox(height: 12),
+                  Builder(
+                    builder: (context) {
+                      final recordedOn =
+                          widget.existingTransaction!.deviceName!;
+                      final isThisDevice =
+                          _deviceName != null && recordedOn == _deviceName;
+                      final colour = isThisDevice
+                          ? AppTheme.primaryColor
+                          : AppTheme.accentDark;
+                      return Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: colour.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                          border:
+                              Border.all(color: colour.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.smartphone, size: 16, color: colour),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                isThisDevice
+                                    ? 'Recorded on this phone ($recordedOn)'
+                                    : 'Recorded on another phone '
+                                        '($recordedOn)',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
                 if (widget.existingTransaction?.smsBody != null) ...[
                   const SizedBox(height: 12),
                   Theme(

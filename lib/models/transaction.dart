@@ -143,6 +143,14 @@ class Transaction {
   /// the device and in the user's own account, same as every other field.
   final String? smsBody;
 
+  /// Name of the phone this transaction was created on ("Galaxy A05s").
+  ///
+  /// Several devices can be signed into one account, and each records its
+  /// own SMS into that shared account — so without this an entry from
+  /// another phone appears with no explanation. Null for anything recorded
+  /// before this existed.
+  final String? deviceName;
+
   Transaction({
     required this.id,
     required this.type,
@@ -154,6 +162,7 @@ class Transaction {
     this.reason,
     this.isAutoDetected = false,
     this.smsBody,
+    this.deviceName,
   });
 
   // Convert to JSON for storage
@@ -169,6 +178,7 @@ class Transaction {
       'reason': reason?.name,
       'isAutoDetected': isAutoDetected,
       'smsBody': smsBody,
+      'deviceName': deviceName,
     };
   }
 
@@ -203,6 +213,7 @@ class Transaction {
       // Null for anything recorded before the full message was kept, and for
       // every manually-entered transaction.
       smsBody: json['smsBody'] as String?,
+      deviceName: json['deviceName'] as String?,
     );
   }
 
@@ -218,6 +229,7 @@ class Transaction {
     SpendingReason? reason,
     bool? isAutoDetected,
     String? smsBody,
+    String? deviceName,
   }) {
     return Transaction(
       id: id ?? this.id,
@@ -230,6 +242,7 @@ class Transaction {
       reason: reason ?? this.reason,
       isAutoDetected: isAutoDetected ?? this.isAutoDetected,
       smsBody: smsBody ?? this.smsBody,
+      deviceName: deviceName ?? this.deviceName,
     );
   }
 }

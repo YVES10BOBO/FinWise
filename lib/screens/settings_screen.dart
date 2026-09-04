@@ -15,6 +15,7 @@ import '../providers/currency_provider.dart';
 import '../providers/income_provider.dart';
 import '../widgets/currency_picker_dialog.dart';
 import '../widgets/sms_auto_detect_tile.dart';
+import '../widgets/device_name_tile.dart';
 import '../widgets/app_lock_tile.dart';
 import 'legal_screen.dart';
 import 'faq_screen.dart';
@@ -139,6 +140,9 @@ class SettingsScreen extends StatelessWidget {
             title: 'Automation',
             children: [
               SmsAutoDetectTile(),
+              // Sits with Automation because it's auto-detected transactions
+              // from a second signed-in phone that most need identifying.
+              DeviceNameTile(),
               // The old on-device "Test SMS Parser" screen was removed —
               // parsing is now covered by test/sms_transaction_parser_test.dart,
               // which checks real provider messages automatically instead of
