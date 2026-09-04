@@ -179,6 +179,41 @@ void main() {
     });
   });
 
+  group('service notices from a trusted sender are not transactions', () {
+    // Regression: being from MTN was treated as proof of a transaction, so
+    // any service message quoting a figure became a phantom expense — the
+    // real-world case was a 1 RWF "Mobile Money payment" filed as utilities.
+    test('data usage notice is ignored', () {
+      final parsed = SmsTransactionParser.parse(
+        sender,
+        'You have used 1 GB of your data bundle. Remaining balance: 1 RWF. '
+        'Valid until 2026-09-30.',
+      );
+
+      expect(parsed, isNull);
+    });
+
+    test('airtime balance reminder is ignored', () {
+      final parsed = SmsTransactionParser.parse(
+        sender,
+        'Your airtime balance is 1 RWF. Ref 445566778899',
+      );
+
+      expect(parsed, isNull);
+    });
+
+    test('but a real payment from the same sender is still recorded', () {
+      final parsed = SmsTransactionParser.parse(
+        sender,
+        'TxId:30101164199*S*Your payment of 400 RWF to David 1812139 was '
+        'completed at 2026-08-25 10:29:20. Balance: 4,292 RWF. Fee 0 RWF.',
+      );
+
+      expect(parsed, isNotNull);
+      expect(parsed!.amount, 400);
+    });
+  });
+
   group('non-financial messages', () {
     test('a personal SMS is ignored', () {
       final parsed = SmsTransactionParser.parse(

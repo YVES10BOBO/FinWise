@@ -32,9 +32,12 @@ class CategorizationService {
     // 3. Utilities — electricity, water, airtime/data, internet.
     //    Rwanda billers: Cash Power (electricity), WASAC (water), REG/EUCL.
     if (_any(t, [
-      'cash power', 'cashpower', 'electricity', 'eucl', 'reg ', 'umeme',
+      'cash power', 'cashpower', 'electricity', 'eucl', 'umeme',
       'wasac', 'water bill', 'water',
-      'airtime', 'bundle', 'data bundle', 'mb ', 'gb ',
+      // 'mb ' / 'gb ' / 'reg ' were removed: two-letter fragments match far
+      // too much ordinary text (any word ending in "mb", a stray "reg"), and
+      // they were part of why a service notice got filed under utilities.
+      'airtime', 'bundle', 'data bundle',
       'internet', 'wifi', 'canalbox', 'liquid', 'utility',
     ])) {
       return Category.utilities;

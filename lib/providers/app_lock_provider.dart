@@ -40,7 +40,15 @@ class AppLockProvider with ChangeNotifier {
   bool _biometricEnabled = false;
   bool _isLocked = false;
   bool _loaded = false;
-  int _timeoutMinutes = 0; // 0 = lock immediately on leaving
+  /// Grace period before re-locking after the app is backgrounded.
+  ///
+  /// Defaults to 1 minute, NOT 0. With 0 the app re-locked on any momentary
+  /// pause — the notification shade, a system dialog, a two-second glance at
+  /// another app — so users were typing their PIN constantly and the lock
+  /// became an obstacle rather than protection. A minute still locks when the
+  /// phone is put down or the app is genuinely left, which is the threat this
+  /// guards against. Users who want instant locking can still choose 0.
+  int _timeoutMinutes = 1;
   DateTime? _backgroundedAt;
   int _failedAttempts = 0;
   DateTime? _lockoutUntil;
@@ -78,7 +86,7 @@ class AppLockProvider with ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       _isEnabled = prefs.getBool(_enabledKey) ?? false;
       _biometricEnabled = prefs.getBool(_biometricKey) ?? false;
-      _timeoutMinutes = prefs.getInt(_timeoutKey) ?? 0;
+      _timeoutMinutes = prefs.getInt(_timeoutKey) ?? 1;
       // Failed attempts and any active cooldown are PERSISTED, otherwise
       // force-quitting the app would reset the counter and defeat the limit.
       _failedAttempts = prefs.getInt(_failedAttemptsKey) ?? 0;

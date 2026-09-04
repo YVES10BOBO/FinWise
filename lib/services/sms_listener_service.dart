@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:another_telephony/telephony.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../models/transaction.dart';
 import '../navigation_key.dart';
 import '../providers/transaction_provider.dart';
@@ -423,15 +424,20 @@ class SmsDetectionHealth {
     return DateTime.now().difference(last) > quietThreshold;
   }
 
-  /// True when something is definitely wrong rather than merely quiet.
-  bool get isBroken => enabled && !permissionGranted;
-
   /// Whether the pipeline is confirmed alive, even if no money moved.
   bool get isScanningRecently {
     final scan = lastScan;
     if (scan == null) return false;
     return DateTime.now().difference(scan) < const Duration(hours: 24);
   }
+
+  /// Something is actually broken, not merely quiet. Either the permission
+  /// is missing while the feature is on, or scanning worked before and has
+  /// now stopped for over a day (a service the OS killed). Both fail
+  /// silently, which is exactly what this exists to surface.
+  bool get isBroken =>
+      enabled &&
+      (!permissionGranted || (lastScan != null && !isScanningRecently));
 }
 
 /// Background handler — required by `telephony`. Runs in its own isolate when
@@ -460,7 +466,15 @@ class SmsListenerService {
   /// feature, and starts the listener + monitoring service.
   static Future<bool> requestPermissionAndEnable() async {
     final granted = await _telephony.requestSmsPermissions ?? false;
-    if (!granted) return false;
+    if (!granted) {
+      // Record the refusal. Without this the stored setting kept its default
+      // of "on", so declining the permission still left the Settings toggle
+      // switched on — telling the user a feature was running when it could
+      // not possibly work.
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(kSmsAutoDetectEnabledKey, false);
+      return false;
+    }
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(kSmsAutoDetectEnabledKey, true);
@@ -486,17 +500,18 @@ class SmsListenerService {
     await ForegroundServiceHandler.stop();
   }
 
-  /// App-startup entry: start listening only if permission is ALREADY
-  /// granted (never prompts here — there's no Activity attached yet).
+  /// App-startup entry: start listening only if the feature is on.
+  ///
+  /// Deliberately does NOT ask for permission. `requestSmsPermissions`
+  /// PROMPTS, and calling it here — with the first-run prompt in onboarding
+  /// and again from the main screen — is what produced two "allow SMS"
+  /// dialogs. If permission is missing, the first inbox poll fails and
+  /// switches the feature off, which is handled in one place.
   static Future<void> startIfEnabled() async {
     final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
     final enabled = prefs.getBool(kSmsAutoDetectEnabledKey) ?? true;
     if (!enabled) return;
-
-    // isSmsCapablePhone-independent: just check current permission state
-    // without prompting, by seeing if listening can begin.
-    final hasPermission = await _telephony.requestSmsPermissions ?? false;
-    if (!hasPermission) return;
 
     _listen();
     await ForegroundServiceHandler.start();
@@ -513,11 +528,35 @@ class SmsListenerService {
   /// during setup, once on first reaching the main screen.
   static Future<void> ensureAutoDetectRunning() async {
     final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
     final enabled = prefs.getBool(kSmsAutoDetectEnabledKey) ?? true;
     if (!enabled) return;
 
+    // Already granted: start up without going near the permission API,
+    // which prompts as a side effect.
+    if (await Permission.sms.isGranted) {
+      _listen();
+      await ForegroundServiceHandler.start();
+      return;
+    }
+
+    // Ask AT MOST ONCE automatically, ever. This screen can be rebuilt (the
+    // auth listener fires a second state update just after login), and each
+    // rebuild used to re-request — which is why the prompt appeared twice,
+    // with the second answer overwriting the first. After this one attempt,
+    // granting is done deliberately from Settings.
+    const askedKey = 'sms_permission_auto_asked';
+    if (prefs.getBool(askedKey) ?? false) return;
+    await prefs.setBool(askedKey, true);
+
     final granted = await _telephony.requestSmsPermissions ?? false;
-    if (!granted) return;
+    if (!granted) {
+      // Declining here (the first-launch prompt) must switch the feature
+      // off, so Settings reflects reality instead of showing a toggle that
+      // is on while nothing is being read.
+      await prefs.setBool(kSmsAutoDetectEnabledKey, false);
+      return;
+    }
 
     await prefs.setBool(kSmsAutoDetectEnabledKey, true);
     _listen();
@@ -554,6 +593,27 @@ class SmsListenerService {
       );
     } catch (e) {
       if (kDebugMode) debugPrint('FinWise: inbox poll failed: $e');
+
+      // SMS permission was refused (or revoked). Reading the inbox
+      // re-triggers a permission request, so retrying every few seconds meant
+      // the system prompt kept reappearing AND the window kept losing focus —
+      // which closed the keyboard the instant the user tried to type an
+      // amount. Switch the feature off instead: it genuinely cannot work
+      // without the permission, and the user can turn it back on from
+      // Settings, which asks once, properly.
+      //
+      // Matched on the SMS permissions specifically, NOT any error containing
+      // "permission" — notification permission is unrelated and declining it
+      // must never switch auto-detect off.
+      final error = e.toString().toLowerCase();
+      final isSmsPermissionError =
+          error.contains('read_sms') || error.contains('receive_sms');
+      if (isSmsPermissionError) {
+        await prefs.setBool(kSmsAutoDetectEnabledKey, false);
+        try {
+          await ForegroundServiceHandler.stop();
+        } catch (_) {}
+      }
       return;
     }
 
@@ -585,7 +645,11 @@ class SmsListenerService {
     await prefs.reload();
 
     final enabled = prefs.getBool(kSmsAutoDetectEnabledKey) ?? true;
-    final permitted = await _telephony.requestSmsPermissions ?? false;
+
+    // Reads the real state WITHOUT prompting. The telephony package's own
+    // check requests permission as a side effect, so using it here would pop
+    // a system dialog simply from opening Settings.
+    final permitted = await Permission.sms.isGranted;
 
     DateTime? at(String key) {
       final ms = prefs.getInt(key);

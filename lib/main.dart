@@ -31,17 +31,26 @@ import 'navigation_key.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Firebase must finish first: the providers built by runApp read the
+  // current user immediately.
   await Firebase.initializeApp();
   // Must run before any FlutterForegroundTask call, and before the service
   // is (re)attached to a running isolate on app restart.
   FlutterForegroundTask.initCommunicationPort();
   ForegroundServiceHandler.init();
+
+  // Paint the UI FIRST. Restarting the SMS listener involves a permission
+  // check and starting a foreground service (which deliberately waits for
+  // Android to settle), and awaiting all that before runApp held the launch
+  // screen on-screen for seconds. Nothing on the first frame depends on it,
+  // so it runs in the background and the app opens immediately.
+  runApp(const FinWiseApp());
+
   // Restart the SMS listener + persistent monitoring service if permission
   // was already granted on a previous launch. (First-run permission
   // prompting happens from MainScreen, where there's an Activity to attach
   // the system dialog to — see SmsListenerService.ensureAutoDetectRunning.)
-  await SmsListenerService.startIfEnabled();
-  runApp(const FinWiseApp());
+  unawaited(SmsListenerService.startIfEnabled());
 }
 
 class FinWiseApp extends StatelessWidget {
@@ -198,21 +207,36 @@ class _InitialScreenState extends State<_InitialScreen> {
         final localName = prefs.getString('user_name');
         final profileService = FirestoreUserProfileService();
 
-        await profileService.createProfileIfNeeded(
-          uid: user.uid,
-          email: user.email,
-          name: (user.displayName?.trim().isNotEmpty ?? false)
-              ? user.displayName!.trim()
-              : (localName?.trim().isNotEmpty ?? false)
-                  ? localName!.trim()
-                  : null,
+        // NOT awaited, deliberately. A Firestore write only completes when
+        // the SERVER acknowledges it — offline, that Future never resolves,
+        // so awaiting it here left the app stuck on the loading spinner with
+        // no error and no way forward. Firestore still applies the write to
+        // its local cache immediately and syncs it whenever connectivity
+        // returns, so nothing is lost by letting it finish in the
+        // background. Startup must never depend on the network.
+        unawaited(
+          profileService.createProfileIfNeeded(
+            uid: user.uid,
+            email: user.email,
+            name: (user.displayName?.trim().isNotEmpty ?? false)
+                ? user.displayName!.trim()
+                : (localName?.trim().isNotEmpty ?? false)
+                    ? localName!.trim()
+                    : null,
+          ),
         );
 
         // If local onboarding flag is false but Firestore says it's complete,
         // hydrate local preferences from the profile so a new device can skip onboarding.
         if (!completed) {
           try {
-            final remote = await profileService.getProfile(user.uid);
+            // Time-boxed: this read only matters for restoring onboarding on
+            // a NEW device. On a slow or absent connection it must not hold
+            // the launch screen — falling back to local state is correct and
+            // the user simply keeps whatever onboarding state this device has.
+            final remote = await profileService
+                .getProfile(user.uid)
+                .timeout(const Duration(seconds: 4));
             if (remote != null && (remote['onboardingComplete'] == true)) {
               completed = true;
 
@@ -342,7 +366,19 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       if (!mounted) return;
 
       // Let the permission dialogs fully dismiss before showing our own.
-      await Future.delayed(const Duration(milliseconds: 600));
+      // 600ms wasn't enough: if the user was still reading the SMS prompt,
+      // this fired while a system dialog was up and the app-lock invitation
+      // never appeared at all. Wait until nothing else is on screen.
+      await Future.delayed(const Duration(milliseconds: 1500));
+      if (!mounted) return;
+
+      // Don't stack our dialog on top of another route (a permission sheet,
+      // or the user having navigated somewhere) — try again shortly instead.
+      for (var i = 0; i < 10; i++) {
+        if (!mounted) return;
+        if (ModalRoute.of(context)?.isCurrent ?? true) break;
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
       if (!mounted) return;
 
       await AppLockPrompt.maybeShow(context);

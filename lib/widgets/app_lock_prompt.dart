@@ -21,6 +21,16 @@ class AppLockPrompt {
 
     if (!context.mounted) return;
     final lock = context.read<AppLockProvider>();
+
+    // The provider loads its saved state asynchronously, and this runs
+    // moments after launch — so isLoaded was usually still false here and the
+    // prompt silently never appeared. Wait briefly for it to settle instead
+    // of giving up on the first frame.
+    for (var i = 0; i < 20 && !lock.isLoaded; i++) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (!context.mounted) return;
+    }
+
     if (!lock.isLoaded || lock.isEnabled) return;
 
     // Mark as asked straight away, so it never appears twice even if the

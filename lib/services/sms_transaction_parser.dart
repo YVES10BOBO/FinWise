@@ -109,6 +109,36 @@ class SmsTransactionParser {
     return _promoWords.any(lower.contains);
   }
 
+  /// Verbs that mean money actually MOVED.
+  ///
+  /// Being from MTN is not evidence of a transaction — the same sender also
+  /// sends data-usage notices, airtime alerts and service messages. Those
+  /// mention an amount, match no direction keyword, and so fell through to
+  /// the default (expense), producing phantom entries like a 1 RWF "Mobile
+  /// Money payment" filed under utilities. Requiring one of these words
+  /// means an amount alone is never enough.
+  ///
+  /// Deliberately excludes "used" — "you have used 1 GB of data" is a usage
+  /// notice, not a payment. It stays in the direction hints, where it only
+  /// matters once a message has already proven itself transactional.
+  static const List<String> _transactionVerbs = [
+    // English
+    'received', 'receive', 'sent', 'send', 'paid', 'payment', 'transferred',
+    'transfer', 'withdraw', 'withdrew', 'deposit', 'deposited', 'debited',
+    'credited', 'purchase', 'bought', 'refund', 'repaid', 'borrowed',
+    // Kinyarwanda
+    'wakiriye', 'wahawe', 'woherejwe', 'yakiriwe', 'winjijwe',
+    'wishyuye', 'wohereje', 'watanze', 'wakuye', 'kohereza', 'umaze kohereza',
+    'wabikuje', 'wabitse',
+  ];
+
+  /// True when the message describes money actually moving, rather than
+  /// merely mentioning an amount.
+  static bool describesMoneyMovement(String body) {
+    final lower = body.toLowerCase();
+    return _transactionVerbs.any(lower.contains);
+  }
+
   /// Words indicating money moved between the user's OWN accounts (wallet to
   /// bank, bank to wallet) rather than to another person or merchant.
   static const List<String> _transferHints = [
@@ -211,6 +241,11 @@ class SmsTransactionParser {
     DateTime? receivedAt,
   }) {
     if (!looksLikeMomoMessage(sender, body)) return null;
+
+    // An amount alone proves nothing: data-usage notices, airtime alerts and
+    // balance reminders all quote figures and all come from the same trusted
+    // sender. Require wording that says money actually moved.
+    if (!describesMoneyMovement(body)) return null;
 
     final amount = _extractAmount(body);
     if (amount == null || amount <= 0) return null;

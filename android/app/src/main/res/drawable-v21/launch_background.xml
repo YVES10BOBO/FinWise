@@ -1,12 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- Launch splash background (Android 21+).
+     Uses the brand colour explicitly rather than ?android:colorBackground —
+     that follows the system theme, so phones in dark mode showed a black
+     splash instead of FinWise's teal. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="?android:colorBackground" />
-
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+    <item android:drawable="@color/finwise_splash" />
 </layer-list>

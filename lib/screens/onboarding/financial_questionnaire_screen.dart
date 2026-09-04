@@ -29,6 +29,13 @@ class _FinancialQuestionnaireScreenState
   final _nameController = TextEditingController();
   final _incomeController = TextEditingController();
   String _incomeFrequency = 'Monthly';
+
+  /// Null until the user actually picks one. Deliberately NOT defaulted to
+  /// the provider's current value: a pre-filled dropdown looks like a
+  /// decision the user made, so people sailed past it and later found every
+  /// amount labelled in a currency they never chose. Amounts are never
+  /// converted, so getting this wrong at the start is expensive to undo.
+  AppCurrency? _selectedCurrency;
   
   // Step 2: Spending style
   String _spendingStyle = 'Balanced';
@@ -86,10 +93,19 @@ class _FinancialQuestionnaireScreenState
       final incomeFreq = prefs.getString('income_frequency');
       final spendingStyle = prefs.getString('spending_style');
       final categories = prefs.getStringList('user_categories');
+      // Only pre-select the currency for someone who has already been
+      // through onboarding (they reach this screen again via Settings →
+      // Profile). First-time users must choose deliberately.
+      final alreadyOnboarded = prefs.getBool('onboarding_complete') ?? false;
 
       if (!mounted) return;
 
+      final existingCurrency = context.read<CurrencyProvider>().currency;
+
       setState(() {
+        if (alreadyOnboarded) {
+          _selectedCurrency = existingCurrency;
+        }
         if (name != null && name.trim().isNotEmpty) {
           _nameController.text = name;
         }
@@ -394,6 +410,10 @@ class _FinancialQuestionnaireScreenState
               fillColor: Colors.white,
             ),
             textCapitalization: TextCapitalization.words,
+            // Rebuild as the user types so the Continue button enables the
+            // moment both name and currency are filled in, rather than only
+            // after some other interaction happens to trigger a rebuild.
+            onChanged: (_) => setState(() {}),
           ),
         ),
         const SizedBox(height: 16),
@@ -403,7 +423,8 @@ class _FinancialQuestionnaireScreenState
             borderRadius: BorderRadius.circular(12),
           ),
           child: DropdownButtonFormField<AppCurrency>(
-            value: context.watch<CurrencyProvider>().currency,
+            value: _selectedCurrency,
+            hint: const Text('Select currency'),
             decoration: InputDecoration(
               labelText: 'Currency',
               prefixIcon: const Icon(Icons.language),
@@ -421,6 +442,7 @@ class _FinancialQuestionnaireScreenState
                 .toList(),
             onChanged: (value) {
               if (value != null) {
+                setState(() => _selectedCurrency = value);
                 context.read<CurrencyProvider>().setCurrency(value);
               }
             },
@@ -834,9 +856,12 @@ class _FinancialQuestionnaireScreenState
   bool _canProceed() {
     switch (_currentStep) {
       case 0:
-        // Only the name is required now. Income moved to Settings as an
-        // optional, editable target.
-        return _nameController.text.trim().isNotEmpty;
+        // Name and currency are the only required answers. Income moved to
+        // Settings as an optional, editable target. Currency is required
+        // because amounts are stored as plain numbers and never converted —
+        // choosing it later re-labels existing history rather than fixing it.
+        return _nameController.text.trim().isNotEmpty &&
+            _selectedCurrency != null;
       case 1:
         return true; // spending step is optional (style has a default)
       case 2:

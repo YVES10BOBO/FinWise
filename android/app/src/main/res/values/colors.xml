@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- FinWise brand teal — matches AppTheme.primaryColor in Dart.
+         Used for the launch window so the splash is branded and identical
+         in light and dark mode, instead of following the system background
+         (which rendered black on phones with dark mode on). -->
+    <color name="finwise_splash">#0D7377</color>
+</resources>

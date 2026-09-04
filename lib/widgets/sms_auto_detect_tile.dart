@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/sms_listener_service.dart';
 import '../services/foreground_service_handler.dart';
@@ -38,13 +39,50 @@ class _SmsAutoDetectTileState extends State<SmsAutoDetectTile> {
       final granted = await SmsListenerService.requestPermissionAndEnable();
       if (!mounted) return;
       if (!granted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'SMS permission was not granted. You can enable it later from your phone\'s app settings.',
+        // Android stops showing the permission dialog once it has been
+        // refused twice — the request then returns "denied" instantly and
+        // the toggle looks broken. In that state the ONLY way to grant it is
+        // the system settings page, so say so and offer to open it.
+        final permanentlyDenied =
+            await Permission.sms.status.isPermanentlyDenied;
+        if (!mounted) return;
+
+        if (permanentlyDenied) {
+          await showDialog<void>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('SMS permission is blocked'),
+              content: const Text(
+                'Android has stopped asking because the permission was '
+                'declined before. To turn auto-detect on, allow SMS for '
+                'FinWise in your phone settings:\n\n'
+                'Permissions → SMS → Allow',
+                style: TextStyle(fontSize: 13, height: 1.5),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Not now'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    openAppSettings();
+                  },
+                  child: const Text('Open settings'),
+                ),
+              ],
             ),
-          ),
-        );
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'SMS permission was not granted, so auto-detect stays off.',
+              ),
+            ),
+          );
+        }
         return;
       }
       setState(() => _enabled = true);
@@ -69,7 +107,32 @@ class _SmsAutoDetectTileState extends State<SmsAutoDetectTile> {
     return Column(
       children: [
         _buildToggle(context),
-        if (_enabled) _buildHealth(context),
+        // Shown even when the toggle is OFF: if Android has blocked the SMS
+        // permission, switching on silently does nothing, and without this
+        // there is no way to find out why or how to fix it.
+        FutureBuilder<PermissionStatus>(
+          future: Permission.sms.status,
+          builder: (context, snapshot) {
+            final status = snapshot.data;
+            if (status == null || status.isGranted) {
+              return _enabled ? _buildHealth(context) : const SizedBox.shrink();
+            }
+            return _StatusTile(
+              icon: Icons.lock_outline,
+              color: AppTheme.expenseColor,
+              title: 'SMS permission not granted',
+              message: status.isPermanentlyDenied
+                  ? 'Android has blocked this permission because it was '
+                      'declined before, so the switch above can\'t turn it on. '
+                      'Allow SMS for FinWise in phone settings, then come back.'
+                  : 'Auto-detect needs permission to read Mobile Money '
+                      'messages. Turn the switch on to grant it.',
+              actionLabel:
+                  status.isPermanentlyDenied ? 'Open phone settings' : null,
+              onAction: status.isPermanentlyDenied ? openAppSettings : null,
+            );
+          },
+        ),
       ],
     );
   }
@@ -83,16 +146,19 @@ class _SmsAutoDetectTileState extends State<SmsAutoDetectTile> {
         final health = snapshot.data;
         if (health == null) return const SizedBox.shrink();
 
-        // Permission revoked (Android can do this after an update) — the
-        // feature is on but cannot possibly work.
+        // Scanning has stopped — usually a revoked SMS permission or a
+        // background service the OS killed. Both fail silently.
         if (health.isBroken) {
           return _StatusTile(
             icon: Icons.error_outline,
             color: AppTheme.expenseColor,
-            title: 'Auto-detect can\'t read messages',
+            title: 'Auto-detect has stopped working',
             message:
-                'SMS permission is not granted, so no transactions are being '
-                'recorded. Turn the switch off and on again to re-request it.',
+                'Messages haven\'t been checked in over a day. Turn the switch '
+                'off and on again to re-grant SMS permission, and make sure '
+                'FinWise isn\'t battery-restricted.',
+            actionLabel: health.batteryOptimized ? 'Fix battery settings' : null,
+            onAction: health.batteryOptimized ? _openBatterySettings : null,
           );
         }
 

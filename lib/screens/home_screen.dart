@@ -256,8 +256,12 @@ class HomeScreen extends StatelessWidget {
       child: SingleChildScrollView(
         child: Column(
           children: [
-            // Header
+            // Header. width: infinity is required — the parent Column
+            // centres its children by default, so without it the gradient
+            // band shrank to the width of the text instead of spanning the
+            // screen edge to edge like it does once transactions exist.
             Container(
+              width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(

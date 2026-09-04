@@ -607,6 +607,11 @@ class SettingsScreen extends StatelessWidget {
               await prefs.remove('user_categories');
               await prefs.remove('questionnaire_complete');
               await prefs.remove('onboarding_complete');
+              // Offer the app lock again after the next sign-in. It's a
+              // one-time prompt per session, not once per install — a user
+              // who skipped it (or a different user on the same phone)
+              // should still be invited to protect their data.
+              await prefs.remove('app_lock_prompt_shown');
               
               if (context.mounted) {
                 // Show logout success message
