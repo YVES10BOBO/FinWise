@@ -1,0 +1,1700 @@
+{
+  "@@locale": "en",
+  "cancel": "Cancel",
+  "save": "Save",
+  "delete": "Delete",
+  "confirm": "Confirm",
+  "close": "Close",
+  "done": "Done",
+  "later": "Later",
+  "clearAll": "Clear All",
+  "all": "All",
+  "previous": "Previous",
+  "next": "Next",
+  "navHome": "Home",
+  "navBudget": "Budget",
+  "navGoals": "Goals",
+  "navHistory": "History",
+  "navSettings": "Settings",
+  "settingsTitle": "Settings",
+  "language": "Language",
+  "chooseLanguage": "Choose language",
+  "languageEnglish": "English",
+  "languageKinyarwanda": "Kinyarwanda",
+  "sectionProfile": "Profile",
+  "sectionData": "Data Management",
+  "sectionSecurity": "Security",
+  "sectionAutomation": "Automation",
+  "sectionAppearance": "Appearance",
+  "sectionAbout": "About",
+  "profileOnboarding": "Profile & onboarding",
+  "profileOnboardingSub": "Update your name and currency",
+  "incomeTarget": "Income target",
+  "incomeTargetSet": "{amount}/month — used to measure your savings rate",
+  "@incomeTargetSet": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "incomeTargetUnset": "Set an optional target to measure your savings rate",
+  "logout": "Logout",
+  "logoutSub": "Sign out and return to login",
+  "deleteAccount": "Delete account",
+  "deleteAccountSub": "Permanently erase your account and all data",
+  "calendarView": "Calendar View",
+  "calendarViewSub": "View transactions by date",
+  "exportCsv": "Export to CSV",
+  "exportCsvSub": "Download transactions as CSV",
+  "exportReport": "Export Report",
+  "exportReportSub": "Generate transaction report",
+  "clearTransactions": "Clear All Transactions",
+  "clearTransactionsSub": "Remove all transaction data",
+  "clearGoals": "Clear All Goals",
+  "clearGoalsSub": "Remove all goal data",
+  "darkMode": "Dark Mode",
+  "darkModeSub": "Toggle dark theme",
+  "currency": "Currency",
+  "appVersion": "App Version",
+  "loading": "Loading…",
+  "faqHelp": "FAQ & Help",
+  "faqHelpSub": "Common questions, or contact us directly",
+  "privacyPolicy": "Privacy Policy",
+  "privacyPolicySub": "What we collect and what stays on your phone",
+  "terms": "Terms & Conditions",
+  "termsSub": "The agreement you accepted at sign-up",
+  "periodThisMonth": "This month",
+  "periodLastMonth": "Last month",
+  "periodThisYear": "This year",
+  "periodLastDays": "Last {days} days",
+  "@periodLastDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "periodAllTime": "All time",
+  "periodCustom": "Custom range…",
+  "showPeriod": "Show period",
+  "selectPeriod": "Select period",
+  "show": "Show",
+  "moneyIn": "Money in",
+  "spent": "Spent",
+  "left": "Left",
+  "savingsRate": "Savings rate",
+  "setAsideForGoals": "Set aside for goals: {amount}",
+  "@setAsideForGoals": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "safeToSpend": "Safe to spend: {amount}",
+  "@safeToSpend": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "overBy": "You are over by {amount}",
+  "@overBy": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "youKept": "You kept {amount}",
+  "@youKept": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "overspentBy": "You overspent by {amount}",
+  "@overspentBy": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "earnedPctOfIncome": "earned {pct}% of your usual income",
+  "@earnedPctOfIncome": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "greatPace": "Great pace — keep it up.",
+  "watchSpending": "Watch your spending to save more.",
+  "noIncomeCurrent": "Add some income in this period, or set an income target in Settings, to see your savings rate.",
+  "noIncomePast": "No income recorded in this period. Set an income target in Settings to see your savings rate.",
+  "historyTitle": "Transaction History",
+  "yourHistory": "Your history",
+  "historySubtitle": "Search, filter and review all your past transactions in one place.",
+  "searchTransactions": "Search transactions...",
+  "filter": "Filter",
+  "filterTitle": "Filter Transactions",
+  "filterByType": "Filter by Type:",
+  "filterByCategory": "Filter by Category:",
+  "income": "Income",
+  "expense": "Expense",
+  "transfer": "Transfer",
+  "items": "Items",
+  "noTransactions": "No transactions found",
+  "tryAdjusting": "Try adjusting your search or filters",
+  "nothingInPeriod": "Nothing in \"{period}\". Try another period, or choose \"All time\".",
+  "@nothingInPeriod": {
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
+  },
+  "goalsTitle": "Goals",
+  "goalsEmptyTitle": "Save for what matters",
+  "goalsEmptyBody": "Set a target, reserve money towards it, and watch your progress. Reserved money stays yours — it just won't be counted as spendable.",
+  "createFirstGoal": "Create your first goal",
+  "activeGoals": "Active goals",
+  "completed": "Completed",
+  "goalsOverview": "Goals overview",
+  "reservedOfTargeted": "reserved of {target} targeted · {pct}%",
+  "@reservedOfTargeted": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      },
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "total": "Total",
+  "active": "Active",
+  "goalsReady": "{count} goal(s) fully funded — ready to buy",
+  "@goalsReady": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "statusReady": "Ready to buy",
+  "statusOverdue": "Overdue",
+  "statusOnTrack": "On track",
+  "statusBehind": "Behind",
+  "pastDue": "Past due",
+  "daysLeft": "{days} days left",
+  "@daysLeft": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "paid": "paid",
+  "paidPlanned": "paid · planned {amount}",
+  "@paidPlanned": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ofAmount": "of {amount}",
+  "@ofAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "fullyFundedTap": "Fully funded — tap to mark it bought",
+  "addPerMonth": "Add {amount}/month to finish on time",
+  "@addPerMonth": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "addContribution": "Add contribution",
+  "details": "Details",
+  "reserveMoney": "Reserve money",
+  "reserveExplain": "Moves money from an account into this goal. It stays yours — just reserved, so it is not counted as spending.",
+  "fromAccount": "From account",
+  "amountWithCode": "Amount ({code})",
+  "@amountWithCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "noteOptional": "Note (optional)",
+  "reserve": "Reserve",
+  "freeAmount": "{account} · {amount} free",
+  "@freeAmount": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "enterAmountAbove0": "Enter an amount above 0",
+  "onlyHasAvailable": "{account} only has {amount} available.",
+  "@onlyHasAvailable": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reservedFrom": "Reserved {amount} from {account}",
+  "@reservedFrom": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "reservedOver": "Reserved {amount} — that is {over} more than this goal needs. Release it any time.",
+  "@reservedOver": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "over": {
+        "type": "String"
+      }
+    }
+  },
+  "accountCash": "Cash",
+  "accountBank": "Bank",
+  "accountMobileMoney": "Mobile Money",
+  "release": "Release",
+  "bought": "Bought",
+  "target": "Target {date}",
+  "@target": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "purchasedOn": "Purchased {date}",
+  "@purchasedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "reservedOfPct": "reserved of {target} · {pct}%",
+  "@reservedOfPct": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      },
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "paidPlannedCompleted": "paid · planned {amount} · completed",
+  "@paidPlannedCompleted": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "paidCompleted": "paid · completed",
+  "readyExtra": "Ready to buy — {amount} more than the price is reserved. You can release the extra.",
+  "@readyExtra": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "fullyFundedBought": "Fully funded — tap Bought when you buy it.",
+  "stillNeed": "Still need {amount} · about {monthly}/month",
+  "@stillNeed": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "monthly": {
+        "type": "String"
+      }
+    }
+  },
+  "differentPrice": "Found a different price? Update price",
+  "plannedPriceChanged": "Planned {amount} · Price changed again? Update",
+  "@plannedPriceChanged": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "editGoal": "Edit goal",
+  "editGoalSub": "Name, target amount, date or icon",
+  "updatePrice": "Update price",
+  "updatePriceSub": "The real price is higher or lower than planned",
+  "undoPurchase": "Undo purchase",
+  "undoPurchaseSub": "Reopen this goal and reserve again",
+  "deleteGoal": "Delete goal",
+  "deleteGoalSub": "Reserved money returns to available",
+  "reservedFromTitle": "Reserved from",
+  "contributionHistory": "Contribution history",
+  "tapToEdit": "Tap an entry to edit or delete it.",
+  "undoToEdit": "Undo the purchase to change these entries.",
+  "noMoneyReserved": "No money reserved yet.",
+  "reservedLabel": "Reserved",
+  "releasedLabel": "Released",
+  "editOrDelete": "Edit or delete",
+  "editThisReserve": "Edit this reserve",
+  "editThisRelease": "Edit this release",
+  "editEntrySub": "Change the amount, account or note",
+  "deleteThisReserve": "Delete this reserve",
+  "deleteThisRelease": "Delete this release",
+  "deleteReserveSub": "The money goes back to available",
+  "deleteReleaseSub": "The money becomes reserved again",
+  "editReserve": "Edit reserve",
+  "editRelease": "Edit release",
+  "releasedTo": "Released to",
+  "deleteReserveQ": "Delete reserve?",
+  "deleteReleaseQ": "Delete release?",
+  "deleteReserveBody": "{amount} will go back to your available money.",
+  "@deleteReserveBody": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteReleaseBody": "{amount} will be reserved for \"{goal}\" again.",
+  "@deleteReleaseBody": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
+  "entryUpdated": "Entry updated",
+  "entryDeleted": "Entry deleted",
+  "purchaseSummary": "Purchase summary",
+  "planned": "Planned",
+  "paidCap": "Paid",
+  "underPlan": "Under plan",
+  "overPlan": "Over plan",
+  "paidLessThanPlanned": "You paid {amount} less than planned 🎉",
+  "@paidLessThanPlanned": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "paidWith": "Paid with",
+  "noPaymentLinked": "No payment linked.",
+  "priceUpdates": "Price updates",
+  "celebrateFundedTitle": "{goal} is fully funded!",
+  "@celebrateFundedTitle": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
+  "celebrateFundedReserved": "You have {amount} reserved.",
+  "@celebrateFundedReserved": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "celebrateFundedReservedSpan": "You have {amount} reserved — saved over {span}.",
+  "@celebrateFundedReservedSpan": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "span": {
+        "type": "String"
+      }
+    }
+  },
+  "celebrateFundedAsk": "Bought it already? Close the goal now.",
+  "iBoughtIt": "I bought it",
+  "celebrateCompletedTitle": "Goal completed!",
+  "celebratePaid": "{goal} — paid {amount}",
+  "@celebratePaid": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "celebratePaidUnder": "{goal} — paid {amount} · {under} under plan",
+  "@celebratePaidUnder": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "under": {
+        "type": "String"
+      }
+    }
+  },
+  "celebrateSavedOver": "You saved for it over {span}.",
+  "@celebrateSavedOver": {
+    "placeholders": {
+      "span": {
+        "type": "String"
+      }
+    }
+  },
+  "celebrateReturned": "{amount} went back to your available money.",
+  "@celebrateReturned": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "startNewGoal": "Start a new goal",
+  "spanLessThanMonth": "less than a month",
+  "spanMonths": "{months, plural, =1{1 month} other{{months} months}}",
+  "@spanMonths": {
+    "placeholders": {
+      "months": {
+        "type": "int"
+      }
+    }
+  },
+  "goalTitle": "Goal",
+  "goalNoLongerExists": "This goal no longer exists.",
+  "boughtWithoutReserving": "Bought without reserving money in FinWise first.",
+  "savedOverContributions": "Saved over {span} · {count, plural, =1{1 contribution} other{{count} contributions}}",
+  "@savedOverContributions": {
+    "placeholders": {
+      "span": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "missingPayments": "{count, plural, =1{1 linked payment is} other{{count} linked payments are}} no longer in your history.",
+  "@missingPayments": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "loginSuccess": "Login successful!",
+  "errUserNotFound": "No account found for that email. Please sign up first.",
+  "errWrongPassword": "Incorrect password. Please check your password and try again.",
+  "errInvalidCredential": "Invalid email or password. Please check your credentials.",
+  "errInvalidEmailEnter": "Invalid email address. Please enter a valid email.",
+  "errUserDisabled": "This account has been disabled. Please contact support.",
+  "errTooManyFailed": "Too many failed attempts. Please wait a few minutes and try again.",
+  "errNetworkInternet": "Network error. Please check your internet connection.",
+  "errLoginDisabled": "Login is currently disabled. Please contact support.",
+  "errReLogin": "Please log out and log in again to continue.",
+  "errLoginFailedCode": "Login failed: {code}. Please check your email and password.",
+  "@errLoginFailedCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "loginFailedRetry": "Login failed. Please try again.",
+  "welcomeBack": "Welcome back",
+  "signInSubtitle": "Sign in to keep track of your money",
+  "email": "Email",
+  "enterEmail": "Please enter your email",
+  "enterValidEmail": "Please enter a valid email",
+  "password": "Password",
+  "enterPassword": "Please enter your password",
+  "passwordMin6": "Password must be at least 6 characters",
+  "forgotPassword": "Forgot password?",
+  "signIn": "Sign in",
+  "newToFinwise": "New to FinWise?",
+  "createAnAccount": "Create an account",
+  "agreeTermsRequired": "Please agree to the terms and conditions",
+  "accountCreated": "Account created successfully!",
+  "errEmailInUse": "That email is already registered. Try logging in instead.",
+  "errInvalidEmailCheck": "Invalid email address. Please check and try again.",
+  "errWeakPassword": "Password is too weak. Use at least 6 characters.",
+  "errSignupDisabled": "Signup is currently disabled. Please contact support.",
+  "errNetworkConnection": "Network error. Please check your connection.",
+  "signupFailed": "Signup failed. Please try again.",
+  "createYourAccount": "Create your account",
+  "signupSubtitle": "Start tracking your money in minutes",
+  "fullName": "Full name",
+  "enterName": "Please enter your name",
+  "enterAPassword": "Please enter a password",
+  "atLeast6": "At least 6 characters",
+  "confirmPassword": "Confirm password",
+  "pleaseConfirmPassword": "Please confirm your password",
+  "passwordsDontMatch": "Passwords do not match",
+  "iAgreeToThe": "I agree to the ",
+  "createAccount": "Create account",
+  "haveAccount": "Already have an account?",
+  "errNoAccountEmail": "No account found for that email.",
+  "errTooManyAttempts": "Too many attempts. Please try again later.",
+  "resetEmailFailed": "Failed to send reset email. Please try again.",
+  "checkYourEmail": "Check your email",
+  "resetYourPassword": "Reset your password",
+  "resetLinkSent": "We sent you a link to set a new password",
+  "resetEnterEmail": "Enter your email and we'll send reset instructions",
+  "sendResetLink": "Send reset link",
+  "emailSent": "Email sent",
+  "resetSentTo": "We sent reset instructions to\n{email}",
+  "@resetSentTo": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "checkSpam": "Can't find it? Check your spam or promotions folder. The email may take a few minutes to arrive.",
+  "backToSignIn": "Back to sign in",
+  "sendAgain": "Send it again",
+  "freqDaily": "Daily",
+  "freqWeekly": "Weekly",
+  "freqMonthly": "Monthly",
+  "freqYearly": "Yearly",
+  "freqIrregular": "Irregular",
+  "pinsDidNotMatch": "PINs did not match. Start again.",
+  "tooManyWait": "Too many attempts. Please wait.",
+  "incorrectPinLeft": "Incorrect PIN. {left, plural, =1{1 try} other{{left} tries}} left before a wait.",
+  "@incorrectPinLeft": {
+    "placeholders": {
+      "left": {
+        "type": "int"
+      }
+    }
+  },
+  "incorrectPinRetry": "Incorrect PIN. Try again.",
+  "createPin": "Create a PIN",
+  "confirmYourPin": "Confirm your PIN",
+  "enterYourPin": "Enter your PIN",
+  "confirmItsYou": "Confirm it's you",
+  "pinUseToOpen": "You'll use this to open FinWise",
+  "pinSameAgain": "Enter the same 4 digits again",
+  "financesLocked": "Your finances are locked",
+  "enterCurrentPin": "Enter your current PIN to continue",
+  "tooManyTryIn": "Too many attempts. Try again in {time}",
+  "@tooManyTryIn": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "forgotPinQ": "Forgot PIN?",
+  "forgotYourPin": "Forgot your PIN?",
+  "forgotPinBody": "To reset it, sign in again with your email and password.\n\nYou will be signed out and the app lock removed. Your transactions and goals are safe — they sync back as soon as you sign in.",
+  "signOutReset": "Sign out & reset",
+  "welcomeTitle": "Welcome to FinWise",
+  "welcomeTagline": "Smart financial advice for a new era of wealth",
+  "welcomeFeat1": "Smart budget recommendations",
+  "welcomeFeat2": "Automatic spending analysis",
+  "welcomeFeat3": "Goal tracking that keeps you focused",
+  "getStarted": "Get Started",
+  "setupProfile": "Setup Profile",
+  "getToKnowYou": "Let's get to know you",
+  "personalizedGuidance": "This helps us provide personalized financial guidance",
+  "yourName": "Your Name",
+  "currencyAdapts": "Wherever you are — FinWise adapts to it",
+  "monthlyIncomeCode": "Monthly Income ({code})",
+  "@monthlyIncomeCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "approximateFine": "Approximate is fine",
+  "enterIncome": "Please enter your income",
+  "enterValidNumber": "Please enter a valid number",
+  "incomeFrequency": "Income Frequency",
+  "dontWorryUpdate": "Don't worry! You can always update this later. We'll provide guidance even with approximate values.",
+  "continueBtn": "Continue",
+  "catFood": "Food",
+  "catTransport": "Transport",
+  "catEntertainment": "Entertainment",
+  "catUtilities": "Utilities",
+  "catRent": "Rent",
+  "catShopping": "Shopping",
+  "catVacation": "Vacation",
+  "catClothes": "Clothes",
+  "catWater": "Water",
+  "catShoes": "Shoes",
+  "catHealth": "Health",
+  "catEducation": "Education",
+  "catFamily": "Family & Support",
+  "catDebt": "Debt & Loans",
+  "catBusiness": "Business",
+  "catGiving": "Giving & Church",
+  "catFees": "Fees & Taxes",
+  "catPersonal": "Personal Care",
+  "catMedicine": "Medicine",
+  "catAlcohol": "Alcohol & Drinks",
+  "catTobacco": "Tobacco",
+  "catIncome": "Income",
+  "catSavings": "Savings",
+  "catOther": "Other",
+  "reasonNecessity": "Necessity",
+  "reasonBusiness": "Business",
+  "reasonEnjoyment": "Enjoyment",
+  "reasonEmergency": "Emergency",
+  "curRwf": "Rwandan Franc",
+  "curUsd": "US Dollar",
+  "curEur": "Euro",
+  "curGbp": "British Pound",
+  "curKes": "Kenyan Shilling",
+  "curUgx": "Ugandan Shilling",
+  "curTzs": "Tanzanian Shilling",
+  "curNgn": "Nigerian Naira",
+  "curGhs": "Ghanaian Cedi",
+  "curZar": "South African Rand",
+  "curXaf": "Central African CFA Franc",
+  "curCad": "Canadian Dollar",
+  "curInr": "Indian Rupee",
+  "giSavings": "Savings",
+  "giLaptop": "Laptop",
+  "giCar": "Car",
+  "giHouse": "House",
+  "giLand": "Land / Plot",
+  "giEducation": "Education",
+  "giBusiness": "Business",
+  "giTravel": "Travel",
+  "giWedding": "Wedding",
+  "giFamily": "Family",
+  "giHealth": "Health",
+  "giEmergency": "Emergency fund",
+  "giPhone": "Phone",
+  "giFurniture": "Furniture",
+  "giClothes": "Clothes",
+  "giGaming": "Gaming",
+  "giDebt": "Pay off debt",
+  "giGift": "Gift",
+  "giOther": "Other",
+  "enterRealPrice": "Enter the real price.",
+  "haveEnoughExtra": "You already have enough — ready to buy. {amount} extra reserved can go back to available.",
+  "@haveEnoughExtra": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "haveExactlyEnough": "You already have exactly enough — ready to buy.",
+  "willStillNeed": "You will still need {amount}.",
+  "@willStillNeed": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "realPriceIntro": "Found the real price in a shop or online? Your goal will follow it. Planned: {planned}{current}.",
+  "@realPriceIntro": {
+    "placeholders": {
+      "planned": {
+        "type": "String"
+      },
+      "current": {
+        "type": "String"
+      }
+    }
+  },
+  "currentPrice": " · current: {amount}",
+  "@currentPrice": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "realPriceCode": "Real price ({code})",
+  "@realPriceCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "priceUpdatedExtra": "Price updated. {amount} more than needed is reserved.",
+  "@priceUpdatedExtra": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "priceUpdatedTo": "Price updated to {amount}.",
+  "@priceUpdatedTo": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "releaseExtra": "Release extra",
+  "noteDown": "Price went down",
+  "update": "Update",
+  "releaseReserved": "Release reserved money",
+  "releaseExplain": "Returns money from this goal back to your available balance. Currently reserved: {amount}",
+  "@releaseExplain": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "amountToRelease": "Amount to release ({code})",
+  "@amountToRelease": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "noteReleasedAll": "Released all",
+  "releaseAll": "Release all",
+  "releasedBack": "Released {amount} back to available",
+  "@releasedBack": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "markAsBought": "Mark as bought",
+  "alreadyRecorded": "Did you already record this purchase?",
+  "linkExisting": "Link existing",
+  "createNew": "Create new",
+  "tickPayments": "Tick the payment(s) for this purchase",
+  "amountEveryPayment": "Enter an amount on every payment",
+  "moreThanHolds": "More than the account holds",
+  "accountShows": "{account} shows {amount}",
+  "@accountShows": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "recordNegative": "Recording this will leave it negative. If the purchase really happened, record it anyway — you may just need to add some missing income.",
+  "goBack": "Go back",
+  "recordAnyway": "Record anyway",
+  "boughtDesc": "Bought: {goal}",
+  "@boughtDesc": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
+  "noExpensesToLink": "No expenses in your history to link. Switch to \"Create new\".",
+  "tickEveryPayment": "Tick every payment for this item — paid part by Mobile Money and part in cash? Tick both. Nothing new will be created.",
+  "searchNameAmount": "Search by name or amount",
+  "matchesPrice": "  ·  matches price",
+  "recordWhatPaid": "Record what you paid. Paid from more than one account? Add a payment for each.",
+  "paidFrom": "Paid from",
+  "amount": "Amount",
+  "addAnotherPayment": "Add another payment",
+  "expenseCategory": "Expense category",
+  "nothingSelected": "Nothing selected yet.",
+  "underYourPrice": "{amount} under your price 🎉",
+  "@underYourPrice": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "overYourPrice": "{amount} over your price",
+  "@overYourPrice": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "exactlyYourPrice": "Exactly your price",
+  "totalPaidPrice": "Total paid: {total}  ·  price {price}",
+  "@totalPaidPrice": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "completedAt": "The goal will be completed at {amount}.",
+  "@completedAt": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "goalCompletedAt": "Goal completed at {amount}.",
+  "@goalCompletedAt": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "returnedToAvailable": "{amount} returned to available.",
+  "@returnedToAvailable": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "underPlanParty": "{amount} under plan 🎉",
+  "@underPlanParty": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "undoCreatedDeleted": "{count, plural, =1{The expense} other{The {count} expenses}} FinWise created for this purchase will be deleted.",
+  "@undoCreatedDeleted": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "undoLinkedStay": "{count, plural, =1{The linked payment stays} other{The {count} linked payments stay}} in your history — just unlinked.",
+  "@undoLinkedStay": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "willBeReservedAgain": "Your {amount} will be reserved again.",
+  "@willBeReservedAgain": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reopenGoal": "Reopen \"{goal}\"?",
+  "@reopenGoal": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
+  "undoneCreatedRemoved": "Purchase undone and the created expense removed.",
+  "undoneKept": "Purchase undone. Your payments were kept in history.",
+  "undo": "Undo",
+  "deleteGoalReserved": "Delete \"{goal}\"? The {amount} reserved will return to your available balance.",
+  "@deleteGoalReserved": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteGoalNoUndo": "Delete \"{goal}\"? This cannot be undone.",
+  "@deleteGoalNoUndo": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
+  "noteGoalDeleted": "Goal deleted",
+  "returnedToBalance": "{amount} returned to your available balance",
+  "@returnedToBalance": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "versionBuild": "{version} (Build {build})",
+  "@versionBuild": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "build": {
+        "type": "String"
+      }
+    }
+  },
+  "clearTransactionsConfirm": "Are you sure you want to delete all transactions? This action cannot be undone.",
+  "transactionsCleared": "All transactions cleared",
+  "incomeTargetExplain": "A planning target only — used to measure your savings rate. It is never added to your balance.",
+  "howOften": "How often",
+  "clear": "Clear",
+  "noTxToExport": "No transactions to export",
+  "exportedAs": "Transactions exported successfully as {format}",
+  "@exportedAs": {
+    "placeholders": {
+      "format": {
+        "type": "String"
+      }
+    }
+  },
+  "exportFailed": "Export failed: {error}",
+  "@exportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "clearGoalsConfirm": "Are you sure you want to delete all goals? This action cannot be undone.",
+  "goalsCleared": "All goals cleared",
+  "deleteAccountQ": "Delete your account?",
+  "deleteAccountBody": "This permanently deletes:\n\n• All your transactions\n• All your goals and reserved money\n• Your profile and settings\n• Your sign-in account\n\nThis cannot be undone. Consider exporting your data first (Data Management → Export).",
+  "enterSignInPassword": "Enter the password you use to sign in to FinWise{email}.",
+  "@enterSignInPassword": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "notAppLockPin": "This is not your app-lock PIN.",
+  "signInPassword": "Sign-in password",
+  "accountDeleted": "Your account has been deleted",
+  "deleteForever": "Delete forever",
+  "logoutConfirm": "Are you sure you want to logout? You will need to login again to access the app.",
+  "loggedOut": "You've been logged out successfully",
+  "addGoal": "Add Goal",
+  "editGoalTitle": "Edit Goal",
+  "selectIcon": "Select Icon",
+  "goalName": "Goal Name",
+  "enterGoalName": "Please enter goal name",
+  "targetAmountCode": "Target Amount ({code})",
+  "@targetAmountCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "enterTargetAmount": "Please enter target amount",
+  "enterValidNumberShort": "Please enter valid number",
+  "targetDate": "Target Date",
+  "add": "Add",
+  "changeCurrencyQ": "Change currency?",
+  "changeCurrencyBody": "Your existing transactions will NOT be converted.\n\nAn amount recorded as 500 {from} will simply display as 500 {to} — the number stays the same, only the label changes.\n\nChange currency only if you entered those amounts in {to}, or if you plan to clear your data.",
+  "@changeCurrencyBody": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "changeTo": "Change to {code}",
+  "@changeTo": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "chooseCurrency": "Choose your currency",
+  "appLock": "App lock",
+  "appLockOnSub": "FinWise asks for your PIN when opened",
+  "appLockOffSub": "Require a PIN to open FinWise",
+  "unlockFingerprint": "Unlock with fingerprint",
+  "fingerprintSub": "Use your fingerprint or face instead of the PIN",
+  "noFingerprint": "No fingerprint or face set up on this phone",
+  "lockAfter": "Lock after",
+  "lockImmediately": "Immediately when you leave the app",
+  "lockAfterMinutes": "After {minutes, plural, =1{1 minute} other{{minutes} minutes}} away",
+  "@lockAfterMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "instant": "Instant",
+  "minShort": "{n} min",
+  "@minShort": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "changePin": "Change PIN",
+  "changePinSub": "Set a new 4-digit PIN",
+  "lockNow": "Lock now",
+  "lockNowSub": "Immediately require the PIN",
+  "useFingerprintQ": "Use fingerprint?",
+  "useFingerprintBody": "Unlock FinWise with your fingerprint or face instead of typing the PIN each time. Your PIN still works as a backup.",
+  "notNow": "Not now",
+  "enable": "Enable",
+  "appLockOn": "App lock is on",
+  "turnOffLock": "Turn off app lock",
+  "lockTurnedOff": "App lock turned off",
+  "enterCurrentPinTitle": "Enter current PIN",
+  "setNewPin": "Set a new PIN",
+  "pinUpdated": "PIN updated",
+  "protectFinances": "Protect your finances",
+  "protectBody": "Add a PIN so only you can open FinWise. Signing in keeps you logged in, so without a lock anyone holding your phone could see your balance and transactions.",
+  "setUpPin": "Set up PIN",
+  "nameThisPhone": "Name this phone",
+  "nameThisPhoneBody": "Transactions recorded on this phone are labelled with this name, so you can tell them apart from ones recorded on your other devices.",
+  "deviceName": "Device name",
+  "thisPhone": "This phone",
+  "namingDevice": "Naming this device…",
+  "shownOnTx": "{name} — shown on transactions recorded here",
+  "@shownOnTx": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "needHelp": "Need help?",
+  "needHelpBody": "Most questions are answered in the FAQ. If not, reach out directly and we'll get back to you.",
+  "browseFaq": "Browse FAQ",
+  "browseFaqSub": "Answers to common questions about FinWise",
+  "emailUs": "Email us",
+  "noEmailApp": "Could not open an email app",
+  "whatsappUs": "WhatsApp us",
+  "whatsappSub": "Chat with us on WhatsApp",
+  "whatsappPreview": "WhatsApp preview",
+  "finwiseSupport": "FinWise Support",
+  "whatsappGreeting": "Hi! Have a question about FinWise, or need help with something? Send us a message and we'll get back to you as soon as we can.",
+  "noWhatsapp": "Could not open WhatsApp",
+  "openChat": "Open chat",
+  "smsBlocked": "SMS permission is blocked",
+  "smsBlockedBody": "Android has stopped asking because the permission was declined before. To turn auto-detect on, allow SMS for FinWise in your phone settings:\n\nPermissions → SMS → Allow",
+  "openSettings": "Open settings",
+  "smsNotGrantedOff": "SMS permission was not granted, so auto-detect stays off.",
+  "smsNotGranted": "SMS permission not granted",
+  "smsBlockedSwitch": "Android has blocked this permission because it was declined before, so the switch above can't turn it on. Allow SMS for FinWise in phone settings, then come back.",
+  "smsNeedsPermission": "Auto-detect needs permission to read Mobile Money messages. Turn the switch on to grant it.",
+  "openPhoneSettings": "Open phone settings",
+  "autoDetectStopped": "Auto-detect has stopped working",
+  "autoDetectStoppedBody": "Messages haven't been checked in over a day. Turn the switch off and on again to re-grant SMS permission, and make sure FinWise isn't battery-restricted.",
+  "fixBattery": "Fix battery settings",
+  "nothingDetected": "Nothing detected in a while",
+  "lastDetectedCheck": "Last transaction detected {ago}. If you have used Mobile Money since then, check that FinWise still has SMS permission and is not battery-restricted.",
+  "@lastDetectedCheck": {
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "lastDetected": "Last transaction detected {ago}.",
+  "@lastDetected": {
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "watchingNothingYet": "Watching for Mobile Money messages. Nothing detected yet.",
+  "waitingFirst": "Waiting for the first Mobile Money message.",
+  "autoDetectWorking": "Auto-detect is working",
+  "improveBackground": "Improve background detection",
+  "improveBackgroundBody": "Android may delay detection to save battery. Mark FinWise as \"Unrestricted\" so messages are picked up promptly.",
+  "minAgo": "{n} min ago",
+  "@minAgo": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursAgo": "{n, plural, =1{1 hour} other{{n} hours}} ago",
+  "@hoursAgo": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "daysAgo": "{n, plural, =1{1 day} other{{n} days}} ago",
+  "@daysAgo": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "autoDetectTitle": "Auto-detect Mobile Money transactions",
+  "autoDetectSub": "Reads MoMo and bank SMS on this device and records transactions automatically. Message content never leaves your phone. A permanent notification is shown while this is on, so Android keeps detecting even when you're in another app.",
+  "selectCategory": "Please select a category",
+  "transactionWord": "Transaction",
+  "categoryAdded": "Category \"{name}\" added",
+  "@categoryAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addTransaction": "Add Transaction",
+  "editTransaction": "Edit Transaction",
+  "recordedThisPhone": "Recorded on this phone ({name})",
+  "@recordedThisPhone": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recordedOtherPhone": "Recorded on another phone ({name})",
+  "@recordedOtherPhone": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "originalMessage": "Original message",
+  "account": "Account",
+  "enterAmount": "Please enter amount",
+  "category": "Category",
+  "categoriesCount": "{count} categories",
+  "@categoriesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addCustomCategory": "Add Custom Category",
+  "enterCategoryName": "Enter category name...",
+  "yourCustomCategories": "Your Custom Categories:",
+  "customCategoriesNote": "FinWise will group these under the closest main category so your budgets stay simple.",
+  "whySpending": "Why are you spending this?",
+  "descriptionOptional": "Description (Optional)",
+  "deleteTransaction": "Delete Transaction",
+  "deleteTransactionQ": "Are you sure you want to delete this transaction?",
+  "autoDetectedTip": "Auto-detected from Mobile Money SMS — tap to review",
+  "autoBadge": "Auto",
+  "todayAt": "Today, {time}",
+  "@todayAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "recentTransactions": "Recent transactions",
+  "viewAll": "View all →",
+  "transactionDeleted": "Transaction deleted",
+  "hello": "Hello",
+  "manageWisely": "Let's manage your money wisely",
+  "expenses": "Expenses",
+  "startTracking": "Start Tracking Your Finances",
+  "tapPlusFirst": "Tap the + button to add your first transaction",
+  "totalAmount": "Total",
+  "available": "Available",
+  "accountsOverview": "Accounts overview",
+  "balanceReservedAvailable": "Balance · reserved · available",
+  "momoShort": "MoMo",
+  "shortBy": "short {amount}",
+  "@shortBy": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "totalBalance": "Total Balance",
+  "addIncome": "Add Income",
+  "addExpense": "Add Expense",
+  "goodMorning": "Good Morning",
+  "goodAfternoon": "Good Afternoon",
+  "goodEvening": "Good Evening",
+  "userFallback": "User",
+  "healthExcellent": "Excellent",
+  "healthGood": "Good",
+  "healthFair": "Fair",
+  "healthNeedsImprovement": "Needs Improvement",
+  "healthCritical": "Critical",
+  "adviceExcellent": "Keep up the great work! You're managing your finances excellently.",
+  "adviceGood": "You're doing well! Consider increasing your savings rate.",
+  "adviceFair": "Try to reduce expenses and set some financial goals.",
+  "adviceNeeds": "Focus on spending less than you earn and create a budget.",
+  "adviceCritical": "Start by tracking all expenses and creating a savings plan.",
+  "financialHealth": "Financial Health",
+  "profileIncomeUsed": "Profile income used: {amount} per month",
+  "@profileIncomeUsed": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "notAvailable": "N/A",
+  "srGood": "Good! 👍",
+  "srOverspending": "Spending more than income",
+  "savingsRateTitle": "Savings Rate",
+  "usingProfileIncome": "Using your profile income (from onboarding) since no income transactions added yet.",
+  "basedOnTracked": "Based on your tracked income and expenses from transactions.",
+  "saved": "Saved",
+  "thisMonthLower": "This month",
+  "smartTip": "SMART TIP",
+  "notEnoughCashFlow": "Not enough data yet for a cash flow view",
+  "moneyInVsOut": "Money in vs out",
+  "inShort": "In",
+  "outShort": "Out",
+  "monthKept": "This month you kept {amount}",
+  "@monthKept": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "monthOverspent": "This month you spent {amount} more than you earned",
+  "@monthOverspent": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "noSpending4Weeks": "No spending recorded in the last 4 weeks",
+  "spendingTrend": "Spending trend · Last 4 weeks",
+  "weekSpentMore": "This week you spent {pct}% more than last week",
+  "@weekSpentMore": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "weekSpentLess": "This week you spent {pct}% less than last week",
+  "@weekSpentLess": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "averagePerWeek": "Average {amount} per week",
+  "@averagePerWeek": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "whyYouSpend": "Why you spend",
+  "tagReasonsHint": "Tag a few expenses as necessity, enjoyment, business or emergency to see what share of your money is essential.",
+  "whyYouSpentMonth": "Why you spent · This month",
+  "necessityShare": "{pct}% of your spending was on necessities",
+  "@necessityShare": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "notTagged": "{amount} not tagged with a reason",
+  "@notTagged": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "spendingByCategoryMonth": "Spending by category · This month",
+  "noSpendingMonth": "No spending recorded this month yet.",
+  "topCategories": "Top Spending Categories",
+  "thisMonthTitle": "This Month",
+  "pctOfTotal": "{pct}% of total spending",
+  "@pctOfTotal": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "noSpendingData": "No spending data to display",
+  "spendingByCategory": "Spending by Category",
+  "categoriesTitle": "Categories",
+  "spendingCategories": "Spending Categories",
+  "categoriesIntro": "FinWise groups your expenses into simple categories so you can quickly see where your money goes.",
+  "budgetsIntro": "Budgets here use your profile income from onboarding plus your real spending from transactions.",
+  "categoryInsight": "Category insight",
+  "calMonth": "Month",
+  "calTwoWeeks": "2 Weeks",
+  "calWeek": "Week",
+  "txCount": "{count, plural, =1{1 transaction} other{{count} transactions}}",
+  "@txCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noTxThisDay": "No transactions on this day",
+  "addForThisDate": "Add an income or expense for this date to see it here.",
+  "transferBetweenAccounts": "Transfer between accounts",
+  "transferFee": "Transfer fee",
+  "transferConfirmation": "Transfer confirmation: {details}",
+  "@transferConfirmation": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "errGoalNotFound": "Goal not found",
+  "errOverRelease": "That would release more than was reserved. Delete or reduce the release first.",
+  "errOverReleaseAccount": "That would release more from an account than was reserved from it.",
+  "insightStart": "Start tracking your expenses to get personalized insights!",
+  "insightHighCategory": "You're spending {pct}% on {category}. Consider reducing by {amount} {symbol} to improve your savings rate.",
+  "@insightHighCategory": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      },
+      "category": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "symbol": {
+        "type": "String"
+      }
+    }
+  },
+  "insightLowSavings": "Your savings rate is {pct}%. Try to save at least 20% of your income for better financial health.",
+  "@insightLowSavings": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "insightGreat": "Great job! You're managing your finances well. Keep tracking to maintain good habits!",
+  "delNotSignedIn": "You are not signed in.",
+  "delNoEmail": "This account has no email sign-in, so it cannot be verified this way. Please contact support.",
+  "delWrongPassword": "Incorrect password. Use the password you sign in to FinWise with (not your app-lock PIN).",
+  "delOtherAccount": "That password belongs to a different account.",
+  "delTooMany": "Too many attempts. Please wait a few minutes and try again.",
+  "delNetwork": "Network error. Check your connection and try again.",
+  "delReLogin": "Please sign out, sign in again, then retry deletion.",
+  "delVerifyFailedCode": "Verification failed ({code}). Please try again.",
+  "@delVerifyFailedCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "delVerifyFailed": "Could not verify your password. Please try again.",
+  "delDataFailed": "Could not delete your data. Please try again.",
+  "delAccountFailed": "Could not delete your account. Please try again.",
+  "notifChannelName": "Transaction alerts",
+  "notifChannelDesc": "Notifies you when a Mobile Money transaction is auto-recorded.",
+  "notifMoneyReceived": "Money received",
+  "notifMoneySent": "Money sent",
+  "notifSmsNotRead": "MoMo SMS not read",
+  "notifSmsNotReadBody": "Looked like a transaction but the amount/format wasn't recognised.",
+  "notifNotSaved": "Transaction not saved",
+  "notifNotSavedBody": "Could not record \"{description}\". Please add it manually.",
+  "@notifNotSavedBody": {
+    "placeholders": {
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "monitorChannelName": "Mobile Money monitoring",
+  "monitorChannelDesc": "Shown while FinWise is watching for Mobile Money SMS to auto-track your transactions.",
+  "monitorTitle": "FinWise is monitoring for transactions",
+  "monitorText": "Mobile Money SMS auto-detect is on. Tap to open FinWise.",
+  "csvHeader": "Date,Type,Category,Description,Amount ({code})",
+  "@csvHeader": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "exportSubject": "FinWise Transactions Export",
+  "exportText": "Your FinWise transaction export",
+  "reportTitle": "FINWISE TRANSACTION REPORT",
+  "reportGenerated": "Generated: {date}",
+  "@reportGenerated": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "reportSummary": "SUMMARY",
+  "reportTotalIncome": "Total Income: {amount}",
+  "@reportTotalIncome": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportTotalExpenses": "Total Expenses: {amount}",
+  "@reportTotalExpenses": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportBalance": "Balance: {amount}",
+  "@reportBalance": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reportTransactions": "TRANSACTIONS",
+  "reportDate": "Date: {value}",
+  "@reportDate": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "reportType": "Type: {value}",
+  "@reportType": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "reportCategory": "Category: {value}",
+  "@reportCategory": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "reportDescription": "Description: {value}",
+  "@reportDescription": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "reportAmount": "Amount: {value}",
+  "@reportAmount": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "reportSubject": "FinWise Transaction Report",
+  "reportText": "Your FinWise transaction report",
+  "styleSaver": "Saver",
+  "styleBalanced": "Balanced",
+  "styleSpender": "Spender",
+  "styleOverspender": "Overspender",
+  "catElectricity": "Electricity",
+  "setUpFinwise": "Set up FinWise",
+  "back": "Back",
+  "letsSetUp": "Let's set up your FinWise",
+  "tellUsAboutYou": "Tell us a bit about you. You can change this anytime.",
+  "whyWeNeed": "Why we need this:",
+  "whyWeNeedBullets": "• Your name personalizes your dashboard\n• Your currency is used across the whole app\n• Add an income target later in Settings (optional)",
+  "selectCurrency": "Select currency",
+  "allWeNeed": "That's all we need to get started. You can set an income target and more anytime in Settings.",
+  "whatsYourStyle": "What's your spending style?",
+  "chooseStyle": "Choose what fits you best. This helps FinWise suggest realistic budgets.",
+  "howThisHelps": "How this helps:",
+  "howThisHelpsBullets": "• Spending style: Helps FinWise give personalized budget advice later\n• Real spending: We only use your actual transactions to calculate charts and budgets",
+  "styleSaverSub": "I save a lot",
+  "styleBalancedSub": "I'm balanced",
+  "styleSpenderSub": "I spend most income",
+  "styleOverspenderSub": "I often overspend",
+  "trackRealSpending": "FinWise will track your real spending automatically from the transactions you add on the dashboard.",
+  "whatDoYouSpendOn": "What do you spend on?",
+  "selectAllCategories": "Select all categories that apply to your spending",
+  "mainCategoriesNote": "FinWise uses these 23 main categories on every page so your budgets and insights stay clear and simple.",
+  "whyCategoriesMatter": "Why categories matter:",
+  "whyCategoriesBullets": "• Track spending by category (Food, Transport, etc.)\n• Get insights like \"You spent 30% on Food this month\"\n• Set budgets per category and get alerts\n• You can add more categories anytime",
+  "addCustomCategoryHint": "Add custom category...",
+  "addRemoveLater": "You can always add or remove categories later in settings.",
+  "permissionNotGrantedLater": "Permission not granted. You can turn on auto-tracking later in Settings.",
+  "trackAutomatically": "Track money automatically",
+  "trackAutomaticallyBody": "This is what makes FinWise different. It reads your Mobile Money SMS and records every payment and deposit for you — no manual typing.",
+  "featInstant": "Instant",
+  "featInstantBody": "New MoMo transactions appear on your balance within seconds.",
+  "featPrivate": "Private",
+  "featPrivateBody": "Everything stays on your phone. Nothing is uploaded or shared.",
+  "featAutomatic": "Automatic",
+  "featAutomaticBody": "Amount, direction and category are filled in for you.",
+  "autoTrackingOnFinish": "Auto-tracking is on. Tap Get Started to finish.",
+  "requestingPermission": "Requesting permission…",
+  "enableAutoTracking": "Enable auto-tracking",
+  "turnOffAnytime": "You can turn this off anytime in Settings.",
+  "optionalSkip": "Optional — you can skip and turn it on later in Settings.",
+  "faqS1": "Automatic tracking (SMS)",
+  "faqS1Q1": "How does auto-detect work?",
+  "faqS1A1": "When you turn it on, FinWise reads incoming Mobile Money SMS (MTN, Airtel, bank alerts) on your phone and records the transaction automatically — amount, whether it was money in or out, and who it was with. It works fully offline: nothing is sent anywhere except your own device and, if you're signed in, your own FinWise account.",
+  "faqS1Q2": "Does FinWise read my personal messages?",
+  "faqS1A2": "No. Only messages that look like Mobile Money or bank notifications are ever processed — everything else is ignored and never stored or transmitted.",
+  "faqS1Q3": "Why did I get two notifications for one payment?",
+  "faqS1A3": "That shouldn't happen. If the same amount, same person, and same type of message (both \"received\" or both \"sent\") arrives twice within a few minutes, FinWise treats the second one as a repeat and does not record it again. If you still see a duplicate, use \"Email us\" below with the date/amount so it can be fixed.",
+  "faqS1Q4": "A promotional or \"bundle expired\" SMS was recorded as an expense.",
+  "faqS1A4": "FinWise filters out common promotional wording, but providers change their message templates over time. If one slips through, delete it from your transaction list — swipe left, or tap it and delete.",
+  "faqS2": "Transfers between your own accounts",
+  "faqS2Q1": "I moved money from Mobile Money to my bank — why isn't it income or an expense?",
+  "faqS2A1": "Moving money between accounts you own (Mobile Money ↔ bank, or saving/withdrawing MoCash) isn't a real gain or loss — it's still your money. FinWise records these as a neutral \"Transfer\" so they never inflate your income or spending totals.",
+  "faqS2Q2": "How does FinWise know it's a transfer and not a real payment?",
+  "faqS2A2": "Mostly by pattern: one movement between your own accounts usually produces two SMS — one saying money left an account, another saying the same amount arrived — with the same amount, the same name, within a few minutes of each other. FinWise pairs those up automatically. It does not rely on your profile name, so it works even if your accounts are registered under a different name.",
+  "faqS2Q3": "What about a loan from MoCash?",
+  "faqS2A3": "A loan genuinely changes what you have or owe, so it's recorded normally — receiving a loan is income, repaying it is an expense. Only a plain save/withdraw within MoCash is treated as a transfer.",
+  "faqS2Q4": "Does a fee on a transfer get recorded?",
+  "faqS2A4": "Yes. The transfer itself is neutral, but any fee charged on it is a real cost, so it's recorded separately as a small expense.",
+  "faqS3": "Goals & saved money",
+  "faqS3Q1": "When I put money toward a goal, does that count as spent?",
+  "faqS3A1": "No. Money reserved for a goal is set aside, not spent — it still shows in your account. It only becomes a real expense once you mark the goal as purchased.",
+  "faqS3Q2": "I marked a goal as purchased but I'd already recorded that expense from an SMS — will it be counted twice?",
+  "faqS3A2": "No — when marking a goal purchased, you can link it to a transaction that's already recorded (e.g. auto-detected from SMS) instead of creating a new one, so it's only counted once.",
+  "faqS4": "Currency & accounts",
+  "faqS4Q1": "What happens if I change my currency after adding transactions?",
+  "faqS4A1": "Amounts are not converted — a transaction recorded as 500 RWF would simply display as 500 in the new currency, same number, different label. FinWise warns you about this before the change goes through, since it doesn't use live exchange rates.",
+  "faqS5": "Privacy & data",
+  "faqS5Q1": "Does FinWise collect my photo or profile picture?",
+  "faqS5A1": "No. FinWise shows your initial as your avatar instead of a photo — no images are ever uploaded.",
+  "faqS5Q2": "Can I use FinWise without SMS auto-detect?",
+  "faqS5A2": "Yes — it's optional. You can add every transaction manually and never grant SMS permission at all.",
+  "faqS5Q3": "How do I delete my account and data?",
+  "faqS5A3": "Settings → Delete account. This permanently removes your transactions, goals, profile, and sign-in — it cannot be undone, so consider exporting your data first.",
+  "faqS5Q4": "Can I export my data?",
+  "faqS5A4": "Yes — Settings → Export to CSV or Export Report (PDF).",
+  "faqS6": "App lock",
+  "faqS6Q1": "How do I turn on PIN or fingerprint lock?",
+  "faqS6A1": "Settings → Security → App Lock. You can use a PIN, or your phone's fingerprint/face unlock where supported.",
+  "faqS6Q2": "I forgot my PIN.",
+  "faqS6A2": "On the lock screen, tap \"Forgot PIN?\" — this signs you out and back in with your FinWise email/password, then lets you set a new PIN.",
+  "stillNeedHelp": "Still need help?",
+  "reachOutDirectly": "Reach out directly and we'll get back to you.",
+  "legalTermsTitle": "Terms & Conditions",
+  "legalTermsIntro": "By creating a FinWise account you agree to these terms. Please read them carefully.",
+  "legalTermsS1T": "1. Using FinWise",
+  "legalTermsS1C": "• FinWise helps you track your personal income, spending and savings goals.\n• You must be old enough to enter a binding agreement in your country.\n• You are responsible for keeping your account credentials secure.\n• Use the app only for lawful, personal financial management.",
+  "legalTermsS2T": "2. Your Data Is Yours",
+  "legalTermsS2C": "• The financial information you record belongs to you.\n• We store it to provide the service and sync it across your devices.\n• You can export or delete your data at any time from Settings.",
+  "legalTermsS3T": "3. Mobile Money SMS Detection",
+  "legalTermsS3C": "• This optional feature reads Mobile Money messages on your device to record transactions automatically.\n• Messages are processed entirely on your phone. Message content is never uploaded or shared.\n• Only financial messages are used; personal SMS are ignored.\n• You can turn this off at any time in Settings.",
+  "legalTermsS4T": "4. Accuracy & Financial Decisions",
+  "legalTermsS4C": "• FinWise is a tracking tool, not financial, investment, tax or legal advice.\n• Automatic detection and categorisation may occasionally be wrong — always review your records.\n• You remain responsible for your own financial decisions.",
+  "legalTermsS5T": "5. Availability",
+  "legalTermsS5C": "• We aim to keep FinWise available and accurate, but the service is provided \"as is\".\n• Features may change, and syncing depends on your internet connection.",
+  "legalTermsS6T": "6. Ending Your Account",
+  "legalTermsS6C": "• You may stop using FinWise and delete your data at any time.\n• We may suspend accounts that misuse the service or breach these terms.",
+  "legalTermsS7T": "7. Changes to These Terms",
+  "legalTermsS7C": "We may update these terms as the app evolves. Continuing to use FinWise after an update means you accept the revised terms.",
+  "legalPrivacyTitle": "Privacy Policy",
+  "legalPrivacyIntro": "FinWise helps you track your money. This policy explains exactly what we collect, what stays on your phone, and what we never do.",
+  "legalPrivacyS1T": "1. What Stays Only On Your Phone",
+  "legalPrivacyS1C": "The following NEVER leaves your device and is never uploaded:\n\n• SMS message content. Mobile Money and bank messages are read and analysed entirely on your phone. We never upload, store or transmit message text.\n• Your app lock PIN. Stored only as a salted, irreversible hash.\n• Fingerprint / face data. Android verifies you in secure hardware and tells the app only \"yes\" or \"no\". FinWise never receives, sees or stores biometric data.",
+  "legalPrivacyS2T": "2. Mobile Money SMS Detection (Optional)",
+  "legalPrivacyS2C": "If you enable auto-detection, FinWise uses SMS permissions to record your transactions automatically.\n\n• Purpose: to read financial alerts from Mobile Money providers and banks so transactions are recorded without manual typing.\n• Only financial messages are used. Personal messages are ignored.\n• Only the extracted amount, direction, date and counterparty name are saved as a transaction — never the raw message.\n• Processing happens on your device, offline.\n• You can turn this off at any time in Settings, and revoke the permission in your phone settings.\n\nThis use complies with Google Play's permitted use for SMS-based money management.",
+  "legalPrivacyS3T": "3. Information We Collect",
+  "legalPrivacyS3C": "• Account: email address and name (for sign-in and personalisation)\n• Financial records: transactions you add or that are detected — amount, description, category, date and account type\n• Goals: names, targets, dates and contribution history\n• Preferences: currency, optional income target, app settings\n\nWe do NOT collect photos. FinWise has no photo upload and does not request camera or gallery access — your avatar is simply the first letter of your name.",
+  "legalPrivacyS4T": "4. Where Your Data Is Stored",
+  "legalPrivacyS4C": "• On your device: a local copy of your transactions and settings, so the app works offline and starts quickly.\n• In the cloud (Firebase, operated by Google): your account details, transactions and goals — so your data survives a lost phone and syncs across devices.\n\nCloud data is encrypted in transit and at rest. Security rules ensure only your signed-in account can read your records.",
+  "legalPrivacyS5T": "5. Notifications & Background Activity",
+  "legalPrivacyS5C": "• FinWise shows a notification when a transaction is detected.\n• While auto-detection is on, a persistent notification indicates that FinWise is monitoring for transactions. Android requires this for any app doing background work, and it keeps detection reliable.\n• Background activity is used only to detect transactions. We do not track your location or usage of other apps.",
+  "legalPrivacyS6T": "6. What We Never Do",
+  "legalPrivacyS6C": "• We never sell your personal information.\n• We never share your financial data with advertisers or data brokers.\n• We never upload SMS content.\n• We do not move money, access your bank or Mobile Money account, or ask for your PIN or banking credentials.\n• We show no advertising.",
+  "legalPrivacyS7T": "7. Third-Party Services",
+  "legalPrivacyS7C": "We use Firebase (Google) for sign-in, database and file storage. Google's privacy policy applies to their handling of that data: https://policies.google.com/privacy\n\nNo other third-party service receives your data.",
+  "legalPrivacyS8T": "8. Your Rights & Control",
+  "legalPrivacyS8C": "• Access: view all of your data inside the app\n• Export: download your transactions as CSV or PDF\n• Delete: remove individual records, clear all data, or delete your account entirely\n• Withdraw consent: turn off SMS detection at any time\n• Sign out: stops cloud sync on that device",
+  "legalPrivacyS9T": "9. Data Retention",
+  "legalPrivacyS9C": "Your data is kept until you delete it. Deleting a record removes it from your device and the cloud. Deleting your account removes your stored data permanently.",
+  "legalPrivacyS10T": "10. Children's Privacy",
+  "legalPrivacyS10C": "FinWise is not intended for anyone under 13. We do not knowingly collect information from children.",
+  "legalPrivacyS11T": "11. Changes To This Policy",
+  "legalPrivacyS11C": "If this policy changes, the date below is updated. Significant changes affecting how your data is used will be announced in the app.",
+  "legalPrivacyS12T": "12. Contact",
+  "legalPrivacyS12C": "For any privacy question or to request deletion of your data, contact us through Help & Support in the app.",
+  "legalLastUpdated": "Last updated: {date}",
+  "@legalLastUpdated": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "legalUpdatedDate": "July 2026",
+  "legalTranslationNote": "",
+  "biometricReason": "Unlock FinWise to view your finances"
+}

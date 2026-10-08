@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/transaction.dart';
 import '../providers/currency_provider.dart';
 import '../theme/app_theme.dart';
+import '../l10n/l10n_helpers.dart';
 
 /// Income vs expenses, month by month — the single most useful chart in a
 /// money app, because it answers "am I living within my means?" at a glance.
@@ -21,26 +22,21 @@ class CashFlowChart extends StatelessWidget {
     this.monthsToShow = 6,
   });
 
-  static const List<String> _monthAbbr = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-  ];
-
   @override
   Widget build(BuildContext context) {
     final currency = context.watch<CurrencyProvider>();
-    final months = _monthlyData();
+    final months = _monthlyData(context);
     final hasData = months.any((m) => m.income > 0 || m.expense > 0);
 
     if (!hasData) {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: _card(),
-        child: const SizedBox(
+        child: SizedBox(
           height: 120,
           child: Center(
             child: Text(
-              'Not enough data yet for a cash flow view',
+              context.l10n.notEnoughCashFlow,
               style: TextStyle(color: AppTheme.textLight),
             ),
           ),
@@ -65,8 +61,8 @@ class CashFlowChart extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Money in vs out',
+              Text(
+                context.l10n.moneyInVsOut,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -75,9 +71,9 @@ class CashFlowChart extends StatelessWidget {
               ),
               Row(
                 children: [
-                  _legendDot(AppTheme.primaryColor, 'In'),
+                  _legendDot(AppTheme.primaryColor, context.l10n.inShort),
                   const SizedBox(width: 12),
-                  _legendDot(AppTheme.accentDark, 'Out'),
+                  _legendDot(AppTheme.accentDark, context.l10n.outShort),
                 ],
               ),
             ],
@@ -85,8 +81,8 @@ class CashFlowChart extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             net >= 0
-                ? 'This month you kept ${currency.formatCompact(net)}'
-                : 'This month you spent ${currency.formatCompact(-net)} more than you earned',
+                ? context.l10n.monthKept(currency.formatCompact(net))
+                : context.l10n.monthOverspent(currency.formatCompact(-net)),
             style: TextStyle(
               fontSize: 12,
               color: net >= 0 ? AppTheme.primaryColor : AppTheme.expenseColor,
@@ -159,7 +155,7 @@ class CashFlowChart extends StatelessWidget {
                       final m = months[group.x.toInt()];
                       final isIncome = rodIdx == 0;
                       return BarTooltipItem(
-                        '${m.label}\n${isIncome ? 'In' : 'Out'}: ${currency.formatCompact(rod.toY)}',
+                        '${m.label}\n${isIncome ? context.l10n.inShort : context.l10n.outShort}: ${currency.formatCompact(rod.toY)}',
                         const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -218,7 +214,7 @@ class CashFlowChart extends StatelessWidget {
     );
   }
 
-  List<_MonthPoint> _monthlyData() {
+  List<_MonthPoint> _monthlyData(BuildContext context) {
     final now = DateTime.now();
     final points = <_MonthPoint>[];
 
@@ -236,7 +232,7 @@ class CashFlowChart extends StatelessWidget {
       }
 
       points.add(_MonthPoint(
-        label: _monthAbbr[month.month - 1],
+        label: monthAbbr(context, month),
         income: income,
         expense: expense,
       ));

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/app_localizations.dart';
 
 /// Permanently deletes a user's account and all of their data.
 ///
@@ -25,16 +26,18 @@ class AccountDeletionService {
   /// [password] is required because Firebase refuses to delete an account
   /// whose sign-in is not recent ("requires-recent-login"). Re-authenticating
   /// also ensures the person deleting the account is genuinely the owner.
-  Future<String?> deleteAccount({required String password}) async {
+  Future<String?> deleteAccount({
+    required String password,
+    required AppLocalizations l,
+  }) async {
     final user = _auth.currentUser;
-    if (user == null) return 'You are not signed in.';
+    if (user == null) return l.delNotSignedIn;
     final uid = user.uid;
     final email = user.email;
 
     // 1. Prove identity again before anything destructive happens.
     if (email == null) {
-      return 'This account has no email sign-in, so it cannot be verified '
-          'this way. Please contact support.';
+      return l.delNoEmail;
     }
 
     try {
@@ -50,19 +53,18 @@ class AccountDeletionService {
         'wrong-password' ||
         'invalid-credential' ||
         'invalid-login-credentials' =>
-          'Incorrect password. Use the password you sign in to FinWise with '
-              '(not your app-lock PIN).',
+          l.delWrongPassword,
         'user-mismatch' =>
-          'That password belongs to a different account.',
+          l.delOtherAccount,
         'too-many-requests' =>
-          'Too many attempts. Please wait a few minutes and try again.',
+          l.delTooMany,
         'network-request-failed' =>
-          'Network error. Check your connection and try again.',
+          l.delNetwork,
         'requires-recent-login' =>
-          'Please sign out, sign in again, then retry deletion.',
+          l.delReLogin,
         // Surface the code for anything unexpected — a vague message makes
         // this impossible to diagnose.
-        _ => 'Verification failed (${e.code}). Please try again.',
+        _ => l.delVerifyFailedCode(e.code),
       };
     } catch (e) {
       if (kDebugMode) debugPrint('FinWise: re-auth threw: $e');
@@ -79,7 +81,7 @@ class AccountDeletionService {
           message.contains('is not a subtype of type');
 
       if (!isPluginDecodingBug) {
-        return 'Could not verify your password. Please try again.';
+        return l.delVerifyFailed;
       }
       // Fall through and continue with deletion.
     }
@@ -91,7 +93,7 @@ class AccountDeletionService {
       await _db.collection('users').doc(uid).delete();
     } catch (e) {
       if (kDebugMode) debugPrint('FinWise: Firestore deletion failed: $e');
-      return 'Could not delete your data. Please try again.';
+      return l.delDataFailed;
     }
 
     // (Profile pictures were removed from the app — Firebase Storage requires
@@ -108,9 +110,9 @@ class AccountDeletionService {
       await user.delete();
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
-        return 'Please sign out, sign in again, then retry deletion.';
+        return l.delReLogin;
       }
-      return 'Could not delete your account. Please try again.';
+      return l.delAccountFailed;
     }
 
     return null; // success

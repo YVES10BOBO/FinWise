@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../theme/app_theme.dart';
 import 'login_screen.dart';
 import 'auth_widgets.dart';
+import '../../l10n/l10n_helpers.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -42,11 +43,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         setState(() => _isLoading = false);
 
         final message = switch (e.code) {
-          'invalid-email' => 'Invalid email address. Please check and try again.',
-          'user-not-found' => 'No account found for that email.',
-          'too-many-requests' => 'Too many attempts. Please try again later.',
-          'network-request-failed' => 'Network error. Please check your connection.',
-          _ => e.message ?? 'Failed to send reset email. Please try again.',
+          'invalid-email' => context.l10n.errInvalidEmailCheck,
+          'user-not-found' => context.l10n.errNoAccountEmail,
+          'too-many-requests' => context.l10n.errTooManyAttempts,
+          'network-request-failed' => context.l10n.errNetworkConnection,
+          _ => e.message ?? context.l10n.resetEmailFailed,
         };
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -61,7 +62,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Failed to send reset email. Please try again.'),
+            content: Text(context.l10n.resetEmailFailed),
             backgroundColor: AppTheme.expenseColor,
             behavior: SnackBarBehavior.floating,
           ),
@@ -78,10 +79,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         child: Column(
           children: [
             AuthHeader(
-              title: _emailSent ? 'Check your email' : 'Reset your password',
+              title: _emailSent ? context.l10n.checkYourEmail : context.l10n.resetYourPassword,
               subtitle: _emailSent
-                  ? 'We sent you a link to set a new password'
-                  : 'Enter your email and we\'ll send reset instructions',
+                  ? context.l10n.resetLinkSent
+                  : context.l10n.resetEnterEmail,
               showBack: true,
             ),
             Padding(
@@ -94,22 +95,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     if (!_emailSent) ...[
                       AuthField(
                         controller: _emailController,
-                        label: 'Email',
+                        label: context.l10n.email,
                         icon: Icons.email_outlined,
                         keyboardType: TextInputType.emailAddress,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Please enter your email';
+                            return context.l10n.enterEmail;
                           }
                           if (!value.contains('@')) {
-                            return 'Please enter a valid email';
+                            return context.l10n.enterValidEmail;
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 24),
                       AuthButton(
-                        label: 'Send reset link',
+                        label: context.l10n.sendResetLink,
                         isLoading: _isLoading,
                         onPressed:
                             _isLoading ? null : _handleResetPassword,
@@ -138,8 +139,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            const Text(
-                              'Email sent',
+                            Text(
+                              context.l10n.emailSent,
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -148,7 +149,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'We sent reset instructions to\n${_emailController.text.trim()}',
+                              context.l10n.resetSentTo(_emailController.text.trim()),
                               style: const TextStyle(
                                 fontSize: 13,
                                 color: AppTheme.textSecondary,
@@ -164,7 +165,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                     .withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Row(
+                              child: Row(
                                 crossAxisAlignment:
                                     CrossAxisAlignment.start,
                                 children: [
@@ -177,9 +178,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                     // often lands in spam — saying so up front
                                     // avoids most "it never arrived" reports.
                                     child: Text(
-                                      'Can\'t find it? Check your spam or '
-                                      'promotions folder. The email may take '
-                                      'a few minutes to arrive.',
+                                      context.l10n.checkSpam,
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: AppTheme.textSecondary,
@@ -195,7 +194,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ),
                       const SizedBox(height: 24),
                       AuthButton(
-                        label: 'Back to sign in',
+                        label: context.l10n.backToSignIn,
                         onPressed: () => Navigator.of(context).pushReplacement(
                           MaterialPageRoute(
                             builder: (context) => const LoginScreen(),
@@ -213,8 +212,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         style: TextButton.styleFrom(
                           foregroundColor: AppTheme.primaryColor,
                         ),
-                        child: const Text(
-                          'Send it again',
+                        child: Text(
+                          context.l10n.sendAgain,
                           style: TextStyle(
                               fontSize: 13, fontWeight: FontWeight.w600),
                         ),
@@ -227,8 +226,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         style: TextButton.styleFrom(
                           foregroundColor: AppTheme.textSecondary,
                         ),
-                        child: const Text(
-                          'Back to sign in',
+                        child: Text(
+                          context.l10n.backToSignIn,
                           style: TextStyle(
                               fontWeight: FontWeight.w600, fontSize: 13),
                         ),

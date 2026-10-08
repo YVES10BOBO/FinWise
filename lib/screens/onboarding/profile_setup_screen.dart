@@ -5,6 +5,7 @@ import 'financial_questionnaire_screen.dart';
 import '../../theme/app_theme.dart';
 import '../../models/currency.dart';
 import '../../providers/currency_provider.dart';
+import '../../l10n/l10n_helpers.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -55,7 +56,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Setup Profile'),
+        title: Text(context.l10n.setupProfile),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
       ),
@@ -68,8 +69,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Let\'s get to know you',
+                Text(
+                  context.l10n.getToKnowYou,
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -78,7 +79,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'This helps us provide personalized financial guidance',
+                  context.l10n.personalizedGuidance,
                   style: TextStyle(
                     fontSize: 14,
                     color: AppTheme.textSecondary,
@@ -89,7 +90,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: 'Your Name',
+                    labelText: context.l10n.yourName,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -97,7 +98,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your name';
+                      return context.l10n.enterName;
                     }
                     return null;
                   },
@@ -107,17 +108,17 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 DropdownButtonFormField<AppCurrency>(
                   value: _selectedCurrency,
                   decoration: InputDecoration(
-                    labelText: 'Currency',
+                    labelText: context.l10n.currency,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     prefixIcon: const Icon(Icons.language),
-                    helperText: 'Wherever you are — FinWise adapts to it',
+                    helperText: context.l10n.currencyAdapts,
                   ),
                   items: AppCurrency.values
                       .map((c) => DropdownMenuItem(
                             value: c,
-                            child: Text('${c.symbol}  ${c.label} (${c.code})'),
+                            child: Text('${c.symbol}  ${currencyName(context, c)} (${c.code})'),
                           ))
                       .toList(),
                   onChanged: (value) {
@@ -134,19 +135,19 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   controller: _incomeController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    labelText: 'Monthly Income (${_selectedCurrency.code})',
+                    labelText: context.l10n.monthlyIncomeCode(_selectedCurrency.code),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     prefixIcon: const Icon(Icons.attach_money),
-                    helperText: 'Approximate is fine',
+                    helperText: context.l10n.approximateFine,
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your income';
+                      return context.l10n.enterIncome;
                     }
                     if (double.tryParse(value) == null) {
-                      return 'Please enter a valid number';
+                      return context.l10n.enterValidNumber;
                     }
                     return null;
                   },
@@ -156,7 +157,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 DropdownButtonFormField<String>(
                   value: _incomeFrequency,
                   decoration: InputDecoration(
-                    labelText: 'Income Frequency',
+                    labelText: context.l10n.incomeFrequency,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -165,7 +166,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   items: ['Monthly', 'Weekly', 'Irregular']
                       .map((freq) => DropdownMenuItem(
                             value: freq,
-                            child: Text(freq),
+                            child: Text(frequencyLabel(context, freq)),
                           ))
                       .toList(),
                   onChanged: (value) {
@@ -196,7 +197,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Don\'t worry! You can always update this later. We\'ll provide guidance even with approximate values.',
+                          context.l10n.dontWorryUpdate,
                           style: TextStyle(
                             fontSize: 12,
                             color: AppTheme.textSecondary,
@@ -220,8 +221,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Continue',
+                    child: Text(
+                      context.l10n.continueBtn,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

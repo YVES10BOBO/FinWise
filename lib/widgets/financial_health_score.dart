@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../providers/currency_provider.dart';
+import '../l10n/l10n_helpers.dart';
 
 class FinancialHealthScore extends StatelessWidget {
   final double income;
@@ -72,20 +73,13 @@ class FinancialHealthScore extends StatelessWidget {
     return score.clamp(0, 100);
   }
 
-  String get healthLabel {
-    if (healthScore >= 80) {
-      return 'Excellent';
-    }
-    if (healthScore >= 60) {
-      return 'Good';
-    }
-    if (healthScore >= 40) {
-      return 'Fair';
-    }
-    if (healthScore >= 20) {
-      return 'Needs Improvement';
-    }
-    return 'Critical';
+  String healthLabel(BuildContext context) {
+    final l = context.l10n;
+    if (healthScore >= 80) return l.healthExcellent;
+    if (healthScore >= 60) return l.healthGood;
+    if (healthScore >= 40) return l.healthFair;
+    if (healthScore >= 20) return l.healthNeedsImprovement;
+    return l.healthCritical;
   }
 
   Color get healthColor {
@@ -120,18 +114,13 @@ class FinancialHealthScore extends StatelessWidget {
     return Icons.error_outline;
   }
 
-  String get healthAdvice {
-    if (healthScore >= 80) {
-      return 'Keep up the great work! You\'re managing your finances excellently.';
-    } else if (healthScore >= 60) {
-      return 'You\'re doing well! Consider increasing your savings rate.';
-    } else if (healthScore >= 40) {
-      return 'Try to reduce expenses and set some financial goals.';
-    } else if (healthScore >= 20) {
-      return 'Focus on spending less than you earn and create a budget.';
-    } else {
-      return 'Start by tracking all expenses and creating a savings plan.';
-    }
+  String healthAdvice(BuildContext context) {
+    final l = context.l10n;
+    if (healthScore >= 80) return l.adviceExcellent;
+    if (healthScore >= 60) return l.adviceGood;
+    if (healthScore >= 40) return l.adviceFair;
+    if (healthScore >= 20) return l.adviceNeeds;
+    return l.adviceCritical;
   }
 
   @override
@@ -178,8 +167,8 @@ class FinancialHealthScore extends StatelessWidget {
                     color: healthColor,
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Financial Health',
+                  Text(
+                    context.l10n.financialHealth,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -207,7 +196,7 @@ class FinancialHealthScore extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            healthLabel,
+            healthLabel(context),
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -227,7 +216,7 @@ class FinancialHealthScore extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            healthAdvice,
+            healthAdvice(context),
             style: const TextStyle(
               fontSize: 12,
               color: AppTheme.textSecondary,
@@ -247,7 +236,7 @@ class FinancialHealthScore extends StatelessWidget {
                 ),
               ),
               child: Text(
-                'Profile income used: ${currencyProvider.formatCompact(displayIncome.toDouble())} per month',
+                context.l10n.profileIncomeUsed(currencyProvider.formatCompact(displayIncome.toDouble())),
                 style: TextStyle(
                   fontSize: 11,
                   color: healthColor,

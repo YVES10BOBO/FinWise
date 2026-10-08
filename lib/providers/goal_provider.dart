@@ -7,6 +7,15 @@ import '../models/goal.dart';
 import '../models/transaction.dart';
 import '../services/firestore_goal_service.dart';
 
+/// Why a contribution change was refused. Codes, not sentences, so the screen
+/// can show them in the user's language.
+class GoalError {
+  static const notFound = 'notFound';
+  static const amount = 'amount';
+  static const overRelease = 'overRelease';
+  static const overReleaseAccount = 'overReleaseAccount';
+}
+
 class GoalProvider with ChangeNotifier {
   List<Goal> _goals = [];
   bool _isLoading = false;
@@ -111,6 +120,59 @@ class GoalProvider with ChangeNotifier {
     _persist(index, [...goal.contributions, ...releases]);
   }
 
+  /// Correct one reserve/release entry (wrong amount, account or note).
+  /// Returns an error message instead of saving when the change would make
+  /// the goal's reserved total negative, or null on success.
+  String? updateContribution(String goalId, GoalContribution updated) {
+    final index = _goals.indexWhere((g) => g.id == goalId);
+    if (index == -1) return GoalError.notFound;
+    if (updated.amount <= 0) return GoalError.amount;
+
+    final list = _goals[index]
+        .contributions
+        .map((c) => c.id == updated.id ? updated : c)
+        .toList();
+    final error = _checkReservedNotNegative(list);
+    if (error != null) return error;
+
+    _persist(index, list);
+    return null;
+  }
+
+  /// Remove one reserve/release entry entirely (e.g. added by mistake).
+  /// Same safety rule as [updateContribution].
+  String? removeContribution(String goalId, String contributionId) {
+    final index = _goals.indexWhere((g) => g.id == goalId);
+    if (index == -1) return GoalError.notFound;
+
+    final list = _goals[index]
+        .contributions
+        .where((c) => c.id != contributionId)
+        .toList();
+    final error = _checkReservedNotNegative(list);
+    if (error != null) return error;
+
+    _persist(index, list);
+    return null;
+  }
+
+  /// Releases can never exceed what was reserved — overall or per account —
+  /// otherwise the goal would "owe" money and account figures go wrong.
+  String? _checkReservedNotNegative(List<GoalContribution> list) {
+    final total = list.fold<double>(0, (s, c) => s + c.signedAmount);
+    if (total < -0.001) {
+      return GoalError.overRelease;
+    }
+    final byAccount = <AccountType, double>{};
+    for (final c in list) {
+      byAccount[c.account] = (byAccount[c.account] ?? 0) + c.signedAmount;
+    }
+    if (byAccount.values.any((v) => v < -0.001)) {
+      return GoalError.overReleaseAccount;
+    }
+    return null;
+  }
+
   /// Return everything reserved for this goal to the available balance.
   void releaseAll(String goalId, {String note = ''}) {
     final goal = _goals.firstWhere(
@@ -123,10 +185,14 @@ class GoalProvider with ChangeNotifier {
   /// Mark a goal as bought. The goal record is KEPT (history/achievement);
   /// it simply stops reserving money, because the reserved amount has now
   /// become a real expense recorded by the caller.
+  ///
+  /// [actualAmount] is the real total paid across all [transactionIds] (a
+  /// purchase is often split between accounts), and is what the goal is
+  /// shown as completed at.
   void markPurchased(
     String goalId, {
     required double actualAmount,
-    String? transactionId,
+    List<String> transactionIds = const [],
   }) {
     final index = _goals.indexWhere((g) => g.id == goalId);
     if (index == -1) return;
@@ -136,7 +202,7 @@ class GoalProvider with ChangeNotifier {
       status: GoalStatus.purchased,
       purchasedAmount: actualAmount,
       purchasedDate: DateTime.now(),
-      purchaseTransactionId: transactionId,
+      purchaseTransactionIds: transactionIds,
     );
 
     _goals[index] = updated;
@@ -162,6 +228,7 @@ class GoalProvider with ChangeNotifier {
       createdAt: goal.createdAt,
       contributions: goal.contributions,
       status: GoalStatus.active,
+      priceChanges: goal.priceChanges,
       // Purchase details intentionally dropped.
     );
 
@@ -169,6 +236,32 @@ class GoalProvider with ChangeNotifier {
     _saveGoals();
     notifyListeners();
     _syncGoal(reopened, 'undo purchase');
+  }
+
+  /// The user found the real price (in a shop, online) and it differs from
+  /// what they planned. The target follows the real price, so a cheaper item
+  /// can become "ready to buy" straight away and a dearer one shows how much
+  /// more is needed. The change is kept as history, never overwritten.
+  void updatePrice(String goalId, double newPrice) {
+    final index = _goals.indexWhere((g) => g.id == goalId);
+    if (index == -1 || newPrice <= 0) return;
+
+    final goal = _goals[index];
+    if (newPrice == goal.targetAmount) return;
+
+    final updated = goal.copyWith(
+      targetAmount: newPrice,
+      priceChanges: [
+        ...goal.priceChanges,
+        GoalPriceChange(
+            from: goal.targetAmount, to: newPrice, date: DateTime.now()),
+      ],
+    );
+
+    _goals[index] = updated;
+    _saveGoals();
+    notifyListeners();
+    _syncGoal(updated, 'price update');
   }
 
   void _persist(int index, List<GoalContribution> contributions) {

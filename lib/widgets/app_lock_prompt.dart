@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/app_lock_provider.dart';
 import '../screens/lock/pin_screen.dart';
 import '../theme/app_theme.dart';
+import '../l10n/l10n_helpers.dart';
 
 /// One-time invitation to turn on the app lock.
 ///
@@ -56,8 +57,8 @@ class AppLockPrompt {
                   size: 30, color: AppTheme.primaryColor),
             ),
             const SizedBox(height: 18),
-            const Text(
-              'Protect your finances',
+            Text(
+              context.l10n.protectFinances,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -65,10 +66,8 @@ class AppLockPrompt {
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'Add a PIN so only you can open FinWise. Signing in keeps you '
-              'logged in, so without a lock anyone holding your phone could '
-              'see your balance and transactions.',
+            Text(
+              context.l10n.protectBody,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
@@ -84,7 +83,7 @@ class AppLockPrompt {
             onPressed: () => Navigator.pop(ctx, false),
             style: TextButton.styleFrom(
                 foregroundColor: AppTheme.textSecondary),
-            child: const Text('Not now'),
+            child: Text(context.l10n.notNow),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -96,7 +95,7 @@ class AppLockPrompt {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('Set up PIN'),
+            child: Text(context.l10n.setUpPin),
           ),
         ],
       ),
@@ -115,7 +114,7 @@ class AppLockPrompt {
       }
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('App lock is on')),
+          SnackBar(content: Text(context.l10n.appLockOn)),
         );
       }
     }

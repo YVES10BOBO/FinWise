@@ -2,6 +2,8 @@ import '../models/transaction.dart';
 import '../models/budget.dart';
 import '../models/currency.dart';
 import 'categorization_service.dart';
+import '../l10n/app_localizations.dart';
+import '../l10n/l10n_helpers.dart';
 
 /// Budget recommendation service
 /// Provides AI-like recommendations based on spending patterns
@@ -85,9 +87,10 @@ class BudgetRecommendationService {
     double monthlyIncome,
     List<Transaction> transactions, {
     AppCurrency currency = AppCurrency.rwf,
+    required AppLocalizations l,
   }) {
     if (transactions.isEmpty) {
-      return 'Start tracking your expenses to get personalized insights!';
+      return l.insightStart;
     }
 
     final spendingPatterns = CategorizationService.analyzeSpendingPatterns(
@@ -109,14 +112,14 @@ class BudgetRecommendationService {
       final percentage = (highestAmount / totalExpenses) * 100;
       
       if (percentage > 35) {
-        return 'You\'re spending ${percentage.toStringAsFixed(0)}% on ${highestCategory.name}. Consider reducing by ${(highestAmount * 0.1).toStringAsFixed(0)} ${currency.symbol} to improve your savings rate.';
+        return l.insightHighCategory(percentage.toStringAsFixed(0), categoryLabelFor(l, highestCategory), (highestAmount * 0.1).toStringAsFixed(0), currency.symbol);
       }
     }
 
     if (savingsRate < 20) {
-      return 'Your savings rate is ${savingsRate.toStringAsFixed(0)}%. Try to save at least 20% of your income for better financial health.';
+      return l.insightLowSavings(savingsRate.toStringAsFixed(0));
     }
 
-    return 'Great job! You\'re managing your finances well. Keep tracking to maintain good habits!';
+    return l.insightGreat;
   }
 }

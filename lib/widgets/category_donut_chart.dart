@@ -4,6 +4,7 @@ import '../models/transaction.dart';
 import '../providers/currency_provider.dart';
 import '../theme/app_theme.dart';
 import 'package:provider/provider.dart';
+import '../l10n/l10n_helpers.dart';
 
 /// Donut chart of this month's spending by category — the "where your money
 /// goes" visual. Uses REAL expense transactions for the current month,
@@ -54,8 +55,8 @@ class CategoryDonutChart extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Spending by category · This month',
+          Text(
+            context.l10n.spendingByCategoryMonth,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -64,11 +65,11 @@ class CategoryDonutChart extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           if (total <= 0)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Center(
                 child: Text(
-                  'No spending recorded this month yet.',
+                  context.l10n.noSpendingMonth,
                   style: TextStyle(color: AppTheme.textLight),
                 ),
               ),
@@ -91,7 +92,7 @@ class CategoryDonutChart extends StatelessWidget {
     final slices = <_Slice>[];
     for (var i = 0; i < top.length; i++) {
       slices.add(_Slice(
-        label: top[i].key.name,
+        label: categoryLabel(context, top[i].key),
         icon: top[i].key.icon,
         amount: top[i].value,
         color: _palette[i % _palette.length],
@@ -99,7 +100,7 @@ class CategoryDonutChart extends StatelessWidget {
     }
     if (otherTotal > 0) {
       slices.add(_Slice(
-        label: 'Other',
+        label: context.l10n.catOther,
         icon: Icons.more_horiz,
         amount: otherTotal,
         color: _palette.last,
@@ -132,7 +133,7 @@ class CategoryDonutChart extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Total',
+                    context.l10n.totalAmount,
                     style: TextStyle(
                       fontSize: 11,
                       color: AppTheme.textLight,

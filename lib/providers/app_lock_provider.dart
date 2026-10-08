@@ -231,10 +231,12 @@ class AppLockProvider with ChangeNotifier {
   // ---- Biometric prompt --------------------------------------------------
 
   /// Ask Android to verify the user. Returns true only on success.
-  Future<bool> authenticateWithBiometrics() async {
+  /// [reason] is shown in Android's fingerprint/face sheet, in the app's
+  /// language.
+  Future<bool> authenticateWithBiometrics(String reason) async {
     try {
       return await _auth.authenticate(
-        localizedReason: 'Unlock FinWise to view your finances',
+        localizedReason: reason,
         options: const AuthenticationOptions(
           biometricOnly: true,
           stickyAuth: true,

@@ -67,6 +67,34 @@ class GoalContribution {
   }
 }
 
+/// The user found a different real price and updated the goal's target.
+/// Kept as history so the goal can show "planned 200,000 → now 100,000"
+/// and, once bought, how the real price compared with the original plan.
+class GoalPriceChange {
+  final double from;
+  final double to;
+  final DateTime date;
+
+  const GoalPriceChange({
+    required this.from,
+    required this.to,
+    required this.date,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'from': from,
+        'to': to,
+        'date': date.toIso8601String(),
+      };
+
+  factory GoalPriceChange.fromJson(Map<String, dynamic> json) =>
+      GoalPriceChange(
+        from: (json['from'] as num).toDouble(),
+        to: (json['to'] as num).toDouble(),
+        date: DateTime.parse(json['date'] as String),
+      );
+}
+
 class Goal {
   final String id;
   final String name;
@@ -86,9 +114,17 @@ class Goal {
   final GoalStatus status;
 
   // Purchase details — populated when the goal is marked purchased.
+  /// The REAL total paid (sum of every linked payment), which is what the
+  /// goal is "completed at" — not the target that was guessed up front.
   final double? purchasedAmount;
   final DateTime? purchasedDate;
-  final String? purchaseTransactionId;
+
+  /// Every transaction that paid for this item. A purchase is often split
+  /// (e.g. 80,000 by Mobile Money + 20,000 in cash), so this is a list.
+  final List<String> purchaseTransactionIds;
+
+  /// Price updates made before buying, oldest first.
+  final List<GoalPriceChange> priceChanges;
 
   Goal({
     required this.id,
@@ -101,8 +137,28 @@ class Goal {
     this.status = GoalStatus.active,
     this.purchasedAmount,
     this.purchasedDate,
-    this.purchaseTransactionId,
+    this.purchaseTransactionIds = const [],
+    this.priceChanges = const [],
   });
+
+  /// First linked payment — kept for code and older app versions that only
+  /// knew about a single linked transaction.
+  String? get purchaseTransactionId =>
+      purchaseTransactionIds.isEmpty ? null : purchaseTransactionIds.first;
+
+  /// The price the user first planned for, before any price updates.
+  double get plannedAmount =>
+      priceChanges.isEmpty ? targetAmount : priceChanges.first.from;
+
+  /// True when the real price has been updated at least once.
+  bool get priceWasUpdated => priceChanges.isNotEmpty;
+
+  /// Reserved money beyond the (possibly lowered) target, which the user
+  /// can release back to available.
+  double get extraReserved {
+    final extra = currentAmount - targetAmount;
+    return extra > 0 ? extra : 0;
+  }
 
   /// Money currently reserved for this goal = contributions − releases.
   /// Derived from the history, so the two can never disagree.
@@ -215,7 +271,10 @@ class Goal {
         // these when a purchase is undone, instead of leaving stale values.
         'purchasedAmount': purchasedAmount,
         'purchasedDate': purchasedDate?.toIso8601String(),
+        // Single id kept for older app versions; the list is the real data.
         'purchaseTransactionId': purchaseTransactionId,
+        'purchaseTransactionIds': purchaseTransactionIds,
+        'priceChanges': priceChanges.map((p) => p.toJson()).toList(),
       };
 
   factory Goal.fromJson(Map<String, dynamic> json) {
@@ -267,7 +326,20 @@ class Goal {
       purchasedDate: json['purchasedDate'] != null
           ? DateTime.parse(json['purchasedDate'])
           : null,
-      purchaseTransactionId: json['purchaseTransactionId'] as String?,
+      // New list format; goals bought with an older version only have the
+      // single id, which becomes a one-item list.
+      purchaseTransactionIds: json['purchaseTransactionIds'] is List
+          ? (json['purchaseTransactionIds'] as List)
+              .map((e) => e.toString())
+              .toList()
+          : (json['purchaseTransactionId'] is String
+              ? [json['purchaseTransactionId'] as String]
+              : const []),
+      priceChanges: json['priceChanges'] is List
+          ? (json['priceChanges'] as List)
+              .map((e) => GoalPriceChange.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : const [],
     );
   }
 
@@ -282,7 +354,8 @@ class Goal {
     GoalStatus? status,
     double? purchasedAmount,
     DateTime? purchasedDate,
-    String? purchaseTransactionId,
+    List<String>? purchaseTransactionIds,
+    List<GoalPriceChange>? priceChanges,
   }) {
     return Goal(
       id: id ?? this.id,
@@ -295,8 +368,9 @@ class Goal {
       status: status ?? this.status,
       purchasedAmount: purchasedAmount ?? this.purchasedAmount,
       purchasedDate: purchasedDate ?? this.purchasedDate,
-      purchaseTransactionId:
-          purchaseTransactionId ?? this.purchaseTransactionId,
+      purchaseTransactionIds:
+          purchaseTransactionIds ?? this.purchaseTransactionIds,
+      priceChanges: priceChanges ?? this.priceChanges,
     );
   }
 }

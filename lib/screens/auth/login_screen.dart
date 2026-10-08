@@ -5,6 +5,7 @@ import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 import 'auth_widgets.dart';
 import '../../main.dart';
+import '../../l10n/l10n_helpers.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -52,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Login successful!'),
+            content: Text(context.l10n.loginSuccess),
             backgroundColor: AppTheme.primaryColor,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 2),
@@ -84,16 +85,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
         // Handle all possible Firebase Auth error codes
         final message = switch (e.code) {
-          'user-not-found' => 'No account found for that email. Please sign up first.',
-          'wrong-password' => 'Incorrect password. Please check your password and try again.',
-          'invalid-credential' => 'Invalid email or password. Please check your credentials.',
-          'invalid-email' => 'Invalid email address. Please enter a valid email.',
-          'user-disabled' => 'This account has been disabled. Please contact support.',
-          'too-many-requests' => 'Too many failed attempts. Please wait a few minutes and try again.',
-          'network-request-failed' => 'Network error. Please check your internet connection.',
-          'operation-not-allowed' => 'Login is currently disabled. Please contact support.',
-          'requires-recent-login' => 'Please log out and log in again to continue.',
-          _ => 'Login failed: ${e.message ?? e.code}. Please check your email and password.',
+          'user-not-found' => context.l10n.errUserNotFound,
+          'wrong-password' => context.l10n.errWrongPassword,
+          'invalid-credential' => context.l10n.errInvalidCredential,
+          'invalid-email' => context.l10n.errInvalidEmailEnter,
+          'user-disabled' => context.l10n.errUserDisabled,
+          'too-many-requests' => context.l10n.errTooManyFailed,
+          'network-request-failed' => context.l10n.errNetworkInternet,
+          'operation-not-allowed' => context.l10n.errLoginDisabled,
+          'requires-recent-login' => context.l10n.errReLogin,
+          _ => context.l10n.errLoginFailedCode(e.message ?? e.code),
         };
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -114,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // Login was successful, just handle navigation
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Login successful!'),
+              content: Text(context.l10n.loginSuccess),
               backgroundColor: AppTheme.primaryColor,
               behavior: SnackBarBehavior.floating,
               duration: const Duration(seconds: 2),
@@ -141,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
           if (!message.contains('PigeonUserDetails')) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Login failed. Please try again.'),
+                content: Text(context.l10n.loginFailedRetry),
                 backgroundColor: AppTheme.expenseColor,
               ),
             );
@@ -159,9 +160,9 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           children: [
             // ── Branded header ──────────────────────────────────────────
-            const AuthHeader(
-              title: 'Welcome back',
-              subtitle: 'Sign in to keep track of your money',
+            AuthHeader(
+              title: context.l10n.welcomeBack,
+              subtitle: context.l10n.signInSubtitle,
             ),
 
             // ── Form ────────────────────────────────────────────────────
@@ -174,15 +175,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     AuthField(
                       controller: _emailController,
-                      label: 'Email',
+                      label: context.l10n.email,
                       icon: Icons.email_outlined,
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your email';
+                          return context.l10n.enterEmail;
                         }
                         if (!value.contains('@')) {
-                          return 'Please enter a valid email';
+                          return context.l10n.enterValidEmail;
                         }
                         return null;
                       },
@@ -190,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 16),
                     AuthField(
                       controller: _passwordController,
-                      label: 'Password',
+                      label: context.l10n.password,
                       icon: Icons.lock_outline,
                       obscure: _obscurePassword,
                       suffix: IconButton(
@@ -206,10 +207,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your password';
+                          return context.l10n.enterPassword;
                         }
                         if (value.length < 6) {
-                          return 'Password must be at least 6 characters';
+                          return context.l10n.passwordMin6;
                         }
                         return null;
                       },
@@ -231,8 +232,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        child: const Text(
-                          'Forgot password?',
+                        child: Text(
+                          context.l10n.forgotPassword,
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 13,
@@ -244,7 +245,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     // Primary action
                     AuthButton(
-                      label: 'Sign in',
+                      label: context.l10n.signIn,
                       isLoading: _isLoading,
                       onPressed: _isLoading ? null : _handleLogin,
                     ),
@@ -259,7 +260,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           padding:
                               const EdgeInsets.symmetric(horizontal: 12),
                           child: Text(
-                            'New to FinWise?',
+                            context.l10n.newToFinwise,
                             style: TextStyle(
                               color: AppTheme.textLight,
                               fontSize: 12,
@@ -288,8 +289,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        child: const Text(
-                          'Create an account',
+                        child: Text(
+                          context.l10n.createAnAccount,
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,

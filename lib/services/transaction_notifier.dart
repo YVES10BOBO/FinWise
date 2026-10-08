@@ -3,6 +3,9 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/currency.dart';
 import '../models/transaction.dart';
+import '../l10n/app_localizations.dart';
+import '../l10n/l10n_helpers.dart';
+import '../providers/locale_provider.dart';
 
 /// Shows a heads-up notification each time a Mobile Money transaction is
 /// auto-detected — so the user gets a visible "Money received / Money sent"
@@ -17,9 +20,18 @@ class TransactionNotifier {
   static bool _initialized = false;
 
   static const String _channelId = 'finwise_transactions';
-  static const String _channelName = 'Transaction alerts';
-  static const String _channelDescription =
-      'Notifies you when a Mobile Money transaction is auto-recorded.';
+
+  /// Channel name/description follow the app language (Android shows them
+  /// in the phone's notification settings).
+  static AndroidNotificationDetails _details(AppLocalizations l) =>
+      AndroidNotificationDetails(
+        _channelId,
+        l.notifChannelName,
+        channelDescription: l.notifChannelDesc,
+        importance: Importance.high,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+      );
 
   static Future<void> _ensureInitialized() async {
     if (_initialized) return;
@@ -42,20 +54,14 @@ class TransactionNotifier {
           currency.decimalDigits > 0 ? '#,##0.${'0' * currency.decimalDigits}' : '#,###';
       final formatted = NumberFormat(pattern).format(tx.amount);
 
+      final l = await savedAppLocalizations();
       final isIncome = tx.type == TransactionType.income;
       final sign = isIncome ? '+' : '-';
-      final title = isIncome ? 'Money received' : 'Money sent';
-      final body = '$sign${currency.symbol}$formatted — ${tx.description}';
+      final title = isIncome ? l.notifMoneyReceived : l.notifMoneySent;
+      final body =
+          '$sign${currency.symbol}$formatted — ${displayDescriptionFor(l, tx.description)}';
 
-      const androidDetails = AndroidNotificationDetails(
-        _channelId,
-        _channelName,
-        channelDescription: _channelDescription,
-        importance: Importance.high,
-        priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
-      );
-      const details = NotificationDetails(android: androidDetails);
+      final details = NotificationDetails(android: _details(l));
 
       // Unique per transaction so several alerts stack instead of replacing.
       await _plugin.show(tx.id.hashCode, title, body, details);
@@ -69,15 +75,8 @@ class TransactionNotifier {
   static Future<void> showError(String title, String body) async {
     try {
       await _ensureInitialized();
-      const androidDetails = AndroidNotificationDetails(
-        _channelId,
-        _channelName,
-        channelDescription: _channelDescription,
-        importance: Importance.high,
-        priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
-      );
-      const details = NotificationDetails(android: androidDetails);
+      final details =
+          NotificationDetails(android: _details(await savedAppLocalizations()));
       // Time-based id so diagnostics stack rather than overwrite each other.
       final id = DateTime.now().millisecondsSinceEpoch.remainder(1000000);
       await _plugin.show(id, title, body, details);

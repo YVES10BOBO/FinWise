@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/transaction.dart';
 import '../providers/currency_provider.dart';
 import '../theme/app_theme.dart';
+import '../l10n/l10n_helpers.dart';
 
 /// Spending broken down by WHY money was spent — necessity, business,
 /// enjoyment, emergency.
@@ -56,12 +57,12 @@ class SpendingReasonChart extends StatelessWidget {
                   size: 22, color: AppTheme.primaryColor),
             ),
             const SizedBox(width: 14),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Why you spend',
+                    context.l10n.whyYouSpend,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
@@ -70,8 +71,7 @@ class SpendingReasonChart extends StatelessWidget {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Tag a few expenses as necessity, enjoyment, business or '
-                    'emergency to see what share of your money is essential.',
+                    context.l10n.tagReasonsHint,
                     style: TextStyle(
                       fontSize: 12,
                       color: AppTheme.textSecondary,
@@ -103,8 +103,8 @@ class SpendingReasonChart extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Why you spent · This month',
+          Text(
+            context.l10n.whyYouSpentMonth,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -113,7 +113,7 @@ class SpendingReasonChart extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '${necessityShare.toStringAsFixed(0)}% of your spending was on necessities',
+            context.l10n.necessityShare(necessityShare.toStringAsFixed(0)),
             style: const TextStyle(
                 fontSize: 12, color: AppTheme.textSecondary),
           ),
@@ -156,7 +156,7 @@ class SpendingReasonChart extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        _label(r),
+                        reasonLabel(context, r),
                         style: const TextStyle(
                             fontSize: 13, color: AppTheme.textPrimary),
                       ),
@@ -186,7 +186,7 @@ class SpendingReasonChart extends StatelessWidget {
           if (withoutReason > 0) ...[
             const Divider(height: 18),
             Text(
-              '${currency.formatCompact(withoutReason)} not tagged with a reason',
+              context.l10n.notTagged(currency.formatCompact(withoutReason)),
               style: TextStyle(fontSize: 11, color: AppTheme.textLight),
             ),
           ],
@@ -207,19 +207,6 @@ class SpendingReasonChart extends StatelessWidget {
         return AppTheme.accentColor;
       case SpendingReason.emergency:
         return AppTheme.expenseColor;
-    }
-  }
-
-  String _label(SpendingReason r) {
-    switch (r) {
-      case SpendingReason.necessity:
-        return 'Necessity';
-      case SpendingReason.business:
-        return 'Business';
-      case SpendingReason.enjoyment:
-        return 'Enjoyment';
-      case SpendingReason.emergency:
-        return 'Emergency';
     }
   }
 

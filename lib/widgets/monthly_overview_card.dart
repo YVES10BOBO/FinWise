@@ -1,57 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/transaction.dart';
+import '../models/overview_period.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/currency_provider.dart';
+import '../providers/goal_provider.dart';
 import '../providers/income_provider.dart';
+import '../providers/period_provider.dart';
 import '../theme/app_theme.dart';
+import 'period_picker.dart';
+import '../l10n/l10n_helpers.dart';
+import '../l10n/app_localizations.dart';
 
-/// The dashboard's headline analysis: this calendar month's money in, money
-/// spent (consumption only), money set aside (savings), the resulting savings
-/// rate, and how it compares to the optional income target.
+/// The dashboard's headline analysis: money in, money spent (consumption
+/// only), the resulting savings rate, and how it compares to the optional
+/// income target — for the period chosen in [PeriodProvider] (a month, a
+/// year, the last N days, a custom range, or all time). The same period is
+/// shown in History, so both screens always describe the same window.
 ///
-/// Everything is computed from REAL transactions — nothing made up. Savings
-/// (Category.other's sibling `Category.savings`) is treated as "set aside",
-/// not "spent", so putting money toward a goal doesn't look like consumption.
+/// Everything is computed from REAL transactions — nothing made up.
 class MonthlyOverviewCard extends StatelessWidget {
   const MonthlyOverviewCard({super.key});
-
-  static const List<String> _months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-  ];
 
   @override
   Widget build(BuildContext context) {
     final txProvider = context.watch<TransactionProvider>();
     final currency = context.watch<CurrencyProvider>();
     final incomeProvider = context.watch<IncomeProvider>();
+    final period = context.watch<PeriodProvider>().period;
+    final l = context.l10n;
 
-    final now = DateTime.now();
-    bool isThisMonth(DateTime d) => d.year == now.year && d.month == now.month;
+    final all = txProvider.transactions;
+    final summary = PeriodSummary.of(all.where((t) => period.contains(t.date)));
+    final moneyIn = summary.moneyIn;
+    final spent = summary.spent;
 
-    double moneyIn = 0, spent = 0;
-    for (final t in txProvider.transactions) {
-      if (!isThisMonth(t.date)) continue;
-      if (t.type == TransactionType.income) {
-        moneyIn += t.amount;
-      } else if (t.category == Category.savings) {
-        // Legacy "set aside" transactions — ignore in the spending view.
-        continue;
-      } else {
-        spent += t.amount;
-      }
-    }
-
-    final left = moneyIn - spent;
-    final target = incomeProvider.monthlyIncome; // 0 when not set
-    // Base for the savings rate: prefer real income this month, fall back to
-    // the target so the rate is still meaningful early in the month.
+    // Transactions are sorted newest first, so the oldest is last.
+    final earliest = all.isEmpty ? null : all.last.date;
+    // Income target scaled to the period's length (0 when not set).
+    final target =
+        incomeProvider.monthlyIncome * period.monthsSpanned(earliest: earliest);
+    // Base for the savings rate: prefer real income in the period, fall back
+    // to the target so the rate is still meaningful early in the period.
     final base = moneyIn > 0 ? moneyIn : target;
     final saved = base - spent;
     final savingsRate =
         base > 0 ? (saved / base * 100).clamp(-100.0, 100.0) : 0.0;
-    final safeToSpend = (target > 0 ? target : moneyIn) - spent;
+    // Net money put into goals during the period (reserves minus releases).
+    // It isn't spending, but it isn't free to spend either, so it comes off
+    // "safe to spend" and counts as saved.
+    double setAside = 0;
+    for (final g in context.watch<GoalProvider>().goals) {
+      for (final c in g.contributions) {
+        if (period.contains(c.date)) setAside += c.signedAmount;
+      }
+    }
+    final safeToSpend =
+        (target > 0 ? target : moneyIn) - spent - (setAside > 0 ? setAside : 0);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -70,39 +74,44 @@ class MonthlyOverviewCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.insights, color: Colors.white, size: 18),
-              const SizedBox(width: 8),
-              Text(
-                'This month · ${_months[now.month - 1]}',
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
+          const PeriodSelector(color: Colors.white, leadingIcon: Icons.insights),
           const SizedBox(height: 16),
           Row(
             children: [
-              _stat(currency, 'Money in', moneyIn, Icons.south_west),
+              _stat(currency, l.moneyIn, moneyIn, Icons.south_west),
               _divider(),
-              _stat(currency, 'Spent', spent, Icons.north_east),
+              _stat(currency, l.spent, spent, Icons.north_east),
               _divider(),
-              _stat(currency, 'Left', left,
+              _stat(currency, l.left, summary.left,
                   Icons.account_balance_wallet_outlined),
             ],
           ),
+          if (setAside > 0) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.savings_outlined,
+                    color: Colors.white.withValues(alpha: 0.9), size: 14),
+                const SizedBox(width: 6),
+                Text(
+                  l.setAsideForGoals(currency.formatCompact(setAside)),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.95),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 16),
           if (base > 0) ...[
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Savings rate',
-                  style: TextStyle(color: Colors.white, fontSize: 13),
+                Text(
+                  l.savingsRate,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
                 ),
                 Text(
                   '${savingsRate.toStringAsFixed(0)}%',
@@ -127,7 +136,8 @@ class MonthlyOverviewCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              _message(currency, savingsRate, safeToSpend, target, moneyIn),
+              _message(l, currency, savingsRate, safeToSpend, target, moneyIn,
+                  period.isCurrent),
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.95),
                 fontSize: 12,
@@ -136,7 +146,7 @@ class MonthlyOverviewCard extends StatelessWidget {
             ),
           ] else
             Text(
-              'Add some income this month, or set an income target in Settings, to see your savings rate.',
+              period.isCurrent ? l.noIncomeCurrent : l.noIncomePast,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.95),
                 fontSize: 12,
@@ -148,22 +158,29 @@ class MonthlyOverviewCard extends StatelessWidget {
     );
   }
 
-  String _message(CurrencyProvider currency, double rate, double safeToSpend,
-      double target, double moneyIn) {
+  String _message(AppLocalizations l, CurrencyProvider currency, double rate,
+      double safeToSpend, double target, double moneyIn, bool isCurrent) {
     final parts = <String>[];
-    if (safeToSpend > 0) {
-      parts.add('Safe to spend: ${currency.formatCompact(safeToSpend)}');
-    } else if (safeToSpend < 0) {
-      parts.add('You are over by ${currency.formatCompact(-safeToSpend)}');
+    if (isCurrent) {
+      if (safeToSpend > 0) {
+        parts.add(l.safeToSpend(currency.formatCompact(safeToSpend)));
+      } else if (safeToSpend < 0) {
+        parts.add(l.overBy(currency.formatCompact(-safeToSpend)));
+      }
+    } else {
+      // The period is over — report the outcome rather than advice.
+      if (safeToSpend > 0) {
+        parts.add(l.youKept(currency.formatCompact(safeToSpend)));
+      } else if (safeToSpend < 0) {
+        parts.add(l.overspentBy(currency.formatCompact(-safeToSpend)));
+      }
     }
     if (target > 0 && moneyIn > 0) {
       final pct = (moneyIn / target * 100).clamp(0, 999).toStringAsFixed(0);
-      parts.add('earned $pct% of your usual income');
+      parts.add(l.earnedPctOfIncome(pct));
     }
     if (parts.isEmpty) {
-      return rate >= 20
-          ? 'Great pace — keep it up.'
-          : 'Watch your spending to save more.';
+      return rate >= 20 ? l.greatPace : l.watchSpending;
     }
     return '${parts.join(' · ')}.';
   }

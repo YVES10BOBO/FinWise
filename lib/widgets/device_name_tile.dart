@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/device_identity_service.dart';
 import '../theme/app_theme.dart';
+import '../l10n/l10n_helpers.dart';
 
 /// Lets the user rename this phone.
 ///
@@ -36,14 +37,12 @@ class _DeviceNameTileState extends State<DeviceNameTile> {
     final saved = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Name this phone'),
+        title: Text(context.l10n.nameThisPhone),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Transactions recorded on this phone are labelled with this '
-              'name, so you can tell them apart from ones recorded on your '
-              'other devices.',
+            Text(
+              context.l10n.nameThisPhoneBody,
               style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 16),
@@ -51,8 +50,8 @@ class _DeviceNameTileState extends State<DeviceNameTile> {
               controller: controller,
               autofocus: true,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Device name',
+              decoration: InputDecoration(
+                labelText: context.l10n.deviceName,
                 prefixIcon: Icon(Icons.smartphone),
               ),
             ),
@@ -61,11 +60,11 @@ class _DeviceNameTileState extends State<DeviceNameTile> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('Save'),
+            child: Text(context.l10n.save),
           ),
         ],
       ),
@@ -88,11 +87,11 @@ class _DeviceNameTileState extends State<DeviceNameTile> {
         child: const Icon(Icons.smartphone,
             color: AppTheme.primaryColor, size: 20),
       ),
-      title: const Text('This phone'),
+      title: Text(context.l10n.thisPhone),
       subtitle: Text(
         _name == null
-            ? 'Naming this device…'
-            : '$_name — shown on transactions recorded here',
+            ? context.l10n.namingDevice
+            : context.l10n.shownOnTx(_name!),
       ),
       trailing: const Icon(Icons.chevron_right, color: AppTheme.textLight),
       onTap: _rename,

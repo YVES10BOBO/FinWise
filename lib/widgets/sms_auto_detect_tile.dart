@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../providers/app_lock_provider.dart';
 import '../services/sms_listener_service.dart';
 import '../services/foreground_service_handler.dart';
 import '../theme/app_theme.dart';
+import '../l10n/l10n_helpers.dart';
 
 /// Settings toggle for the SMS auto-detection Beta feature.
 /// Off by default. Turning it on triggers the Android SMS permission
@@ -36,7 +39,15 @@ class _SmsAutoDetectTileState extends State<SmsAutoDetectTile> {
 
   Future<void> _onChanged(bool value) async {
     if (value) {
-      final granted = await SmsListenerService.requestPermissionAndEnable();
+      // Suppress the auto-lock across the permission prompt. Android reports
+      // the app as backgrounded while a system dialog is up, which the lock
+      // read as "the user left" — so granting SMS permission instantly threw
+      // up the PIN screen and looked exactly like the app closing and
+      // restarting. Same guard the first-run flow already uses.
+      final lock = context.read<AppLockProvider>();
+      final granted = await lock.withoutLocking(
+        () => SmsListenerService.requestPermissionAndEnable(),
+      );
       if (!mounted) return;
       if (!granted) {
         // Android stops showing the permission dialog once it has been
@@ -51,34 +62,31 @@ class _SmsAutoDetectTileState extends State<SmsAutoDetectTile> {
           await showDialog<void>(
             context: context,
             builder: (ctx) => AlertDialog(
-              title: const Text('SMS permission is blocked'),
-              content: const Text(
-                'Android has stopped asking because the permission was '
-                'declined before. To turn auto-detect on, allow SMS for '
-                'FinWise in your phone settings:\n\n'
-                'Permissions → SMS → Allow',
+              title: Text(context.l10n.smsBlocked),
+              content: Text(
+                context.l10n.smsBlockedBody,
                 style: TextStyle(fontSize: 13, height: 1.5),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Not now'),
+                  child: Text(context.l10n.notNow),
                 ),
                 TextButton(
                   onPressed: () {
                     Navigator.pop(ctx);
                     openAppSettings();
                   },
-                  child: const Text('Open settings'),
+                  child: Text(context.l10n.openSettings),
                 ),
               ],
             ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text(
-                'SMS permission was not granted, so auto-detect stays off.',
+                context.l10n.smsNotGrantedOff,
               ),
             ),
           );
@@ -120,15 +128,12 @@ class _SmsAutoDetectTileState extends State<SmsAutoDetectTile> {
             return _StatusTile(
               icon: Icons.lock_outline,
               color: AppTheme.expenseColor,
-              title: 'SMS permission not granted',
+              title: context.l10n.smsNotGranted,
               message: status.isPermanentlyDenied
-                  ? 'Android has blocked this permission because it was '
-                      'declined before, so the switch above can\'t turn it on. '
-                      'Allow SMS for FinWise in phone settings, then come back.'
-                  : 'Auto-detect needs permission to read Mobile Money '
-                      'messages. Turn the switch on to grant it.',
+                  ? context.l10n.smsBlockedSwitch
+                  : context.l10n.smsNeedsPermission,
               actionLabel:
-                  status.isPermanentlyDenied ? 'Open phone settings' : null,
+                  status.isPermanentlyDenied ? context.l10n.openPhoneSettings : null,
               onAction: status.isPermanentlyDenied ? openAppSettings : null,
             );
           },
@@ -152,12 +157,10 @@ class _SmsAutoDetectTileState extends State<SmsAutoDetectTile> {
           return _StatusTile(
             icon: Icons.error_outline,
             color: AppTheme.expenseColor,
-            title: 'Auto-detect has stopped working',
+            title: context.l10n.autoDetectStopped,
             message:
-                'Messages haven\'t been checked in over a day. Turn the switch '
-                'off and on again to re-grant SMS permission, and make sure '
-                'FinWise isn\'t battery-restricted.',
-            actionLabel: health.batteryOptimized ? 'Fix battery settings' : null,
+                context.l10n.autoDetectStoppedBody,
+            actionLabel: health.batteryOptimized ? context.l10n.fixBattery : null,
             onAction: health.batteryOptimized ? _openBatterySettings : null,
           );
         }
@@ -166,13 +169,11 @@ class _SmsAutoDetectTileState extends State<SmsAutoDetectTile> {
           return _StatusTile(
             icon: Icons.warning_amber_outlined,
             color: AppTheme.accentDark,
-            title: 'Nothing detected in a while',
+            title: context.l10n.nothingDetected,
             message:
-                'Last transaction detected ${_ago(health.lastDetection!)}. '
-                'If you have used Mobile Money since then, check that FinWise '
-                'still has SMS permission and is not battery-restricted.',
+                context.l10n.lastDetectedCheck(_ago(health.lastDetection!)),
             actionLabel:
-                health.batteryOptimized ? 'Fix battery settings' : null,
+                health.batteryOptimized ? context.l10n.fixBattery : null,
             onAction: health.batteryOptimized ? _openBatterySettings : null,
           );
         }
@@ -180,28 +181,27 @@ class _SmsAutoDetectTileState extends State<SmsAutoDetectTile> {
         // Healthy — say so plainly. Knowing it IS working is as useful as
         // knowing it isn't.
         final detail = health.lastDetection != null
-            ? 'Last transaction detected ${_ago(health.lastDetection!)}.'
+            ? context.l10n.lastDetected(_ago(health.lastDetection!))
             : health.isScanningRecently
-                ? 'Watching for Mobile Money messages. Nothing detected yet.'
-                : 'Waiting for the first Mobile Money message.';
+                ? context.l10n.watchingNothingYet
+                : context.l10n.waitingFirst;
 
         return Column(
           children: [
             _StatusTile(
               icon: Icons.check_circle_outline,
               color: AppTheme.incomeColor,
-              title: 'Auto-detect is working',
+              title: context.l10n.autoDetectWorking,
               message: detail,
             ),
             if (health.batteryOptimized)
               _StatusTile(
                 icon: Icons.battery_saver,
                 color: AppTheme.accentDark,
-                title: 'Improve background detection',
+                title: context.l10n.improveBackground,
                 message:
-                    'Android may delay detection to save battery. Mark FinWise '
-                    'as "Unrestricted" so messages are picked up promptly.',
-                actionLabel: 'Open phone settings',
+                    context.l10n.improveBackgroundBody,
+                actionLabel: context.l10n.openPhoneSettings,
                 onAction: _openBatterySettings,
               ),
           ],
@@ -214,21 +214,18 @@ class _SmsAutoDetectTileState extends State<SmsAutoDetectTile> {
   /// point, noticing the gap is.
   String _ago(DateTime when) {
     final diff = DateTime.now().difference(when);
-    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+    if (diff.inMinutes < 60) return context.l10n.minAgo(diff.inMinutes);
     if (diff.inHours < 24) {
-      return '${diff.inHours} hour${diff.inHours == 1 ? '' : 's'} ago';
+      return context.l10n.hoursAgo(diff.inHours);
     }
-    return '${diff.inDays} day${diff.inDays == 1 ? '' : 's'} ago';
+    return context.l10n.daysAgo(diff.inDays);
   }
 
   Widget _buildToggle(BuildContext context) {
     return SwitchListTile(
-      title: const Text('Auto-detect Mobile Money transactions'),
-      subtitle: const Text(
-        'Reads MoMo and bank SMS on this device and records transactions '
-        'automatically. Message content never leaves your phone. A permanent '
-        'notification is shown while this is on, so Android keeps detecting '
-        'even when you\'re in another app.',
+      title: Text(context.l10n.autoDetectTitle),
+      subtitle: Text(
+        context.l10n.autoDetectSub,
         style: TextStyle(fontSize: 12),
       ),
       value: _enabled,
@@ -294,23 +291,30 @@ class _StatusTile extends StatelessWidget {
                     ),
                   ),
                   if (actionLabel != null && onAction != null) ...[
-                    const SizedBox(height: 6),
-                    GestureDetector(
-                      onTap: onAction,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            actionLabel!,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: color,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(Icons.open_in_new, size: 13, color: color),
-                        ],
+                    const SizedBox(height: 8),
+                    // A real button, not bare text: it gets a ripple, a
+                    // border and a proper touch target, so it's obvious this
+                    // is something you tap.
+                    OutlinedButton.icon(
+                      onPressed: onAction,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: color,
+                        side: BorderSide(color: color.withValues(alpha: 0.5)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        minimumSize: const Size(0, 36),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: const Icon(Icons.open_in_new, size: 14),
+                      label: Text(
+                        actionLabel!,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],

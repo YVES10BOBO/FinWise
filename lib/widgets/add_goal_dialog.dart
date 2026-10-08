@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/goal.dart';
 import '../theme/app_theme.dart';
 import '../providers/currency_provider.dart';
+import '../l10n/l10n_helpers.dart';
 
 class AddGoalDialog extends StatefulWidget {
   final Goal? existingGoal;
@@ -63,19 +64,32 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
   void _saveGoal() {
     if (_formKey.currentState!.validate()) {
       final existing = widget.existingGoal;
+      final newTarget = double.parse(_amountController.text);
+      // Changing the amount of an existing goal is a price update: record it
+      // so the goal still knows what was originally planned.
+      final priceChanges = [
+        ...?existing?.priceChanges,
+        if (existing != null && newTarget != existing.targetAmount)
+          GoalPriceChange(
+              from: existing.targetAmount,
+              to: newTarget,
+              date: DateTime.now()),
+      ];
       final goal = Goal(
         id: existing?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         name: _nameController.text.trim(),
         iconKey: _selectedIconKey,
-        targetAmount: double.parse(_amountController.text),
+        targetAmount: newTarget,
         targetDate: _selectedDate,
         createdAt: existing?.createdAt ?? DateTime.now(),
-        // Editing must never wipe the contribution history or status.
+        // Editing must never wipe the contribution history, status,
+        // purchase links or price history.
         contributions: existing?.contributions ?? const [],
         status: existing?.status ?? GoalStatus.active,
         purchasedAmount: existing?.purchasedAmount,
         purchasedDate: existing?.purchasedDate,
-        purchaseTransactionId: existing?.purchaseTransactionId,
+        purchaseTransactionIds: existing?.purchaseTransactionIds ?? const [],
+        priceChanges: priceChanges,
       );
 
       if (widget.onSave != null) {
@@ -100,7 +114,7 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.existingGoal == null ? 'Add Goal' : 'Edit Goal',
+                  widget.existingGoal == null ? context.l10n.addGoal : context.l10n.editGoalTitle,
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -109,8 +123,8 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
                 ),
                 const SizedBox(height: 20),
                 // Emoji Selection
-                const Text(
-                  'Select Icon',
+                Text(
+                  context.l10n.selectIcon,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -130,9 +144,10 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
                       children: _iconOptions.entries.map((entry) {
                         final key = entry.key;
                         final icon = entry.value;
-                        final label = Goal.goalIconLabels[key] ?? key;
+                        final label = goalIconName(context, key);
                         final isSelected = _selectedIconKey == key;
-                        return GestureDetector(
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(12),
                           onTap: () {
                             setState(() {
                               _selectedIconKey = key;
@@ -197,7 +212,7 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: 'Goal Name',
+                    labelText: context.l10n.goalName,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -205,7 +220,7 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter goal name';
+                      return context.l10n.enterGoalName;
                     }
                     return null;
                   },
@@ -217,7 +232,7 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
                     labelText:
-                        'Target Amount (${context.watch<CurrencyProvider>().code})',
+                        context.l10n.targetAmountCode(context.watch<CurrencyProvider>().code),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -225,10 +240,10 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter target amount';
+                      return context.l10n.enterTargetAmount;
                     }
                     if (double.tryParse(value) == null) {
-                      return 'Please enter valid number';
+                      return context.l10n.enterValidNumberShort;
                     }
                     return null;
                   },
@@ -239,7 +254,7 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
                   onTap: _selectDate,
                   child: InputDecorator(
                     decoration: InputDecoration(
-                      labelText: 'Target Date',
+                      labelText: context.l10n.targetDate,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -264,7 +279,7 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: const Text('Cancel'),
+                        child: Text(context.l10n.cancel),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -279,7 +294,7 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: Text(widget.existingGoal == null ? 'Add' : 'Update'),
+                        child: Text(widget.existingGoal == null ? context.l10n.add : context.l10n.update),
                       ),
                     ),
                   ],

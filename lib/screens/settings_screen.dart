@@ -20,27 +20,31 @@ import '../widgets/app_lock_tile.dart';
 import 'legal_screen.dart';
 import 'faq_screen.dart';
 import '../main.dart';
+import '../l10n/l10n_helpers.dart';
+import '../providers/locale_provider.dart';
+import '../services/foreground_service_handler.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(l.settingsTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           // Profile Section
           _SettingsSection(
-            title: 'Profile',
+            title: l.sectionProfile,
             children: [
               _SettingsTile(
                 icon: Icons.person,
-                title: 'Profile & onboarding',
-                subtitle: 'Update your name and currency',
+                title: l.profileOnboarding,
+                subtitle: l.profileOnboardingSub,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -54,11 +58,12 @@ class SettingsScreen extends StatelessWidget {
               Consumer2<IncomeProvider, CurrencyProvider>(
                 builder: (context, income, currency, _) {
                   final subtitle = income.isSet
-                      ? '${currency.formatCompact(income.monthlyIncome)}/month — used to measure your savings rate'
-                      : 'Set an optional target to measure your savings rate';
+                      ? l.incomeTargetSet(
+                          currency.formatCompact(income.monthlyIncome))
+                      : l.incomeTargetUnset;
                   return _SettingsTile(
                     icon: Icons.account_balance_wallet_outlined,
-                    title: 'Income target',
+                    title: l.incomeTarget,
                     subtitle: subtitle,
                     onTap: () => _showIncomeDialog(context),
                   );
@@ -66,8 +71,8 @@ class SettingsScreen extends StatelessWidget {
               ),
               _SettingsTile(
                 icon: Icons.logout,
-                title: 'Logout',
-                subtitle: 'Sign out and return to login',
+                title: l.logout,
+                subtitle: l.logoutSub,
                 onTap: () => _showLogoutDialog(context),
                 iconColor: AppTheme.expenseColor,
               ),
@@ -75,8 +80,8 @@ class SettingsScreen extends StatelessWidget {
               // promised in our privacy policy.
               _SettingsTile(
                 icon: Icons.person_remove_outlined,
-                title: 'Delete account',
-                subtitle: 'Permanently erase your account and all data',
+                title: l.deleteAccount,
+                subtitle: l.deleteAccountSub,
                 onTap: () => _showDeleteAccountDialog(context),
                 iconColor: AppTheme.expenseColor,
               ),
@@ -85,12 +90,12 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 20),
           // Data Section
           _SettingsSection(
-            title: 'Data Management',
+            title: l.sectionData,
             children: [
               _SettingsTile(
                 icon: Icons.calendar_today,
-                title: 'Calendar View',
-                subtitle: 'View transactions by date',
+                title: l.calendarView,
+                subtitle: l.calendarViewSub,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -102,27 +107,27 @@ class SettingsScreen extends StatelessWidget {
               ),
               _SettingsTile(
                 icon: Icons.file_download,
-                title: 'Export to CSV',
-                subtitle: 'Download transactions as CSV',
+                title: l.exportCsv,
+                subtitle: l.exportCsvSub,
                 onTap: () => _exportData(context, 'csv'),
               ),
               _SettingsTile(
                 icon: Icons.picture_as_pdf,
-                title: 'Export Report',
-                subtitle: 'Generate transaction report',
+                title: l.exportReport,
+                subtitle: l.exportReportSub,
                 onTap: () => _exportData(context, 'pdf'),
               ),
               _SettingsTile(
                 icon: Icons.delete_outline,
-                title: 'Clear All Transactions',
-                subtitle: 'Remove all transaction data',
+                title: l.clearTransactions,
+                subtitle: l.clearTransactionsSub,
                 onTap: () => _showClearTransactionsDialog(context),
                 iconColor: AppTheme.expenseColor,
               ),
               _SettingsTile(
                 icon: Icons.delete_outline,
-                title: 'Clear All Goals',
-                subtitle: 'Remove all goal data',
+                title: l.clearGoals,
+                subtitle: l.clearGoalsSub,
                 onTap: () => _showClearGoalsDialog(context),
                 iconColor: AppTheme.expenseColor,
               ),
@@ -130,15 +135,15 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           // Security
-          const _SettingsSection(
-            title: 'Security',
-            children: [AppLockTile()],
+          _SettingsSection(
+            title: l.sectionSecurity,
+            children: const [AppLockTile()],
           ),
           const SizedBox(height: 20),
           // Automation Section (Beta)
-          const _SettingsSection(
-            title: 'Automation',
-            children: [
+          _SettingsSection(
+            title: l.sectionAutomation,
+            children: const [
               SmsAutoDetectTile(),
               // Sits with Automation because it's auto-detected transactions
               // from a second signed-in phone that most need identifying.
@@ -152,13 +157,24 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 20),
           // Appearance Section
           _SettingsSection(
-            title: 'Appearance',
+            title: l.sectionAppearance,
             children: [
+              // English by default; anyone can switch at any time.
+              Consumer<LocaleProvider>(
+                builder: (context, localeProvider, _) => _SettingsTile(
+                  icon: Icons.translate,
+                  title: l.language,
+                  subtitle: localeProvider.isKinyarwanda
+                      ? l.languageKinyarwanda
+                      : l.languageEnglish,
+                  onTap: () => _showLanguagePicker(context),
+                ),
+              ),
               Consumer<ThemeProvider>(
                 builder: (context, themeProvider, child) {
                   return SwitchListTile(
-                    title: const Text('Dark Mode'),
-                    subtitle: const Text('Toggle dark theme'),
+                    title: Text(l.darkMode),
+                    subtitle: Text(l.darkModeSub),
                     value: themeProvider.isDarkMode,
                     onChanged: (value) {
                       themeProvider.setTheme(value);
@@ -174,9 +190,9 @@ class SettingsScreen extends StatelessWidget {
                 builder: (context, currencyProvider, child) {
                   return _SettingsTile(
                     icon: Icons.language,
-                    title: 'Currency',
+                    title: l.currency,
                     subtitle:
-                        '${currencyProvider.currency.label} (${currencyProvider.currency.code})',
+                        '${currencyName(context, currencyProvider.currency)} (${currencyProvider.currency.code})',
                     onTap: () => showCurrencyPicker(context),
                   );
                 },
@@ -186,7 +202,7 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 20),
           // About Section
           _SettingsSection(
-            title: 'About',
+            title: l.sectionAbout,
             children: [
               // Read at runtime — a hardcoded string here had silently drifted
               // to "1.0.0 (Build 1)" while the app shipped as 1.2.x, which is
@@ -197,18 +213,18 @@ class SettingsScreen extends StatelessWidget {
                   final info = snapshot.data;
                   return _SettingsTile(
                     icon: Icons.info_outline,
-                    title: 'App Version',
+                    title: l.appVersion,
                     subtitle: info == null
-                        ? 'Loading…'
-                        : '${info.version} (Build ${info.buildNumber})',
+                        ? l.loading
+                        : context.l10n.versionBuild(info.version, info.buildNumber),
                     onTap: null,
                   );
                 },
               ),
               _SettingsTile(
                 icon: Icons.help_outline,
-                title: 'FAQ & Help',
-                subtitle: 'Common questions, or contact us directly',
+                title: l.faqHelp,
+                subtitle: l.faqHelpSub,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const FaqScreen()),
@@ -216,8 +232,8 @@ class SettingsScreen extends StatelessWidget {
               ),
               _SettingsTile(
                 icon: Icons.description,
-                title: 'Privacy Policy',
-                subtitle: 'What we collect and what stays on your phone',
+                title: l.privacyPolicy,
+                subtitle: l.privacyPolicySub,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => LegalScreen.privacy()),
@@ -225,8 +241,8 @@ class SettingsScreen extends StatelessWidget {
               ),
               _SettingsTile(
                 icon: Icons.gavel_outlined,
-                title: 'Terms & Conditions',
-                subtitle: 'The agreement you accepted at sign-up',
+                title: l.terms,
+                subtitle: l.termsSub,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => LegalScreen.terms()),
@@ -247,14 +263,14 @@ class SettingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear All Transactions'),
-        content: const Text(
-          'Are you sure you want to delete all transactions? This action cannot be undone.',
+        title: Text(context.l10n.clearTransactions),
+        content: Text(
+          context.l10n.clearTransactionsConfirm,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () {
@@ -265,13 +281,13 @@ class SettingsScreen extends StatelessWidget {
               provider.clearAllTransactions();
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('All transactions cleared')),
+                SnackBar(content: Text(context.l10n.transactionsCleared)),
               );
             },
             style: TextButton.styleFrom(
               foregroundColor: AppTheme.expenseColor,
             ),
-            child: const Text('Clear All'),
+            child: Text(context.l10n.clearAll),
           ),
         ],
       ),
@@ -291,13 +307,12 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('Income target'),
+          title: Text(context.l10n.incomeTarget),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'A planning target only — used to measure your savings rate. '
-                'It is never added to your balance.',
+              Text(
+                context.l10n.incomeTargetExplain,
                 style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
               const SizedBox(height: 16),
@@ -305,7 +320,7 @@ class SettingsScreen extends StatelessWidget {
                 controller: controller,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  labelText: 'Amount ($currencyCode)',
+                  labelText: context.l10n.amountWithCode(currencyCode),
                   prefixIcon:
                       const Icon(Icons.account_balance_wallet_outlined),
                 ),
@@ -313,12 +328,13 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: frequency,
-                decoration: const InputDecoration(
-                  labelText: 'How often',
+                decoration: InputDecoration(
+                  labelText: context.l10n.howOften,
                   prefixIcon: Icon(Icons.calendar_today),
                 ),
                 items: const ['Daily', 'Weekly', 'Monthly', 'Yearly']
-                    .map((f) => DropdownMenuItem(value: f, child: Text(f)))
+                    .map((f) => DropdownMenuItem(
+                        value: f, child: Text(frequencyLabel(context, f))))
                     .toList(),
                 onChanged: (v) {
                   if (v != null) setLocal(() => frequency = v);
@@ -332,7 +348,7 @@ class SettingsScreen extends StatelessWidget {
                 income.setIncome(null, frequency);
                 Navigator.pop(ctx);
               },
-              child: const Text('Clear'),
+              child: Text(context.l10n.clear),
             ),
             TextButton(
               onPressed: () {
@@ -340,7 +356,7 @@ class SettingsScreen extends StatelessWidget {
                 income.setIncome(value, frequency);
                 Navigator.pop(ctx);
               },
-              child: const Text('Save'),
+              child: Text(context.l10n.save),
             ),
           ],
         ),
@@ -355,7 +371,7 @@ class SettingsScreen extends StatelessWidget {
 
     if (transactions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No transactions to export')),
+        SnackBar(content: Text(context.l10n.noTxToExport)),
       );
       return;
     }
@@ -370,16 +386,18 @@ class SettingsScreen extends StatelessWidget {
       );
 
       if (format == 'csv') {
-        await ExportService.exportToCSV(transactions, currency: currency);
+        await ExportService.exportToCSV(transactions,
+            currency: currency, l: context.l10n);
       } else {
-        await ExportService.exportToPDF(transactions, currency: currency);
+        await ExportService.exportToPDF(transactions,
+            currency: currency, l: context.l10n);
       }
 
       if (context.mounted) {
         Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Transactions exported successfully as $format'),
+            content: Text(context.l10n.exportedAs(format.toUpperCase())),
             backgroundColor: AppTheme.primaryColor,
           ),
         );
@@ -389,7 +407,7 @@ class SettingsScreen extends StatelessWidget {
         Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Export failed: $e'),
+            content: Text(context.l10n.exportFailed('$e')),
             backgroundColor: AppTheme.expenseColor,
           ),
         );
@@ -401,14 +419,14 @@ class SettingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear All Goals'),
-        content: const Text(
-          'Are you sure you want to delete all goals? This action cannot be undone.',
+        title: Text(context.l10n.clearGoals),
+        content: Text(
+          context.l10n.clearGoalsConfirm,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () {
@@ -418,13 +436,13 @@ class SettingsScreen extends StatelessWidget {
                   .clearAllGoals();
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('All goals cleared')),
+                SnackBar(content: Text(context.l10n.goalsCleared)),
               );
             },
             style: TextButton.styleFrom(
               foregroundColor: AppTheme.expenseColor,
             ),
-            child: const Text('Clear All'),
+            child: Text(context.l10n.clearAll),
           ),
         ],
       ),
@@ -437,20 +455,14 @@ class SettingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete your account?'),
-        content: const Text(
-          'This permanently deletes:\n\n'
-          '• All your transactions\n'
-          '• All your goals and reserved money\n'
-          '• Your profile and settings\n'
-          '• Your sign-in account\n\n'
-          'This cannot be undone. Consider exporting your data first '
-          '(Data Management → Export).',
+        title: Text(context.l10n.deleteAccountQ),
+        content: Text(
+          context.l10n.deleteAccountBody,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             style: TextButton.styleFrom(
@@ -459,7 +471,7 @@ class SettingsScreen extends StatelessWidget {
               Navigator.pop(ctx);
               _confirmDeleteWithPassword(context);
             },
-            child: const Text('Continue'),
+            child: Text(context.l10n.continueBtn),
           ),
         ],
       ),
@@ -476,18 +488,19 @@ class SettingsScreen extends StatelessWidget {
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('Confirm it\'s you'),
+          title: Text(context.l10n.confirmItsYou),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Enter the password you use to sign in to FinWise'
-                '${FirebaseAuth.instance.currentUser?.email != null ? ' (${FirebaseAuth.instance.currentUser!.email})' : ''}.',
+                context.l10n.enterSignInPassword(FirebaseAuth.instance.currentUser?.email != null
+                    ? ' (${FirebaseAuth.instance.currentUser!.email})'
+                    : ''),
                 style: const TextStyle(fontSize: 13),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'This is not your app-lock PIN.',
+              Text(
+                context.l10n.notAppLockPin,
                 style: TextStyle(fontSize: 11, color: AppTheme.textLight),
               ),
               const SizedBox(height: 16),
@@ -496,8 +509,8 @@ class SettingsScreen extends StatelessWidget {
                 obscureText: true,
                 enabled: !busy,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'Sign-in password',
+                decoration: InputDecoration(
+                  labelText: context.l10n.signInPassword,
                   prefixIcon: Icon(Icons.lock_outline),
                 ),
               ),
@@ -514,7 +527,7 @@ class SettingsScreen extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: busy ? null : () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
+              child: Text(context.l10n.cancel),
             ),
             TextButton(
               style: TextButton.styleFrom(
@@ -523,7 +536,7 @@ class SettingsScreen extends StatelessWidget {
                   ? null
                   : () async {
                       if (passwordController.text.isEmpty) {
-                        setLocal(() => error = 'Please enter your password');
+                        setLocal(() => error = context.l10n.enterPassword);
                         return;
                       }
                       setLocal(() {
@@ -533,7 +546,8 @@ class SettingsScreen extends StatelessWidget {
 
                       final result = await AccountDeletionService()
                           .deleteAccount(
-                              password: passwordController.text);
+                              password: passwordController.text,
+                              l: context.l10n);
 
                       if (result != null) {
                         setLocal(() {
@@ -553,8 +567,8 @@ class SettingsScreen extends StatelessWidget {
                           (route) => false,
                         );
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Your account has been deleted'),
+                          SnackBar(
+                            content: Text(context.l10n.accountDeleted),
                           ),
                         );
                       }
@@ -565,7 +579,7 @@ class SettingsScreen extends StatelessWidget {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Delete forever'),
+                  : Text(context.l10n.deleteForever),
             ),
           ],
         ),
@@ -581,18 +595,69 @@ class SettingsScreen extends StatelessWidget {
   // plan, and photo collection was flagged by Play Store review. Users get an
   // initial-letter avatar instead.
 
+  /// English / Kinyarwanda. Applies instantly and is remembered.
+  void _showLanguagePicker(BuildContext context) {
+    final l = context.l10n;
+    final provider = context.read<LocaleProvider>();
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetCtx) {
+        Widget option(String code, String label) {
+          final selected = provider.locale.languageCode == code;
+          return ListTile(
+            leading: Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: AppTheme.primaryColor,
+            ),
+            title: Text(label,
+                style: TextStyle(
+                    fontWeight:
+                        selected ? FontWeight.bold : FontWeight.normal)),
+            onTap: () async {
+              Navigator.pop(sheetCtx);
+              await provider.setLanguage(code);
+              // The always-on monitoring notification follows the language.
+              await ForegroundServiceHandler.updateLanguage();
+            },
+          );
+        }
+
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(l.chooseLanguage,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              // Each language is shown in its own name so anyone can find it.
+              option('en', 'English'),
+              option('rw', 'Ikinyarwanda'),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text(
-          'Are you sure you want to logout? You will need to login again to access the app.',
+        title: Text(context.l10n.logout),
+        content: Text(
+          context.l10n.logoutConfirm,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -621,11 +686,11 @@ class SettingsScreen extends StatelessWidget {
                 // Show logout success message
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: const Row(
+                    content: Row(
                       children: [
                         Icon(Icons.check_circle, color: Colors.white),
                         SizedBox(width: 8),
-                        Text('You\'ve been logged out successfully'),
+                        Text(context.l10n.loggedOut),
                       ],
                     ),
                     backgroundColor: Colors.green.shade600,
@@ -649,7 +714,7 @@ class SettingsScreen extends StatelessWidget {
             style: TextButton.styleFrom(
               foregroundColor: AppTheme.expenseColor,
             ),
-            child: const Text('Logout'),
+            child: Text(context.l10n.logout),
           ),
         ],
       ),

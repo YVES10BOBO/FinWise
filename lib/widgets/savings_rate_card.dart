@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../providers/currency_provider.dart';
+import '../l10n/l10n_helpers.dart';
 
 class SavingsRateCard extends StatelessWidget {
   final double income;
@@ -22,8 +23,8 @@ class SavingsRateCard extends StatelessWidget {
     return ((income - expenses) / income) * 100;
   }
 
-  String get savingsRateText {
-    if (income == 0) return 'N/A';
+  String savingsRateText(BuildContext context) {
+    if (income == 0) return context.l10n.notAvailable;
     return '${savingsRate.toStringAsFixed(1)}%';
   }
 
@@ -34,11 +35,12 @@ class SavingsRateCard extends StatelessWidget {
     return AppTheme.expenseColor; // Red - Negative
   }
 
-  String get savingsRateLabel {
-    if (savingsRate >= 20) return 'Excellent';
-    if (savingsRate >= 10) return 'Good! 👍';
-    if (savingsRate >= 0) return 'Fair';
-    return 'Spending more than income';
+  String savingsRateLabel(BuildContext context) {
+    final l = context.l10n;
+    if (savingsRate >= 20) return l.healthExcellent;
+    if (savingsRate >= 10) return l.srGood;
+    if (savingsRate >= 0) return l.healthFair;
+    return l.srOverspending;
   }
 
   @override
@@ -65,8 +67,8 @@ class SavingsRateCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Savings Rate',
+              Text(
+                context.l10n.savingsRateTitle,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -80,7 +82,7 @@ class SavingsRateCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  savingsRateText,
+                  savingsRateText(context),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -93,8 +95,8 @@ class SavingsRateCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             isUsingFallbackIncome
-              ? 'Using your profile income (from onboarding) since no income transactions added yet.'
-              : 'Based on your tracked income and expenses from transactions.',
+              ? context.l10n.usingProfileIncome
+              : context.l10n.basedOnTracked,
             style: const TextStyle(
               fontSize: 11,
               color: AppTheme.textSecondary,
@@ -102,7 +104,7 @@ class SavingsRateCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            savingsRateLabel,
+            savingsRateLabel(context),
             style: TextStyle(
               fontSize: 14,
               color: savingsRateColor,
@@ -125,17 +127,17 @@ class SavingsRateCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _StatItem(
-                label: 'Income',
+                label: context.l10n.income,
                 value: currencyProvider.formatCompact(income),
                 color: AppTheme.incomeColor,
               ),
               _StatItem(
-                label: 'Expenses',
+                label: context.l10n.expenses,
                 value: currencyProvider.formatCompact(expenses),
                 color: AppTheme.expenseColor,
               ),
               _StatItem(
-                label: 'Saved',
+                label: context.l10n.saved,
                 value: currencyProvider.formatCompact(savings),
                 color: savingsRateColor,
               ),

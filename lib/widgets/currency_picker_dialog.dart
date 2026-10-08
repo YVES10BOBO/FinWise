@@ -4,6 +4,7 @@ import '../models/currency.dart';
 import '../providers/currency_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../theme/app_theme.dart';
+import '../l10n/l10n_helpers.dart';
 
 /// A simple list dialog letting the user pick their home currency.
 /// Call `showCurrencyPicker(context)` from anywhere in the app.
@@ -35,26 +36,21 @@ Future<void> showCurrencyPicker(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Change currency?'),
+        title: Text(context.l10n.changeCurrencyQ),
         content: Text(
-          'Your existing transactions will NOT be converted.\n\n'
-          'An amount recorded as 500 ${previous.code} will simply display as '
-          '500 ${selected.code} — the number stays the same, only the label '
-          'changes.\n\n'
-          'Change currency only if you entered those amounts in '
-          '${selected.code}, or if you plan to clear your data.',
+          context.l10n.changeCurrencyBody(previous.code, selected.code),
           style: const TextStyle(fontSize: 13, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             style: TextButton.styleFrom(
                 foregroundColor: AppTheme.accentDark),
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Change to ${selected.code}'),
+            child: Text(context.l10n.changeTo(selected.code)),
           ),
         ],
       ),
@@ -88,10 +84,10 @@ class _CurrencyPickerSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Text(
-                'Choose your currency',
+                context.l10n.chooseCurrency,
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
@@ -114,7 +110,7 @@ class _CurrencyPickerSheet extends StatelessWidget {
                         ),
                       ),
                     ),
-                    title: Text('${currency.label} (${currency.code})'),
+                    title: Text('${currencyName(context, currency)} (${currency.code})'),
                     trailing: isSelected
                         ? const Icon(Icons.check_circle, color: AppTheme.primaryColor)
                         : null,

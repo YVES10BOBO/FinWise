@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../providers/currency_provider.dart';
+import '../l10n/l10n_helpers.dart';
 
 class BalanceCard extends StatelessWidget {
   final double balance;
@@ -36,7 +37,7 @@ class BalanceCard extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            'Total Balance',
+            context.l10n.totalBalance,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.9),
               fontSize: 14,
@@ -56,7 +57,7 @@ class BalanceCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _ActionButton(
-                  label: 'Add Income',
+                  label: context.l10n.addIncome,
                   icon: Icons.arrow_downward_rounded,
                   onPressed: onAddIncome,
                 ),
@@ -64,7 +65,7 @@ class BalanceCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _ActionButton(
-                  label: 'Add Expense',
+                  label: context.l10n.addExpense,
                   icon: Icons.arrow_upward_rounded,
                   onPressed: onAddExpense,
                 ),

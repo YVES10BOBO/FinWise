@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'financial_questionnaire_screen.dart';
 import '../../theme/app_theme.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../../l10n/l10n_helpers.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -42,8 +43,8 @@ class WelcomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 40),
                 // Title
-                const Text(
-                  'Welcome to FinWise',
+                Text(
+                  context.l10n.welcomeTitle,
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -54,7 +55,7 @@ class WelcomeScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 // Subtitle
                 Text(
-                  'Smart financial advice for a new era of wealth',
+                  context.l10n.welcomeTagline,
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.white.withValues(alpha: 0.9),
@@ -65,17 +66,17 @@ class WelcomeScreen extends StatelessWidget {
                 // Features
                 _FeatureItem(
                   icon: FontAwesomeIcons.lightbulb,
-                  text: 'Smart budget recommendations',
+                  text: context.l10n.welcomeFeat1,
                 ),
                 const SizedBox(height: 20),
                 _FeatureItem(
                   icon: FontAwesomeIcons.chartPie,
-                  text: 'Automatic spending analysis',
+                  text: context.l10n.welcomeFeat2,
                 ),
                 const SizedBox(height: 20),
                 _FeatureItem(
                   icon: FontAwesomeIcons.bullseye,
-                  text: 'Goal tracking that keeps you focused',
+                  text: context.l10n.welcomeFeat3,
                 ),
                 const Spacer(),
                 // Get Started Button
@@ -98,8 +99,8 @@ class WelcomeScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Get Started',
+                    child: Text(
+                      context.l10n.getStarted,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

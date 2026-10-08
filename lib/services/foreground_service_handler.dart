@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'sms_listener_service.dart';
+import '../providers/locale_provider.dart';
 
 /// Keeps FinWise's Android process alive (via a required, visible
 /// notification) while SMS auto-detect is on. This doesn't do the SMS
@@ -36,9 +37,11 @@ class _SmsMonitorTaskHandler extends TaskHandler {
     // here so Mobile Money messages are detected and recorded in near real
     // time regardless of app state — instead of only when the user reopens
     // the app. De-dup (by the SMS's transaction id) means overlap with the
-    // in-app poll can never double-record. Fire-and-forget; errors are
-    // swallowed inside pollInboxForNew.
-    SmsListenerService.pollInboxForNew();
+    // in-app poll can never double-record. Fire-and-forget, but any error is
+    // caught here so it can never surface as an unhandled exception.
+    SmsListenerService.pollInboxForNew().catchError((Object e) {
+      if (kDebugMode) debugPrint('FinWise: background poll failed: $e');
+    });
   }
 
   @override
@@ -47,13 +50,15 @@ class _SmsMonitorTaskHandler extends TaskHandler {
 
 class ForegroundServiceHandler {
   /// Call once at app startup, before starting/stopping the service.
-  static void init() {
+  static Future<void> init() async {
+    // Channel name/description are shown in the phone's notification
+    // settings, so they follow the app language.
+    final l = await savedAppLocalizations();
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
         channelId: 'finwise_sms_monitor',
-        channelName: 'Mobile Money monitoring',
-        channelDescription:
-            'Shown while FinWise is watching for Mobile Money SMS to auto-track your transactions.',
+        channelName: l.monitorChannelName,
+        channelDescription: l.monitorChannelDesc,
         onlyAlertOnce: true,
       ),
       iosNotificationOptions: const IOSNotificationOptions(
@@ -123,16 +128,19 @@ class ForegroundServiceHandler {
   static Future<void> start() async {
     try {
       // Let any permission dialog finish dismissing before Android is asked
-      // to promote us to a foreground service.
-      await Future.delayed(const Duration(milliseconds: 400));
+      // to promote us to a foreground service. 400ms wasn't always enough:
+      // starting a data-sync foreground service while the app is still
+      // mid-transition can be refused outright by Android 12+, and the app
+      // appeared to close.
+      await Future.delayed(const Duration(milliseconds: 1200));
 
       if (await FlutterForegroundTask.isRunningService) return;
 
+      final l = await savedAppLocalizations();
       await FlutterForegroundTask.startService(
         serviceId: 257,
-        notificationTitle: 'FinWise is monitoring for transactions',
-        notificationText:
-            'Mobile Money SMS auto-detect is on. Tap to open FinWise.',
+        notificationTitle: l.monitorTitle,
+        notificationText: l.monitorText,
         callback: smsMonitorServiceCallback,
       );
     } catch (e) {
@@ -140,6 +148,21 @@ class ForegroundServiceHandler {
         debugPrint('FinWise: foreground service failed to start: $e');
       }
       // Non-fatal — the app keeps working without it.
+    }
+  }
+
+  /// Re-word the persistent notification after the user switches language,
+  /// so it doesn't stay in the old language until the next restart.
+  static Future<void> updateLanguage() async {
+    try {
+      if (!await FlutterForegroundTask.isRunningService) return;
+      final l = await savedAppLocalizations();
+      await FlutterForegroundTask.updateService(
+        notificationTitle: l.monitorTitle,
+        notificationText: l.monitorText,
+      );
+    } catch (_) {
+      // Cosmetic only.
     }
   }
 

@@ -7,6 +7,7 @@ import 'login_screen.dart';
 import 'auth_widgets.dart';
 import '../legal_screen.dart';
 import '../../services/firestore_user_profile_service.dart';
+import '../../l10n/l10n_helpers.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -39,8 +40,8 @@ class _SignupScreenState extends State<SignupScreen> {
     if (_formKey.currentState!.validate()) {
       if (!_agreeToTerms) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please agree to the terms and conditions'),
+          SnackBar(
+            content: Text(context.l10n.agreeTermsRequired),
           ),
         );
         return;
@@ -84,7 +85,7 @@ class _SignupScreenState extends State<SignupScreen> {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Account created successfully!'),
+            content: Text(context.l10n.accountCreated),
             backgroundColor: AppTheme.primaryColor,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 2),
@@ -112,12 +113,12 @@ class _SignupScreenState extends State<SignupScreen> {
         setState(() => _isLoading = false);
 
         final message = switch (e.code) {
-          'email-already-in-use' => 'That email is already registered. Try logging in instead.',
-          'invalid-email' => 'Invalid email address. Please check and try again.',
-          'weak-password' => 'Password is too weak. Use at least 6 characters.',
-          'operation-not-allowed' => 'Signup is currently disabled. Please contact support.',
-          'network-request-failed' => 'Network error. Please check your connection.',
-          _ => e.message ?? 'Signup failed. Please try again.',
+          'email-already-in-use' => context.l10n.errEmailInUse,
+          'invalid-email' => context.l10n.errInvalidEmailCheck,
+          'weak-password' => context.l10n.errWeakPassword,
+          'operation-not-allowed' => context.l10n.errSignupDisabled,
+          'network-request-failed' => context.l10n.errNetworkConnection,
+          _ => e.message ?? context.l10n.signupFailed,
         };
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -138,7 +139,7 @@ class _SignupScreenState extends State<SignupScreen> {
           // Account was created successfully, just handle navigation
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Account created successfully!'),
+              content: Text(context.l10n.accountCreated),
               backgroundColor: AppTheme.primaryColor,
               behavior: SnackBarBehavior.floating,
               duration: const Duration(seconds: 2),
@@ -160,7 +161,7 @@ class _SignupScreenState extends State<SignupScreen> {
           if (!message.contains('PigeonUserDetails')) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Signup failed. Please try again.'),
+                content: Text(context.l10n.signupFailed),
                 backgroundColor: AppTheme.expenseColor,
               ),
             );
@@ -177,9 +178,9 @@ class _SignupScreenState extends State<SignupScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            const AuthHeader(
-              title: 'Create your account',
-              subtitle: 'Start tracking your money in minutes',
+            AuthHeader(
+              title: context.l10n.createYourAccount,
+              subtitle: context.l10n.signupSubtitle,
               showBack: true,
             ),
             Padding(
@@ -191,26 +192,26 @@ class _SignupScreenState extends State<SignupScreen> {
                   children: [
                     AuthField(
                       controller: _nameController,
-                      label: 'Full name',
+                      label: context.l10n.fullName,
                       icon: Icons.person_outline,
                       textCapitalization: TextCapitalization.words,
                       validator: (value) =>
                           (value == null || value.trim().isEmpty)
-                              ? 'Please enter your name'
+                              ? context.l10n.enterName
                               : null,
                     ),
                     const SizedBox(height: 16),
                     AuthField(
                       controller: _emailController,
-                      label: 'Email',
+                      label: context.l10n.email,
                       icon: Icons.email_outlined,
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your email';
+                          return context.l10n.enterEmail;
                         }
                         if (!value.contains('@')) {
-                          return 'Please enter a valid email';
+                          return context.l10n.enterValidEmail;
                         }
                         return null;
                       },
@@ -218,7 +219,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     const SizedBox(height: 16),
                     AuthField(
                       controller: _passwordController,
-                      label: 'Password',
+                      label: context.l10n.password,
                       icon: Icons.lock_outline,
                       obscure: _obscurePassword,
                       suffix: IconButton(
@@ -234,24 +235,24 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter a password';
+                          return context.l10n.enterAPassword;
                         }
                         if (value.length < 6) {
-                          return 'Password must be at least 6 characters';
+                          return context.l10n.passwordMin6;
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'At least 6 characters',
+                      context.l10n.atLeast6,
                       style: TextStyle(
                           fontSize: 11, color: AppTheme.textLight),
                     ),
                     const SizedBox(height: 16),
                     AuthField(
                       controller: _confirmPasswordController,
-                      label: 'Confirm password',
+                      label: context.l10n.confirmPassword,
                       icon: Icons.lock_outline,
                       obscure: _obscureConfirmPassword,
                       suffix: IconButton(
@@ -268,10 +269,10 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please confirm your password';
+                          return context.l10n.pleaseConfirmPassword;
                         }
                         if (value != _passwordController.text) {
-                          return 'Passwords do not match';
+                          return context.l10n.passwordsDontMatch;
                         }
                         return null;
                       },
@@ -310,9 +311,9 @@ class _SignupScreenState extends State<SignupScreen> {
                                     height: 1.4,
                                   ),
                                   children: [
-                                    const TextSpan(text: 'I agree to the '),
+                                    TextSpan(text: context.l10n.iAgreeToThe),
                                     TextSpan(
-                                      text: 'Terms & Conditions',
+                                      text: context.l10n.terms,
                                       style: const TextStyle(
                                         color: AppTheme.primaryColor,
                                         fontWeight: FontWeight.bold,
@@ -335,7 +336,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     const SizedBox(height: 20),
 
                     AuthButton(
-                      label: 'Create account',
+                      label: context.l10n.createAccount,
                       isLoading: _isLoading,
                       onPressed: _isLoading ? null : _handleSignup,
                     ),
@@ -346,8 +347,8 @@ class _SignupScreenState extends State<SignupScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text(
-                          'Already have an account?',
+                        Text(
+                          context.l10n.haveAccount,
                           style: TextStyle(
                             color: AppTheme.textSecondary,
                             fontSize: 13,
@@ -363,8 +364,8 @@ class _SignupScreenState extends State<SignupScreen> {
                           style: TextButton.styleFrom(
                             foregroundColor: AppTheme.primaryColor,
                           ),
-                          child: const Text(
-                            'Sign in',
+                          child: Text(
+                            context.l10n.signIn,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/transaction.dart';
 import '../theme/app_theme.dart';
 import '../providers/currency_provider.dart';
+import '../l10n/l10n_helpers.dart';
 
 class SpendingChart extends StatelessWidget {
   final Map<Category, double> categorySpending;
@@ -16,9 +17,9 @@ class SpendingChart extends StatelessWidget {
       return Container(
         height: 200,
         padding: const EdgeInsets.all(20),
-        child: const Center(
+        child: Center(
           child: Text(
-            'No spending data to display',
+            context.l10n.noSpendingData,
             style: TextStyle(color: AppTheme.textLight),
           ),
         ),
@@ -44,8 +45,8 @@ class SpendingChart extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Spending by Category',
+          Text(
+            context.l10n.spendingByCategory,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -144,7 +145,7 @@ class _LegendItem extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              category.name,
+              categoryLabel(context, category),
               style: const TextStyle(
                 fontSize: 14,
                 color: AppTheme.textPrimary,

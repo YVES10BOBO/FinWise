@@ -4,6 +4,7 @@ import '../models/transaction.dart';
 import '../theme/app_theme.dart';
 import '../providers/currency_provider.dart';
 import 'package:intl/intl.dart';
+import '../l10n/l10n_helpers.dart';
 
 class TransactionItem extends StatefulWidget {
   final Transaction transaction;
@@ -51,7 +52,6 @@ class _TransactionItemState extends State<TransactionItem>
     final onDelete = widget.onDelete;
     
     final currencyProvider = context.watch<CurrencyProvider>();
-    final dateFormatter = DateFormat('MMM d, yyyy');
     final isToday = transaction.date.day == DateTime.now().day &&
         transaction.date.month == DateTime.now().month &&
         transaction.date.year == DateTime.now().year;
@@ -76,19 +76,19 @@ class _TransactionItemState extends State<TransactionItem>
         return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Delete Transaction'),
-            content: const Text('Are you sure you want to delete this transaction?'),
+            title: Text(context.l10n.deleteTransaction),
+            content: Text(context.l10n.deleteTransactionQ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'),
+                child: Text(context.l10n.cancel),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
                 style: TextButton.styleFrom(
                   foregroundColor: AppTheme.expenseColor,
                 ),
-                child: const Text('Delete'),
+                child: Text(context.l10n.delete),
               ),
             ],
           ),
@@ -161,7 +161,7 @@ class _TransactionItemState extends State<TransactionItem>
                             children: [
                               Flexible(
                                 child: Text(
-                                  transaction.description,
+                                  displayDescription(context, transaction.description),
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w600,
                                     color: AppTheme.textPrimary,
@@ -174,7 +174,7 @@ class _TransactionItemState extends State<TransactionItem>
                                 const SizedBox(width: 6),
                                 Tooltip(
                                   message:
-                                      'Auto-detected from Mobile Money SMS — tap to review',
+                                      context.l10n.autoDetectedTip,
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 6, vertical: 2),
@@ -191,7 +191,7 @@ class _TransactionItemState extends State<TransactionItem>
                                             color: AppTheme.primaryColor),
                                         const SizedBox(width: 3),
                                         Text(
-                                          'Auto',
+                                          context.l10n.autoBadge,
                                           style: TextStyle(
                                             fontSize: 10,
                                             fontWeight: FontWeight.w600,
@@ -208,8 +208,8 @@ class _TransactionItemState extends State<TransactionItem>
                           const SizedBox(height: 3),
                           Text(
                             isToday
-                                ? 'Today, ${DateFormat('h:mm a').format(transaction.date)}'
-                                : dateFormatter.format(transaction.date),
+                                ? context.l10n.todayAt(DateFormat('HH:mm').format(transaction.date))
+                                : formatDay(context, transaction.date),
                             style: const TextStyle(
                               fontSize: 12,
                               color: AppTheme.textLight,

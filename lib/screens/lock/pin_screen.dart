@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_lock_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../l10n/l10n_helpers.dart';
 
 enum PinMode {
   /// Choose a new PIN (then confirm it).
@@ -73,11 +74,14 @@ class _PinScreenState extends State<PinScreen> {
 
   Future<void> _tryBiometrics() async {
     final lock = context.read<AppLockProvider>();
+    // Read before any await: the screen may change while waiting.
+    final reason = context.l10n.biometricReason;
     if (!lock.biometricEnabled) return;
     if (!await lock.canUseBiometrics()) return;
 
     // The biometric sheet is system UI — don't let it re-trigger the lock.
-    final ok = await lock.withoutLocking(lock.authenticateWithBiometrics);
+    final ok = await lock
+        .withoutLocking(() => lock.authenticateWithBiometrics(reason));
     if (ok && mounted) {
       lock.unlock();
     }
@@ -124,7 +128,7 @@ class _PinScreenState extends State<PinScreen> {
           widget.onSuccess?.call(entered);
           if (mounted) Navigator.of(context).pop(true);
         } else {
-          _fail('PINs did not match. Start again.');
+          _fail(context.l10n.pinsDidNotMatch);
           setState(() => _firstEntry = null);
         }
         break;
@@ -141,12 +145,12 @@ class _PinScreenState extends State<PinScreen> {
             Navigator.of(context).pop(true);
           }
         } else if (lock.isInCooldown) {
-          _fail('Too many attempts. Please wait.');
+          _fail(context.l10n.tooManyWait);
         } else {
           final left = lock.attemptsRemaining;
           _fail(left <= 2
-              ? 'Incorrect PIN. $left ${left == 1 ? 'try' : 'tries'} left before a wait.'
-              : 'Incorrect PIN. Try again.');
+              ? context.l10n.incorrectPinLeft(left)
+              : context.l10n.incorrectPinRetry);
         }
         break;
     }
@@ -165,11 +169,11 @@ class _PinScreenState extends State<PinScreen> {
     if (widget.title != null) return widget.title!;
     switch (widget.mode) {
       case PinMode.setup:
-        return _firstEntry == null ? 'Create a PIN' : 'Confirm your PIN';
+        return _firstEntry == null ? context.l10n.createPin : context.l10n.confirmYourPin;
       case PinMode.unlock:
-        return 'Enter your PIN';
+        return context.l10n.enterYourPin;
       case PinMode.verify:
-        return 'Confirm it\'s you';
+        return context.l10n.confirmItsYou;
     }
   }
 
@@ -177,12 +181,12 @@ class _PinScreenState extends State<PinScreen> {
     switch (widget.mode) {
       case PinMode.setup:
         return _firstEntry == null
-            ? 'You\'ll use this to open FinWise'
-            : 'Enter the same 4 digits again';
+            ? context.l10n.pinUseToOpen
+            : context.l10n.pinSameAgain;
       case PinMode.unlock:
-        return 'Your finances are locked';
+        return context.l10n.financesLocked;
       case PinMode.verify:
-        return 'Enter your current PIN to continue';
+        return context.l10n.enterCurrentPin;
     }
   }
 
@@ -280,7 +284,7 @@ class _PinScreenState extends State<PinScreen> {
                   padding: const EdgeInsets.only(top: 14),
                   child: Text(
                     cooling
-                        ? 'Too many attempts. Try again in ${_formatCountdown(lock.cooldownSecondsLeft)}'
+                        ? context.l10n.tooManyTryIn(_formatCountdown(lock.cooldownSecondsLeft))
                         : (_error ?? ''),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
@@ -345,8 +349,8 @@ class _PinScreenState extends State<PinScreen> {
                   style: TextButton.styleFrom(
                     foregroundColor: AppTheme.textSecondary,
                   ),
-                  child: const Text(
-                    'Forgot PIN?',
+                  child: Text(
+                    context.l10n.forgotPinQ,
                     style: TextStyle(
                         fontSize: 13, fontWeight: FontWeight.w600),
                   ),
@@ -367,22 +371,18 @@ class _PinScreenState extends State<PinScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Forgot your PIN?'),
-        content: const Text(
-          'To reset it, sign in again with your email and password.\n\n'
-          'You will be signed out and the app lock removed. Your transactions '
-          'and goals are safe — they sync back as soon as you sign in.',
-        ),
+        title: Text(context.l10n.forgotYourPin),
+        content: Text(context.l10n.forgotPinBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             style: TextButton.styleFrom(
                 foregroundColor: AppTheme.expenseColor),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Sign out & reset'),
+            child: Text(context.l10n.signOutReset),
           ),
         ],
       ),

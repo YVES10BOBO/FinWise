@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../models/transaction.dart' as models;
 import '../providers/currency_provider.dart';
+import '../l10n/l10n_helpers.dart';
 
 class TopSpendingCategoriesWidget extends StatelessWidget {
   final Map<models.Category, double> categorySpending;
@@ -49,8 +50,8 @@ class TopSpendingCategoriesWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Top Spending Categories',
+              Text(
+                context.l10n.topCategories,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -58,7 +59,7 @@ class TopSpendingCategoriesWidget extends StatelessWidget {
                 ),
               ),
               Text(
-                'This Month',
+                context.l10n.thisMonthTitle,
                 style: TextStyle(
                   fontSize: 12,
                   color: AppTheme.textSecondary,
@@ -113,7 +114,7 @@ class TopSpendingCategoriesWidget extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              category.name,
+                              categoryLabel(context, category),
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
@@ -144,7 +145,7 @@ class TopSpendingCategoriesWidget extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${percentage.toStringAsFixed(1)}% of total spending',
+                          context.l10n.pctOfTotal(percentage.toStringAsFixed(1)),
                           style: TextStyle(
                             fontSize: 11,
                             color: AppTheme.textSecondary,

@@ -8,6 +8,7 @@ import '../services/categorization_service.dart';
 import '../widgets/spending_chart.dart';
 import '../providers/currency_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/l10n_helpers.dart';
 
 class CategoriesScreen extends StatelessWidget {
   const CategoriesScreen({super.key});
@@ -22,7 +23,7 @@ class CategoriesScreen extends StatelessWidget {
             if (incomeSnapshot.connectionState == ConnectionState.waiting) {
               return Scaffold(
                 appBar: AppBar(
-                  title: const Text('Categories'),
+                  title: Text(context.l10n.categoriesTitle),
                 ),
                 body: const Center(
                   child: CircularProgressIndicator(),
@@ -45,7 +46,7 @@ class CategoriesScreen extends StatelessWidget {
 
             return Scaffold(
               appBar: AppBar(
-                title: const Text('Categories'),
+                title: Text(context.l10n.categoriesTitle),
               ),
               body: SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
@@ -53,7 +54,7 @@ class CategoriesScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
@@ -61,20 +62,20 @@ class CategoriesScreen extends StatelessWidget {
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.04),
                             blurRadius: 10,
-                            offset: const Offset(0, 4),
+                            offset: Offset(0, 4),
                           ),
                         ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Row(
                             children: [
                               Icon(Icons.category_outlined,
                                   size: 22, color: AppTheme.primaryColor),
                               SizedBox(width: 8),
                               Text(
-                                'Spending Categories',
+                                context.l10n.spendingCategories,
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -85,7 +86,7 @@ class CategoriesScreen extends StatelessWidget {
                           ),
                           SizedBox(height: 8),
                           Text(
-                            'FinWise groups your expenses into simple categories so you can quickly see where your money goes.',
+                            context.l10n.categoriesIntro,
                             style: TextStyle(
                               fontSize: 12,
                               color: AppTheme.textSecondary,
@@ -94,7 +95,7 @@ class CategoriesScreen extends StatelessWidget {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Budgets here use your profile income from onboarding plus your real spending from transactions.',
+                            context.l10n.budgetsIntro,
                             style: TextStyle(
                               fontSize: 12,
                               color: AppTheme.textSecondary,
@@ -115,7 +116,7 @@ class CategoriesScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
+                        gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [Color(0xFFE8F5E9), Color(0xFFE3F2FD)],
@@ -127,12 +128,12 @@ class CategoriesScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                            children: const [
+                            children: [
                               Icon(Icons.lightbulb_outline,
                                   size: 20, color: AppTheme.primaryColor),
                               SizedBox(width: 10),
                               Text(
-                                'Category insight',
+                                context.l10n.categoryInsight,
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -147,6 +148,7 @@ class CategoriesScreen extends StatelessWidget {
                               monthlyIncome > 0 ? monthlyIncome : 300000,
                               provider.transactions,
                               currency: context.watch<CurrencyProvider>().currency,
+                              l: context.l10n,
                             ),
                             style: const TextStyle(
                               fontSize: 14,
@@ -233,7 +235,7 @@ class _CategoryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      budget.category.name,
+                      categoryLabel(context, budget.category),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

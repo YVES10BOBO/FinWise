@@ -4,6 +4,7 @@ import '../screens/faq_screen.dart';
 import '../services/support_contact_service.dart';
 import '../theme/app_theme.dart';
 import 'whatsapp_preview_card.dart';
+import '../l10n/l10n_helpers.dart';
 
 /// Bottom sheet shown by the help icon: browse the FAQ, or reach out
 /// directly. Reusable from anywhere in the app — see [showContactSheet].
@@ -40,22 +41,21 @@ class _ContactSheet extends StatelessWidget {
                 ),
               ),
             ),
-            const Text(
-              'Need help?',
+            Text(
+              context.l10n.needHelp,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
-            const Text(
-              'Most questions are answered in the FAQ. If not, reach out '
-              'directly and we\'ll get back to you.',
+            Text(
+              context.l10n.needHelpBody,
               style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 20),
             _ContactOption(
               icon: Icons.quiz_outlined,
               color: AppTheme.primaryColor,
-              title: 'Browse FAQ',
-              subtitle: 'Answers to common questions about FinWise',
+              title: context.l10n.browseFaq,
+              subtitle: context.l10n.browseFaqSub,
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
@@ -67,15 +67,16 @@ class _ContactSheet extends StatelessWidget {
             _ContactOption(
               icon: Icons.email_outlined,
               color: AppTheme.secondaryColor,
-              title: 'Email us',
+              title: context.l10n.emailUs,
               subtitle: SupportContactService.supportEmail,
               onTap: () async {
                 Navigator.pop(context);
-                final ok = await SupportContactService.emailUs();
+                final ok = await SupportContactService.emailUs(
+                    subject: context.l10n.finwiseSupport);
                 if (!ok && context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Could not open an email app')),
+                    SnackBar(
+                        content: Text(context.l10n.noEmailApp)),
                   );
                 }
               },
@@ -83,8 +84,8 @@ class _ContactSheet extends StatelessWidget {
             _ContactOption(
               icon: FontAwesomeIcons.whatsapp,
               color: whatsAppGreen,
-              title: 'WhatsApp us',
-              subtitle: 'Chat with us on WhatsApp',
+              title: context.l10n.whatsappUs,
+              subtitle: context.l10n.whatsappSub,
               onTap: () {
                 Navigator.pop(context);
                 showWhatsAppPreview(context);

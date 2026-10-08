@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../providers/currency_provider.dart';
+import '../l10n/l10n_helpers.dart';
 
 class StatsCard extends StatelessWidget {
   final IconData icon;
@@ -70,8 +71,8 @@ class StatsCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          const Text(
-            'This month',
+          Text(
+            context.l10n.thisMonthLower,
             style: TextStyle(
               fontSize: 11,
               color: AppTheme.textSecondary,

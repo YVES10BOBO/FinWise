@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../services/support_contact_service.dart';
 import '../theme/app_theme.dart';
+import '../l10n/l10n_helpers.dart';
 
 /// WhatsApp's brand green, shared so the contact sheet tile and this card
 /// use exactly the same colour.
@@ -15,7 +16,7 @@ Future<void> showWhatsAppPreview(BuildContext context) {
   return showGeneralDialog(
     context: context,
     barrierDismissible: true,
-    barrierLabel: 'WhatsApp preview',
+    barrierLabel: context.l10n.whatsappPreview,
     barrierColor: Colors.black.withValues(alpha: 0.15),
     transitionDuration: const Duration(milliseconds: 220),
     pageBuilder: (context, _, __) => const _WhatsAppPreviewCard(),
@@ -83,9 +84,9 @@ class _WhatsAppPreviewCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'FinWise Support',
+                      context.l10n.finwiseSupport,
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -107,9 +108,7 @@ class _WhatsAppPreviewCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                'Hi! Have a question about FinWise, or need help with '
-                'something? Send us a message and we\'ll get back to you as '
-                'soon as we can.',
+                context.l10n.whatsappGreeting,
                 style: TextStyle(
                   fontSize: 13,
                   height: 1.5,
@@ -135,13 +134,13 @@ class _WhatsAppPreviewCard extends StatelessWidget {
                     final ok = await SupportContactService.whatsAppUs();
                     if (!ok && context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Could not open WhatsApp')),
+                        SnackBar(
+                            content: Text(context.l10n.noWhatsapp)),
                       );
                     }
                   },
                   icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
-                  label: const Text('Open chat'),
+                  label: Text(context.l10n.openChat),
                 ),
               ),
             ),

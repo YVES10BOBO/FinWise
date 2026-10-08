@@ -12,6 +12,7 @@ import '../../services/firestore_user_profile_service.dart';
 import '../../providers/currency_provider.dart';
 import '../../models/currency.dart';
 import '../../services/sms_listener_service.dart';
+import '../../l10n/l10n_helpers.dart';
 
 class FinancialQuestionnaireScreen extends StatefulWidget {
   const FinancialQuestionnaireScreen({super.key});
@@ -221,7 +222,7 @@ class _FinancialQuestionnaireScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Set up FinWise'),
+        title: Text(context.l10n.setUpFinwise),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
       ),
@@ -273,8 +274,8 @@ class _FinancialQuestionnaireScreenState
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text(
-                            'Back',
+                          child: Text(
+                            context.l10n.back,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -296,8 +297,8 @@ class _FinancialQuestionnaireScreenState
                           ),
                           elevation: 0,
                         ),
-                        child: const Text(
-                          'Get Started',
+                        child: Text(
+                          context.l10n.getStarted,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -334,8 +335,8 @@ class _FinancialQuestionnaireScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Let\'s set up your FinWise',
+        Text(
+          context.l10n.letsSetUp,
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -344,7 +345,7 @@ class _FinancialQuestionnaireScreenState
         ),
         const SizedBox(height: 8),
         Text(
-          'Tell us a bit about you. You can change this anytime.',
+          context.l10n.tellUsAboutYou,
           style: TextStyle(
             fontSize: 14,
             color: Colors.white.withValues(alpha: 0.9),
@@ -369,7 +370,7 @@ class _FinancialQuestionnaireScreenState
                   const Icon(Icons.lightbulb_outline, color: Colors.white, size: 20),
                   const SizedBox(width: 8),
                   Text(
-                    'Why we need this:',
+                    context.l10n.whyWeNeed,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
@@ -380,9 +381,7 @@ class _FinancialQuestionnaireScreenState
               ),
               const SizedBox(height: 8),
               Text(
-                '• Your name personalizes your dashboard\n'
-                '• Your currency is used across the whole app\n'
-                '• Add an income target later in Settings (optional)',
+                context.l10n.whyWeNeedBullets,
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.white.withValues(alpha: 0.85),
@@ -401,7 +400,7 @@ class _FinancialQuestionnaireScreenState
           child: TextFormField(
             controller: _nameController,
             decoration: InputDecoration(
-              labelText: 'Your Name',
+              labelText: context.l10n.yourName,
               prefixIcon: const Icon(Icons.person),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -424,9 +423,9 @@ class _FinancialQuestionnaireScreenState
           ),
           child: DropdownButtonFormField<AppCurrency>(
             value: _selectedCurrency,
-            hint: const Text('Select currency'),
+            hint: Text(context.l10n.selectCurrency),
             decoration: InputDecoration(
-              labelText: 'Currency',
+              labelText: context.l10n.currency,
               prefixIcon: const Icon(Icons.language),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -437,7 +436,7 @@ class _FinancialQuestionnaireScreenState
             items: AppCurrency.values
                 .map((c) => DropdownMenuItem(
                       value: c,
-                      child: Text('${c.symbol}  ${c.label} (${c.code})'),
+                      child: Text('${c.symbol}  ${currencyName(context, c)} (${c.code})'),
                     ))
                 .toList(),
             onChanged: (value) {
@@ -461,7 +460,7 @@ class _FinancialQuestionnaireScreenState
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'That\'s all we need to get started. You can set an income target and more anytime in Settings.',
+                  context.l10n.allWeNeed,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.white.withValues(alpha: 0.9),
@@ -479,8 +478,8 @@ class _FinancialQuestionnaireScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'What\'s your spending style?',
+        Text(
+          context.l10n.whatsYourStyle,
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -489,7 +488,7 @@ class _FinancialQuestionnaireScreenState
         ),
         const SizedBox(height: 8),
         Text(
-          'Choose what fits you best. This helps FinWise suggest realistic budgets.',
+          context.l10n.chooseStyle,
           style: TextStyle(
             fontSize: 14,
             color: Colors.white.withValues(alpha: 0.9),
@@ -514,7 +513,7 @@ class _FinancialQuestionnaireScreenState
                   const Icon(Icons.lightbulb_outline, color: Colors.white, size: 20),
                   const SizedBox(width: 8),
                   Text(
-                    'How this helps:',
+                    context.l10n.howThisHelps,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
@@ -525,8 +524,7 @@ class _FinancialQuestionnaireScreenState
               ),
               const SizedBox(height: 8),
               Text(
-                '• Spending style: Helps FinWise give personalized budget advice later\n'
-                '• Real spending: We only use your actual transactions to calculate charts and budgets',
+                context.l10n.howThisHelpsBullets,
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.white.withValues(alpha: 0.85),
@@ -543,22 +541,22 @@ class _FinancialQuestionnaireScreenState
           children: [
             _buildStyleChip(
               label: 'Saver',
-              subtitle: 'I save a lot',
+              subtitle: context.l10n.styleSaverSub,
               icon: Icons.savings_outlined,
             ),
             _buildStyleChip(
               label: 'Balanced',
-              subtitle: 'I\'m balanced',
+              subtitle: context.l10n.styleBalancedSub,
               icon: Icons.balance_outlined,
             ),
             _buildStyleChip(
               label: 'Spender',
-              subtitle: 'I spend most income',
+              subtitle: context.l10n.styleSpenderSub,
               icon: Icons.shopping_bag_outlined,
             ),
             _buildStyleChip(
               label: 'Overspender',
-              subtitle: 'I often overspend',
+              subtitle: context.l10n.styleOverspenderSub,
               icon: Icons.warning_amber_outlined,
             ),
           ],
@@ -576,7 +574,7 @@ class _FinancialQuestionnaireScreenState
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'FinWise will track your real spending automatically from the transactions you add on the dashboard.',
+                  context.l10n.trackRealSpending,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.white.withValues(alpha: 0.9),
@@ -612,7 +610,7 @@ class _FinancialQuestionnaireScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                label,
+                spendingStyleLabel(context, label),
                 style: TextStyle(
                   color: isSelected ? Colors.white : AppTheme.textPrimary,
                   fontWeight: FontWeight.bold,
@@ -653,8 +651,8 @@ class _FinancialQuestionnaireScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'What do you spend on?',
+        Text(
+          context.l10n.whatDoYouSpendOn,
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -663,7 +661,7 @@ class _FinancialQuestionnaireScreenState
         ),
         const SizedBox(height: 8),
         Text(
-          'Select all categories that apply to your spending',
+          context.l10n.selectAllCategories,
           style: TextStyle(
             fontSize: 14,
             color: Colors.white.withValues(alpha: 0.9),
@@ -671,7 +669,7 @@ class _FinancialQuestionnaireScreenState
         ),
         const SizedBox(height: 4),
         Text(
-          'FinWise uses these 23 main categories on every page so your budgets and insights stay clear and simple.',
+          context.l10n.mainCategoriesNote,
           style: TextStyle(
             fontSize: 12,
             color: Colors.white.withValues(alpha: 0.9),
@@ -696,7 +694,7 @@ class _FinancialQuestionnaireScreenState
                   const Icon(Icons.lightbulb_outline, color: Colors.white, size: 20),
                   const SizedBox(width: 8),
                   Text(
-                    'Why categories matter:',
+                    context.l10n.whyCategoriesMatter,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
@@ -707,10 +705,7 @@ class _FinancialQuestionnaireScreenState
               ),
               const SizedBox(height: 8),
               Text(
-                '• Track spending by category (Food, Transport, etc.)\n'
-                '• Get insights like "You spent 30% on Food this month"\n'
-                '• Set budgets per category and get alerts\n'
-                '• You can add more categories anytime',
+                context.l10n.whyCategoriesBullets,
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.white.withValues(alpha: 0.85),
@@ -729,7 +724,7 @@ class _FinancialQuestionnaireScreenState
             final isSelected = _selectedCategories.contains(category);
             return FilterChip(
               label: Text(
-                category,
+                onboardingCategoryLabel(context, category),
                 style: TextStyle(
                   color: isSelected ? Colors.white : AppTheme.textPrimary,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
@@ -759,8 +754,8 @@ class _FinancialQuestionnaireScreenState
         const SizedBox(height: 24),
         // Custom Categories
         if (_customCategories.isNotEmpty) ...[
-          const Text(
-            'Your Custom Categories:',
+          Text(
+            context.l10n.yourCustomCategories,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -802,7 +797,7 @@ class _FinancialQuestionnaireScreenState
                 child: TextField(
                   controller: _customCategoryController,
                   decoration: InputDecoration(
-                    hintText: 'Add custom category...',
+                    hintText: context.l10n.addCustomCategoryHint,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -839,7 +834,7 @@ class _FinancialQuestionnaireScreenState
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'You can always add or remove categories later in settings.',
+                  context.l10n.addRemoveLater,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.white.withValues(alpha: 0.9),
@@ -893,9 +888,9 @@ class _FinancialQuestionnaireScreenState
     });
     if (!granted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Permission not granted. You can turn on auto-tracking later in Settings.',
+            context.l10n.permissionNotGrantedLater,
           ),
         ),
       );
@@ -906,8 +901,8 @@ class _FinancialQuestionnaireScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Track money automatically',
+        Text(
+          context.l10n.trackAutomatically,
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -916,9 +911,7 @@ class _FinancialQuestionnaireScreenState
         ),
         const SizedBox(height: 8),
         Text(
-          'This is what makes FinWise different. It reads your Mobile Money '
-          'SMS and records every payment and deposit for you — no manual '
-          'typing.',
+          context.l10n.trackAutomaticallyBody,
           style: TextStyle(
             fontSize: 14,
             color: Colors.white.withValues(alpha: 0.9),
@@ -940,20 +933,20 @@ class _FinancialQuestionnaireScreenState
             children: [
               _buildAutoTrackFeature(
                 Icons.bolt,
-                'Instant',
-                'New MoMo transactions appear on your balance within seconds.',
+                context.l10n.featInstant,
+                context.l10n.featInstantBody,
               ),
               const SizedBox(height: 16),
               _buildAutoTrackFeature(
                 Icons.lock_outline,
-                'Private',
-                'Everything stays on your phone. Nothing is uploaded or shared.',
+                context.l10n.featPrivate,
+                context.l10n.featPrivateBody,
               ),
               const SizedBox(height: 16),
               _buildAutoTrackFeature(
                 Icons.auto_awesome,
-                'Automatic',
-                'Amount, direction and category are filled in for you.',
+                context.l10n.featAutomatic,
+                context.l10n.featAutomaticBody,
               ),
             ],
           ),
@@ -973,7 +966,7 @@ class _FinancialQuestionnaireScreenState
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Auto-tracking is on. Tap Complete to finish.',
+                    context.l10n.autoTrackingOnFinish,
                     style: TextStyle(
                       color: AppTheme.textPrimary,
                       fontWeight: FontWeight.w600,
@@ -1001,8 +994,8 @@ class _FinancialQuestionnaireScreenState
                     )
                   : const Icon(Icons.sms_outlined),
               label: Text(_enablingAutoTrack
-                  ? 'Requesting permission…'
-                  : 'Enable auto-tracking'),
+                  ? context.l10n.requestingPermission
+                  : context.l10n.enableAutoTracking),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: AppTheme.primaryColor,
@@ -1021,8 +1014,8 @@ class _FinancialQuestionnaireScreenState
         const SizedBox(height: 12),
         Text(
           _autoTrackEnabled
-              ? 'You can turn this off anytime in Settings.'
-              : 'Optional — you can skip and turn it on later in Settings.',
+              ? context.l10n.turnOffAnytime
+              : context.l10n.optionalSkip,
           style: TextStyle(
             fontSize: 12,
             color: Colors.white.withValues(alpha: 0.85),

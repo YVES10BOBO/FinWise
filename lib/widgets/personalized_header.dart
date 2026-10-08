@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
+import '../l10n/l10n_helpers.dart';
 
 // Profile pictures were removed: Firebase Storage now requires the paid Blaze
 // plan, and Play Store flagged photo collection. Users get a clean avatar with
@@ -14,21 +15,20 @@ class PersonalizedHeader extends StatefulWidget {
 }
 
 class _PersonalizedHeaderState extends State<PersonalizedHeader> {
-  String _userName = 'User';
-  String _greeting = 'Hello';
+  /// Null until loaded; a translated "User" is shown meanwhile.
+  String? _userName;
 
   @override
   void initState() {
     super.initState();
     _loadUserName();
-    _setGreeting();
   }
 
   Future<void> _loadUserName() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final name = prefs.getString('user_name') ?? 'User';
-      if (mounted) {
+      final name = prefs.getString('user_name');
+      if (name != null && name.trim().isNotEmpty && mounted) {
         setState(() {
           _userName = name.split(' ').first; // Get first name only
         });
@@ -38,15 +38,13 @@ class _PersonalizedHeaderState extends State<PersonalizedHeader> {
     }
   }
 
-  void _setGreeting() {
+  /// Worked out at build time so it follows the chosen language.
+  String _greeting(BuildContext context) {
     final hour = DateTime.now().hour;
-    if (hour < 12) {
-      _greeting = 'Good Morning';
-    } else if (hour < 17) {
-      _greeting = 'Good Afternoon';
-    } else {
-      _greeting = 'Good Evening';
-    }
+    final l = context.l10n;
+    if (hour < 12) return l.goodMorning;
+    if (hour < 17) return l.goodAfternoon;
+    return l.goodEvening;
   }
 
   @override
@@ -73,7 +71,7 @@ class _PersonalizedHeaderState extends State<PersonalizedHeader> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  '$_greeting, $_userName',
+                  '${_greeting(context)}, ${_userName ?? context.l10n.userFallback}',
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -84,7 +82,7 @@ class _PersonalizedHeaderState extends State<PersonalizedHeader> {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  "Let's manage your money wisely",
+                  context.l10n.manageWisely,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.white.withValues(alpha: 0.9),
@@ -102,7 +100,7 @@ class _PersonalizedHeaderState extends State<PersonalizedHeader> {
             radius: 22,
             backgroundColor: Colors.white.withValues(alpha: 0.22),
             child: Text(
-              _userName.isNotEmpty ? _userName[0].toUpperCase() : 'U',
+              (_userName ?? context.l10n.userFallback)[0].toUpperCase(),
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,

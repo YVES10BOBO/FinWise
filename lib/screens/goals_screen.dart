@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../models/goal.dart';
 import '../models/transaction.dart';
@@ -8,6 +7,8 @@ import '../providers/goal_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/currency_provider.dart';
 import '../widgets/add_goal_dialog.dart';
+import '../widgets/goal_celebration.dart';
+import '../l10n/l10n_helpers.dart';
 import 'goal_details_screen.dart';
 
 class GoalsScreen extends StatelessWidget {
@@ -18,11 +19,12 @@ class GoalsScreen extends StatelessWidget {
     return Consumer<GoalProvider>(
       builder: (context, provider, child) {
         final goals = provider.goals;
+        final l = context.l10n;
 
         if (goals.isEmpty) {
           return Scaffold(
             appBar: AppBar(
-              title: const Text('Goals'),
+              title: Text(l.goalsTitle),
               actions: [
                 IconButton(
                   icon: const Icon(Icons.add),
@@ -46,21 +48,19 @@ class GoalsScreen extends StatelessWidget {
                           size: 52, color: AppTheme.primaryColor),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      'Save for what matters',
-                      style: TextStyle(
+                    Text(
+                      l.goalsEmptyTitle,
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      'Set a target, reserve money towards it, and watch your '
-                      'progress. Reserved money stays yours — it just won\'t '
-                      'be counted as spendable.',
+                    Text(
+                      l.goalsEmptyBody,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                           color: AppTheme.textSecondary,
                           fontSize: 13,
                           height: 1.5),
@@ -71,7 +71,7 @@ class GoalsScreen extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: () => showGoalDialog(context),
                         icon: const Icon(Icons.add),
-                        label: const Text('Create your first goal'),
+                        label: Text(l.createFirstGoal),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryColor,
                           foregroundColor: Colors.white,
@@ -99,7 +99,7 @@ class GoalsScreen extends StatelessWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Goals'),
+            title: Text(l.goalsTitle),
             actions: [
               IconButton(
                 icon: const Icon(Icons.add),
@@ -115,9 +115,9 @@ class GoalsScreen extends StatelessWidget {
                 _GoalsDashboard(provider: provider),
                 const SizedBox(height: 20),
                 if (active.isNotEmpty) ...[
-                  const Text(
-                    'Active goals',
-                    style: TextStyle(
+                  Text(
+                    l.activeGoals,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.textPrimary,
@@ -128,9 +128,9 @@ class GoalsScreen extends StatelessWidget {
                 ],
                 if (purchased.isNotEmpty) ...[
                   const SizedBox(height: 10),
-                  const Text(
-                    'Completed',
-                    style: TextStyle(
+                  Text(
+                    l.completed,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.textPrimary,
@@ -176,6 +176,7 @@ class _GoalsDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currency = context.watch<CurrencyProvider>();
+    final l = context.l10n;
     final active = provider.activeGoals;
     final purchased = provider.purchasedGoals;
     final totalTarget =
@@ -202,13 +203,13 @@ class _GoalsDashboard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.flag_outlined, size: 18, color: Colors.white),
-              SizedBox(width: 8),
+              const Icon(Icons.flag_outlined, size: 18, color: Colors.white),
+              const SizedBox(width: 8),
               Text(
-                'Goals overview',
-                style: TextStyle(
+                l.goalsOverview,
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -226,7 +227,7 @@ class _GoalsDashboard extends StatelessWidget {
             ),
           ),
           Text(
-            'reserved of ${currency.formatCompact(totalTarget)} targeted · $pct%',
+            l.reservedOfTargeted(currency.formatCompact(totalTarget), pct),
             style: TextStyle(
               fontSize: 12,
               color: Colors.white.withValues(alpha: 0.9),
@@ -235,11 +236,11 @@ class _GoalsDashboard extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              _chip('${provider.goals.length}', 'Total'),
+              _chip('${provider.goals.length}', l.total),
               const SizedBox(width: 8),
-              _chip('${active.length}', 'Active'),
+              _chip('${active.length}', l.active),
               const SizedBox(width: 8),
-              _chip('${purchased.length}', 'Completed'),
+              _chip('${purchased.length}', l.completed),
             ],
           ),
           if (provider.readyToPurchase.isNotEmpty) ...[
@@ -257,7 +258,7 @@ class _GoalsDashboard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '${provider.readyToPurchase.length} goal(s) fully funded — ready to purchase',
+                      l.goalsReady(provider.readyToPurchase.length),
                       style: const TextStyle(
                           fontSize: 12, color: Colors.white),
                     ),
@@ -308,8 +309,11 @@ class _GoalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currency = context.watch<CurrencyProvider>();
-    final progress = goal.progress.clamp(0.0, 1.0);
+    final l = context.l10n;
     final purchased = goal.isPurchased;
+    // A bought goal is complete at whatever it really cost, even when that
+    // was less than the target — so it always reads 100%.
+    final progress = purchased ? 1.0 : goal.progress.clamp(0.0, 1.0);
     final done = goal.isCompleted;
     final daysLeft = goal.daysRemaining;
 
@@ -323,24 +327,26 @@ class _GoalCard extends StatelessWidget {
     final String statusLabel;
     final Color statusColor;
     if (purchased) {
-      statusLabel = 'Purchased';
+      statusLabel = l.completed;
       statusColor = AppTheme.textLight;
     } else if (done) {
-      statusLabel = 'Ready to buy';
+      statusLabel = l.statusReady;
       statusColor = AppTheme.primaryColor;
     } else if (daysLeft < 0) {
-      statusLabel = 'Overdue';
+      statusLabel = l.statusOverdue;
       statusColor = AppTheme.accentDark;
     } else if (goal.progress >= timeFraction) {
-      statusLabel = 'On track';
+      statusLabel = l.statusOnTrack;
       statusColor = AppTheme.primaryColor;
     } else {
-      statusLabel = 'Behind';
+      statusLabel = l.statusBehind;
       statusColor = AppTheme.accentDark;
     }
 
     final accent = purchased ? AppTheme.textLight : AppTheme.primaryColor;
-    final pct = (goal.progress * 100).clamp(0, 999).toStringAsFixed(0);
+    final pct = purchased
+        ? '100'
+        : (goal.progress * 100).clamp(0, 999).toStringAsFixed(0);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -387,7 +393,7 @@ class _GoalCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            goal.iconLabel,
+                            goalIconName(context, goal.iconKey),
                             textAlign: TextAlign.center,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -436,11 +442,11 @@ class _GoalCard extends StatelessWidget {
                               const SizedBox(width: 6),
                               Text(
                                 purchased
-                                    ? DateFormat('MMM d, y').format(
+                                    ? formatDay(context,
                                         goal.purchasedDate ?? goal.targetDate)
                                     : (daysLeft < 0
-                                        ? 'Past due'
-                                        : '$daysLeft days left'),
+                                        ? l.pastDue
+                                        : l.daysLeft(daysLeft)),
                                 style: const TextStyle(
                                   fontSize: 11,
                                   color: AppTheme.textLight,
@@ -475,8 +481,12 @@ class _GoalCard extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 3),
                       child: Text(
                         purchased
-                            ? 'spent'
-                            : 'of ${currency.formatCompact(goal.targetAmount)}',
+                            ? ((goal.purchasedAmount ?? 0) != goal.plannedAmount
+                                ? l.paidPlanned(
+                                    currency.formatCompact(goal.plannedAmount))
+                                : l.paid)
+                            : l.ofAmount(
+                                currency.formatCompact(goal.targetAmount)),
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppTheme.textSecondary,
@@ -529,13 +539,14 @@ class _GoalCard extends StatelessWidget {
                   if (done)
                     _hint(
                       Icons.celebration_outlined,
-                      'Fully funded — tap to mark it purchased',
+                      l.fullyFundedTap,
                       AppTheme.primaryColor,
                     )
                   else if (daysLeft > 0)
                     _hint(
                       Icons.trending_up,
-                      'Add ${currency.formatCompact(goal.monthlyNeeded)}/month to finish on time',
+                      l.addPerMonth(
+                          currency.formatCompact(goal.monthlyNeeded)),
                       AppTheme.textSecondary,
                     ),
 
@@ -549,7 +560,7 @@ class _GoalCard extends StatelessWidget {
                         child: ElevatedButton.icon(
                           onPressed: () => showReserveDialog(context, goal),
                           icon: const Icon(Icons.add, size: 18),
-                          label: const Text('Add contribution'),
+                          label: Text(l.addContribution),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: accent,
                             foregroundColor: Colors.white,
@@ -590,7 +601,7 @@ class _GoalCard extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          child: const Text('Details'),
+                          child: Text(l.details),
                         ),
                       ),
                     ],
@@ -666,6 +677,7 @@ void showReserveDialog(BuildContext context, Goal goal) {
   final goalProvider = Provider.of<GoalProvider>(context, listen: false);
 
   AccountType selected = AccountType.mobileMoney;
+  final l = context.l10n;
 
   double availableFor(AccountType a) =>
       (txProvider.accountBalances[a] ?? 0) - goalProvider.reservedFor(a);
@@ -674,29 +686,29 @@ void showReserveDialog(BuildContext context, Goal goal) {
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setLocal) => AlertDialog(
-        title: const Text('Reserve money'),
+        title: Text(l.reserveMoney),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Moves money from an account into this goal. It stays yours — '
-                'just reserved, so it is not counted as spending.',
+                l.reserveExplain,
                 style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
               const SizedBox(height: 14),
               DropdownButtonFormField<AccountType>(
                 value: selected,
-                decoration: const InputDecoration(
-                  labelText: 'From account',
-                  prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+                decoration: InputDecoration(
+                  labelText: l.fromAccount,
+                  prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
                 ),
                 items: AccountType.values.map((a) {
                   return DropdownMenuItem(
                     value: a,
                     child: Text(
-                      '${_accountLabel(a)} · ${currency.formatCompact(availableFor(a))} free',
+                      l.freeAmount(accountName(context, a),
+                          currency.formatCompact(availableFor(a))),
                       style: const TextStyle(fontSize: 13),
                     ),
                   );
@@ -710,16 +722,16 @@ void showReserveDialog(BuildContext context, Goal goal) {
                 controller: controller,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  labelText: 'Amount (${currency.code})',
+                  labelText: l.amountWithCode(currency.code),
                   prefixIcon: const Icon(Icons.savings_outlined),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: noteController,
-                decoration: const InputDecoration(
-                  labelText: 'Note (optional)',
-                  prefixIcon: Icon(Icons.notes),
+                decoration: InputDecoration(
+                  labelText: l.noteOptional,
+                  prefixIcon: const Icon(Icons.notes),
                 ),
               ),
             ],
@@ -728,14 +740,14 @@ void showReserveDialog(BuildContext context, Goal goal) {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(l.cancel),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               final value = double.tryParse(controller.text.trim());
               if (value == null || value <= 0) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Enter an amount above 0')),
+                  SnackBar(content: Text(l.enterAmountAbove0)),
                 );
                 return;
               }
@@ -744,12 +756,14 @@ void showReserveDialog(BuildContext context, Goal goal) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      '${_accountLabel(selected)} only has ${currency.formatCompact(free)} available.',
+                      l.onlyHasAvailable(accountName(context, selected),
+                          currency.formatCompact(free)),
                     ),
                   ),
                 );
                 return;
               }
+              final wasFunded = goal.isCompleted;
               goalProvider.addContribution(
                 goal.id,
                 amount: value,
@@ -758,13 +772,52 @@ void showReserveDialog(BuildContext context, Goal goal) {
               );
               Navigator.pop(ctx);
 
+              // This reserve just reached the price → celebrate (once), and
+              // offer to close the goal straight away, since people often
+              // forget to come back and mark it bought.
+              final updated = goalProvider.goals
+                  .where((g) => g.id == goal.id)
+                  .firstOrNull;
+              if (!wasFunded &&
+                  updated != null &&
+                  updated.isCompleted &&
+                  !updated.isPurchased) {
+                final span = savingSpanText(context, updated);
+                final shown = await showGoalCelebration(
+                  context,
+                  goal: updated,
+                  kind: GoalCelebrationKind.funded,
+                  title: l.celebrateFundedTitle(updated.name),
+                  lines: [
+                    span.isNotEmpty
+                        ? l.celebrateFundedReservedSpan(
+                            currency.formatCompact(updated.currentAmount), span)
+                        : l.celebrateFundedReserved(
+                            currency.formatCompact(updated.currentAmount)),
+                    l.celebrateFundedAsk,
+                  ],
+                  primaryLabel: l.iBoughtIt,
+                  secondaryLabel: l.later,
+                  onPrimary: () {
+                    if (context.mounted) {
+                      GoalDetailsScreen(goalId: updated.id)
+                          .showPurchaseDialog(context, updated);
+                    }
+                  },
+                );
+                if (shown) return;
+              }
+              if (!context.mounted) return;
+
               // Reserving beyond the target is allowed (you may have decided
               // the thing costs more), but say so plainly rather than
               // silently showing over 100%.
               final over = (goal.currentAmount + value) - goal.targetAmount;
               final msg = over > 0
-                  ? 'Reserved ${currency.formatCompact(value)} — that is ${currency.formatCompact(over)} more than this goal needs. Release it any time.'
-                  : 'Reserved ${currency.formatCompact(value)} from ${_accountLabel(selected)}';
+                  ? l.reservedOver(currency.formatCompact(value),
+                      currency.formatCompact(over))
+                  : l.reservedFrom(currency.formatCompact(value),
+                      accountName(context, selected));
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(msg),
@@ -772,21 +825,10 @@ void showReserveDialog(BuildContext context, Goal goal) {
                 ),
               );
             },
-            child: const Text('Reserve'),
+            child: Text(l.reserve),
           ),
         ],
       ),
     ),
   );
-}
-
-String _accountLabel(AccountType a) {
-  switch (a) {
-    case AccountType.cash:
-      return 'Cash';
-    case AccountType.bank:
-      return 'Bank';
-    case AccountType.mobileMoney:
-      return 'Mobile Money';
-  }
 }

@@ -5,9 +5,9 @@ import '../providers/transaction_provider.dart';
 import '../models/transaction.dart';
 import '../theme/app_theme.dart';
 import '../widgets/transaction_item.dart';
-import 'package:intl/intl.dart';
 import '../widgets/add_transaction_dialog.dart';
 import '../providers/currency_provider.dart';
+import '../l10n/l10n_helpers.dart';
 
 class CalendarViewScreen extends StatefulWidget {
   const CalendarViewScreen({super.key});
@@ -81,7 +81,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Calendar View'),
+            title: Text(context.l10n.calendarView),
             actions: [
               PopupMenuButton<CalendarFormat>(
                 icon: const Icon(Icons.view_module),
@@ -91,17 +91,17 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                   });
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: CalendarFormat.month,
-                    child: Text('Month'),
+                    child: Text(context.l10n.calMonth),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: CalendarFormat.twoWeeks,
-                    child: Text('2 Weeks'),
+                    child: Text(context.l10n.calTwoWeeks),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: CalendarFormat.week,
-                    child: Text('Week'),
+                    child: Text(context.l10n.calWeek),
                   ),
                 ],
               ),
@@ -148,6 +148,9 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                     ),
                   ),
                   headerStyle: HeaderStyle(
+                    // Month title in the app's language ("Ukwakira 2026").
+                    titleTextFormatter: (date, _) =>
+                        '${monthName(context, date)} ${date.year}',
                     formatButtonVisible: false,
                     titleCentered: true,
                     formatButtonShowsNext: false,
@@ -164,6 +167,14 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                     _focusedDay = focusedDay;
                   },
                   calendarBuilders: CalendarBuilders(
+                    // Weekday headers in the app's language.
+                    dowBuilder: (context, day) => Center(
+                      child: Text(
+                        weekdayShort(context, day),
+                        style: const TextStyle(
+                            fontSize: 12, color: AppTheme.textSecondary),
+                      ),
+                    ),
                     markerBuilder: (context, date, events) {
                       if (events.isEmpty) return const SizedBox.shrink();
                       return Positioned(
@@ -201,7 +212,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          DateFormat('EEEE, MMMM d, yyyy').format(_selectedDay),
+                          formatFullDate(context, _selectedDay),
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -210,7 +221,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${selectedEvents.length} transaction${selectedEvents.length != 1 ? 's' : ''}',
+                          context.l10n.txCount(selectedEvents.length),
                           style: const TextStyle(
                             fontSize: 14,
                             color: AppTheme.textSecondary,
@@ -243,16 +254,16 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                               color: Colors.grey,
                             ),
                             const SizedBox(height: 20),
-                            const Text(
-                              'No transactions on this day',
+                            Text(
+                              context.l10n.noTxThisDay,
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 10),
-                            const Text(
-                              'Add an income or expense for this date to see it here.',
+                            Text(
+                              context.l10n.addForThisDate,
                               style: TextStyle(
                                 color: Colors.grey,
                               ),

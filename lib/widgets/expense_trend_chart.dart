@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/transaction.dart';
 import '../providers/currency_provider.dart';
 import '../theme/app_theme.dart';
+import '../l10n/l10n_helpers.dart';
 
 /// Weekly spending trend for the last 4 weeks.
 ///
@@ -20,17 +20,17 @@ class ExpenseTrendChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currency = context.watch<CurrencyProvider>();
-    final weeks = _weeklyData();
+    final weeks = _weeklyData(context);
 
     if (weeks.every((w) => w.total == 0)) {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: _card(),
-        child: const SizedBox(
+        child: SizedBox(
           height: 140,
           child: Center(
             child: Text(
-              'No spending recorded in the last 4 weeks',
+              context.l10n.noSpending4Weeks,
               style: TextStyle(color: AppTheme.textLight),
             ),
           ),
@@ -56,8 +56,8 @@ class ExpenseTrendChart extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Spending trend · Last 4 weeks',
+          Text(
+            context.l10n.spendingTrend,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -67,8 +67,8 @@ class ExpenseTrendChart extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             previous > 0
-                ? 'This week you spent ${changePct.abs().toStringAsFixed(0)}% ${spentMore ? 'more' : 'less'} than last week'
-                : 'Average ${currency.formatCompact(average)} per week',
+                ? (spentMore ? context.l10n.weekSpentMore(changePct.abs().toStringAsFixed(0)) : context.l10n.weekSpentLess(changePct.abs().toStringAsFixed(0)))
+                : context.l10n.averagePerWeek(currency.formatCompact(average)),
             style: TextStyle(
               fontSize: 12,
               color: spentMore ? AppTheme.accentDark : AppTheme.primaryColor,
@@ -232,9 +232,8 @@ class ExpenseTrendChart extends StatelessWidget {
 
   /// Four clean, non-overlapping 7-day windows ending today, labelled with the
   /// date each window starts. Savings transfers are excluded.
-  List<_WeekPoint> _weeklyData() {
+  List<_WeekPoint> _weeklyData(BuildContext context) {
     final now = DateTime.now();
-    final fmt = DateFormat('MMM d');
     final points = <_WeekPoint>[];
 
     for (int i = 3; i >= 0; i--) {
@@ -249,7 +248,8 @@ class ExpenseTrendChart extends StatelessWidget {
               !t.date.isAfter(end))
           .fold(0.0, (sum, t) => sum + t.amount);
 
-      points.add(_WeekPoint(label: fmt.format(start), total: total));
+      points.add(_WeekPoint(
+          label: formatDay(context, start, withYear: false), total: total));
     }
     return points;
   }

@@ -16,6 +16,8 @@ import 'firestore_transaction_service.dart';
 import 'foreground_service_handler.dart';
 import 'sms_transaction_parser.dart';
 import 'transaction_notifier.dart';
+import '../l10n/l10n_helpers.dart';
+import '../providers/locale_provider.dart';
 
 /// Whether the user has auto-detection on. Default ON — it "just works"
 /// without hunting for a toggle; only stays off if explicitly turned off.
@@ -154,10 +156,8 @@ Future<void> _processSms(String sender, String body, {DateTime? receivedAt}) asy
     if (parsed == null) {
       // Only warn if it looked financial — avoids nagging on personal SMS.
       if (debug && looksMomo) {
-        await TransactionNotifier.showError(
-          'MoMo SMS not read',
-          'Looked like a transaction but the amount/format wasn\'t recognised.',
-        );
+        final l = await savedAppLocalizations();
+        await TransactionNotifier.showError(l.notifSmsNotRead, l.notifSmsNotReadBody);
       }
       return;
     }
@@ -235,9 +235,10 @@ Future<void> _processSms(String sender, String body, {DateTime? receivedAt}) asy
     // Tell the user only if something was actually detected but couldn't be
     // saved — a silent loss of a real transaction would be worse.
     if (built != null) {
+      final l = await savedAppLocalizations();
       await TransactionNotifier.showError(
-        'Transaction not saved',
-        'Could not record "${built.description}". Please add it manually.',
+        l.notifNotSaved,
+        l.notifNotSavedBody(displayDescriptionFor(l, built.description)),
       );
     }
   }
@@ -484,7 +485,18 @@ class SmsListenerService {
   /// Called from the Settings toggle. Asks for SMS permission, enables the
   /// feature, and starts the listener + monitoring service.
   static Future<bool> requestPermissionAndEnable() async {
-    final granted = await _telephony.requestSmsPermissions ?? false;
+    // Ask via permission_handler rather than the telephony package: it
+    // reports a real status (granted / denied / permanentlyDenied) instead
+    // of a bare bool, so the caller can tell "user said no this time" from
+    // "Android will never ask again" and respond appropriately. Falls back
+    // to the telephony request if that somehow reports nothing useful.
+    var status = await Permission.sms.request();
+    if (status.isDenied) {
+      final legacy = await _telephony.requestSmsPermissions ?? false;
+      if (legacy) status = PermissionStatus.granted;
+    }
+
+    final granted = status.isGranted;
     if (!granted) {
       // Record the refusal. Without this the stored setting kept its default
       // of "on", so declining the permission still left the Settings toggle
@@ -595,6 +607,17 @@ class SmsListenerService {
     await prefs.reload();
     final enabled = prefs.getBool(kSmsAutoDetectEnabledKey) ?? true;
     if (!enabled) return;
+
+    // The foreground-service isolate (15s timer) is a separate Dart isolate
+    // that never ran main(), so Firebase isn't initialised there. Touching
+    // FirebaseAuth.instance without this threw "[core/no-app] No Firebase
+    // App '[DEFAULT]'" on every tick, so background polling never ran.
+    try {
+      if (Firebase.apps.isEmpty) await Firebase.initializeApp();
+    } catch (e) {
+      if (kDebugMode) debugPrint('FinWise: Firebase init failed in poller: $e');
+      return;
+    }
 
     // Signed out: don't even read the inbox. Nothing would be recorded
     // anyway, and reading someone's messages when there's no account to

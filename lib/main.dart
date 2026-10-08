@@ -19,6 +19,10 @@ import 'providers/category_provider.dart';
 import 'providers/currency_provider.dart';
 import 'providers/income_provider.dart';
 import 'providers/app_lock_provider.dart';
+import 'providers/period_provider.dart';
+import 'providers/locale_provider.dart';
+import 'l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'screens/lock/pin_screen.dart';
 import 'widgets/app_lock_prompt.dart';
 import 'theme/theme_provider.dart';
@@ -38,7 +42,7 @@ void main() async {
   // Must run before any FlutterForegroundTask call, and before the service
   // is (re)attached to a running isolate on app restart.
   FlutterForegroundTask.initCommunicationPort();
-  ForegroundServiceHandler.init();
+  await ForegroundServiceHandler.init();
   // Resolve the device name once here, in the main isolate where platform
   // channels are reliable. The SMS background isolate then just reads the
   // cached value.
@@ -72,13 +76,25 @@ class FinWiseApp extends StatelessWidget {
           ChangeNotifierProvider(create: (_) => CurrencyProvider()),
           ChangeNotifierProvider(create: (_) => IncomeProvider()),
           ChangeNotifierProvider(create: (_) => AppLockProvider()),
+          ChangeNotifierProvider(create: (_) => PeriodProvider()),
+          ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, _) {
+      child: Consumer2<ThemeProvider, LocaleProvider>(
+        builder: (context, themeProvider, localeProvider, _) {
           return MaterialApp(
             navigatorKey: navigatorKey,
             title: 'FinWise',
             theme: themeProvider.currentTheme,
+            // English by default; Kinyarwanda when chosen in Settings.
+            locale: localeProvider.locale,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              ...kinyarwandaFallbacks,
+            ],
             debugShowCheckedModeBanner: false,
             home: const AppLockGate(child: InitialScreen()),
           );
@@ -455,6 +471,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       // Swipeable: dragging left/right moves between tabs, same as tapping
       // the bottom nav bar. Each tab is wrapped in _KeepAlivePage so its
@@ -487,26 +504,26 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           type: BottomNavigationBarType.fixed,
           selectedItemColor: AppTheme.primaryColor,
           unselectedItemColor: AppTheme.textLight,
-          items: const [
+          items: [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Home',
+              icon: const Icon(Icons.home),
+              label: l.navHome,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.category),
-              label: 'Budget',
+              icon: const Icon(Icons.category),
+              label: l.navBudget,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.track_changes),
-              label: 'Goals',
+              icon: const Icon(Icons.track_changes),
+              label: l.navGoals,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.history),
-              label: 'History',
+              icon: const Icon(Icons.history),
+              label: l.navHistory,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.settings),
-              label: 'Settings',
+              icon: const Icon(Icons.settings),
+              label: l.navSettings,
             ),
           ],
         ),

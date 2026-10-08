@@ -6,6 +6,7 @@ import '../services/categorization_service.dart';
 import '../services/device_identity_service.dart';
 import '../providers/category_provider.dart';
 import '../providers/currency_provider.dart';
+import '../l10n/l10n_helpers.dart';
 
 class AddTransactionDialog extends StatefulWidget {
   final Function(Transaction) onSave;
@@ -72,8 +73,8 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
     if (_formKey.currentState!.validate()) {
       if (_selectedType == TransactionType.expense && _selectedCategory == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please select a category'),
+          SnackBar(
+            content: Text(context.l10n.selectCategory),
             backgroundColor: Colors.red,
           ),
         );
@@ -81,7 +82,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
       }
 
       final description = _descriptionController.text.isEmpty
-          ? (_selectedCategory?.name ?? 'Transaction')
+          ? (_selectedCategory != null ? categoryLabel(context, _selectedCategory!) : context.l10n.transactionWord)
           : _descriptionController.text;
       
       // Use selected category or auto-categorize
@@ -131,7 +132,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Category "$categoryName" added'),
+          content: Text(context.l10n.categoryAdded(categoryName)),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -172,8 +173,8 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                 // Title
                 Text(
                   widget.existingTransaction == null
-                      ? 'Add Transaction'
-                      : 'Edit Transaction',
+                      ? context.l10n.addTransaction
+                      : context.l10n.editTransaction,
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -216,9 +217,8 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                             Expanded(
                               child: Text(
                                 isThisDevice
-                                    ? 'Recorded on this phone ($recordedOn)'
-                                    : 'Recorded on another phone '
-                                        '($recordedOn)',
+                                    ? context.l10n.recordedThisPhone(recordedOn)
+                                    : context.l10n.recordedOtherPhone(recordedOn),
                                 style: const TextStyle(
                                   fontSize: 12,
                                   color: AppTheme.textSecondary,
@@ -241,8 +241,8 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                       childrenPadding: const EdgeInsets.only(bottom: 8),
                       leading: const Icon(Icons.sms_outlined,
                           size: 18, color: AppTheme.primaryColor),
-                      title: const Text(
-                        'Original message',
+                      title: Text(
+                        context.l10n.originalMessage,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -276,7 +276,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                   children: [
                     Expanded(
                       child: _TypeButton(
-                        label: 'Income',
+                        label: context.l10n.income,
                         icon: Icons.arrow_downward_rounded,
                         isSelected: _selectedType == TransactionType.income,
                         onTap: () {
@@ -290,7 +290,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _TypeButton(
-                        label: 'Expense',
+                        label: context.l10n.expense,
                         icon: Icons.arrow_upward_rounded,
                         isSelected: _selectedType == TransactionType.expense,
                         onTap: () {
@@ -305,8 +305,8 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                 ),
                 const SizedBox(height: 24),
                 // Account selection
-                const Text(
-                  'Account',
+                Text(
+                  context.l10n.account,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -319,7 +319,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                   runSpacing: 8,
                   children: [
                     _AccountChip(
-                      label: 'Cash',
+                      label: context.l10n.accountCash,
                       icon: Icons.payments_outlined,
                       isSelected: _selectedAccount == AccountType.cash,
                       onTap: () {
@@ -329,7 +329,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                       },
                     ),
                     _AccountChip(
-                      label: 'Mobile Money',
+                      label: context.l10n.accountMobileMoney,
                       icon: Icons.phone_iphone,
                       isSelected: _selectedAccount == AccountType.mobileMoney,
                       onTap: () {
@@ -339,7 +339,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                       },
                     ),
                     _AccountChip(
-                      label: 'Bank',
+                      label: context.l10n.accountBank,
                       icon: Icons.account_balance,
                       isSelected: _selectedAccount == AccountType.bank,
                       onTap: () {
@@ -358,7 +358,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
                     labelText:
-                        'Amount (${context.watch<CurrencyProvider>().code})',
+                        context.l10n.amountWithCode(context.watch<CurrencyProvider>().code),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -371,10 +371,10 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter amount';
+                      return context.l10n.enterAmount;
                     }
                     if (double.tryParse(value) == null) {
-                      return 'Please enter valid number';
+                      return context.l10n.enterValidNumberShort;
                     }
                     return null;
                   },
@@ -385,8 +385,8 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Category',
+                      Text(
+                        context.l10n.category,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -394,7 +394,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                         ),
                       ),
                       Text(
-                        '${availableCategories.length} categories',
+                        context.l10n.categoriesCount(availableCategories.length),
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppTheme.textSecondary,
@@ -430,7 +430,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              category.name,
+                              categoryLabel(context, category),
                               style: TextStyle(
                                 color: isSelected
                                     ? Colors.white
@@ -472,7 +472,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                         });
                       },
                       icon: const Icon(Icons.add_circle_outline, size: 20),
-                      label: const Text('Add Custom Category'),
+                      label: Text(context.l10n.addCustomCategory),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppTheme.primaryColor,
                         side: const BorderSide(color: AppTheme.primaryColor),
@@ -489,7 +489,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                           child: TextField(
                             controller: _customCategoryController,
                             decoration: InputDecoration(
-                              hintText: 'Enter category name...',
+                              hintText: context.l10n.enterCategoryName,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -526,8 +526,8 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                     const SizedBox(height: 8),
                     // Show custom categories with delete option
                     if (categoryProvider.customCategories.isNotEmpty) ...[
-                      const Text(
-                        'Your Custom Categories:',
+                      Text(
+                        context.l10n.yourCustomCategories,
                         style: TextStyle(
                           fontSize: 12,
                           color: AppTheme.textSecondary,
@@ -535,8 +535,8 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
-                        'FinWise will group these under the closest main category so your budgets stay simple.',
+                      Text(
+                        context.l10n.customCategoriesNote,
                         style: TextStyle(
                           fontSize: 11,
                           color: AppTheme.textSecondary,
@@ -574,8 +574,8 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                   ],
                   const SizedBox(height: 16),
                   // Spending reason (why)
-                  const Text(
-                    'Why are you spending this?',
+                  Text(
+                    context.l10n.whySpending,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -588,7 +588,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                     runSpacing: 8,
                     children: [
                       _ReasonChip(
-                        label: 'Necessity',
+                        label: reasonLabel(context, SpendingReason.necessity),
                         icon: Icons.receipt_long_outlined,
                         reason: SpendingReason.necessity,
                         selectedReason: _selectedReason,
@@ -599,7 +599,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                         },
                       ),
                       _ReasonChip(
-                        label: 'Business',
+                        label: reasonLabel(context, SpendingReason.business),
                         icon: Icons.business_center_outlined,
                         reason: SpendingReason.business,
                         selectedReason: _selectedReason,
@@ -610,7 +610,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                         },
                       ),
                       _ReasonChip(
-                        label: 'Enjoyment',
+                        label: reasonLabel(context, SpendingReason.enjoyment),
                         icon: Icons.celebration_outlined,
                         reason: SpendingReason.enjoyment,
                         selectedReason: _selectedReason,
@@ -621,7 +621,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                         },
                       ),
                       _ReasonChip(
-                        label: 'Emergency',
+                        label: reasonLabel(context, SpendingReason.emergency),
                         icon: Icons.warning_amber_outlined,
                         reason: SpendingReason.emergency,
                         selectedReason: _selectedReason,
@@ -637,7 +637,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                 ] else ...[
                   // Income category (always income)
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: AppTheme.primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -645,7 +645,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                           Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
                     ),
                     child: Row(
-                      children: const [
+                      children: [
                         Icon(
                           Icons.account_balance_wallet_outlined,
                           size: 20,
@@ -653,7 +653,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                         ),
                         SizedBox(width: 8),
                         Text(
-                          'Income',
+                          context.l10n.income,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -669,7 +669,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                 TextFormField(
                   controller: _descriptionController,
                   decoration: InputDecoration(
-                    labelText: 'Description (Optional)',
+                    labelText: context.l10n.descriptionOptional,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -693,8 +693,8 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                           ),
                           side: const BorderSide(color: AppTheme.textLight),
                         ),
-                        child: const Text(
-                          'Cancel',
+                        child: Text(
+                          context.l10n.cancel,
                           style: TextStyle(
                             color: AppTheme.textSecondary,
                             fontWeight: FontWeight.w600,
@@ -715,8 +715,8 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                           ),
                           elevation: 0,
                         ),
-                        child: const Text(
-                          'Save',
+                        child: Text(
+                          context.l10n.save,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,

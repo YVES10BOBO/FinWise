@@ -22,6 +22,7 @@ import '../models/transaction.dart';
 import '../services/budget_recommendation_service.dart';
 import '../providers/currency_provider.dart';
 import 'transactions_screen.dart';
+import '../l10n/l10n_helpers.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -55,6 +56,7 @@ class HomeScreen extends StatelessWidget {
           effectiveIncome,
           transactionProvider.transactions,
           currency: currency,
+          l: context.l10n,
         );
 
         return SafeArea(
@@ -189,8 +191,8 @@ class HomeScreen extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Recent transactions',
+                      Text(
+                        context.l10n.recentTransactions,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -206,8 +208,8 @@ class HomeScreen extends StatelessWidget {
                             ),
                           );
                         },
-                        child: const Text(
-                          'View all →',
+                        child: Text(
+                          context.l10n.viewAll,
                           style: TextStyle(color: AppTheme.primaryColor),
                         ),
                       ),
@@ -232,8 +234,8 @@ class HomeScreen extends StatelessWidget {
                                   listen: false)
                               .removeTransaction(transaction.id);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Transaction deleted'),
+                            SnackBar(
+                              content: Text(context.l10n.transactionDeleted),
                               duration: Duration(seconds: 2),
                             ),
                           );
@@ -262,8 +264,8 @@ class HomeScreen extends StatelessWidget {
             // screen edge to edge like it does once transactions exist.
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -272,9 +274,9 @@ class HomeScreen extends StatelessWidget {
               ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
-                  'Hello',
+                  context.l10n.hello,
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -283,7 +285,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 5),
                 Text(
-                  "Let's manage your money wisely",
+                  context.l10n.manageWisely,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.white70,
@@ -312,7 +314,7 @@ class HomeScreen extends StatelessWidget {
                   Expanded(
                     child: StatsCard(
                       icon: Icons.trending_up,
-                      label: 'Income',
+                      label: context.l10n.income,
                       value: income,
                       color: AppTheme.incomeColor,
                     ),
@@ -321,7 +323,7 @@ class HomeScreen extends StatelessWidget {
                   Expanded(
                     child: StatsCard(
                       icon: Icons.trending_down,
-                      label: 'Expenses',
+                      label: context.l10n.expenses,
                       value: expenses,
                       color: AppTheme.expenseColor,
                     ),
@@ -343,8 +345,8 @@ class HomeScreen extends StatelessWidget {
                     color: AppTheme.primaryColor,
                   ),
                   const SizedBox(height: 20),
-                  const Text(
-                    'Start Tracking Your Finances',
+                  Text(
+                    context.l10n.startTracking,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -354,7 +356,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Tap the + button to add your first transaction',
+                    context.l10n.tapPlusFirst,
                     style: TextStyle(
                       fontSize: 14,
                       color: AppTheme.textLight,
@@ -432,7 +434,7 @@ class _SpendableReservedCard extends StatelessWidget {
             child: _cell(
               icon: Icons.account_balance_outlined,
               color: AppTheme.textSecondary,
-              label: 'Total',
+              label: context.l10n.totalAmount,
               value: currency.formatCompact(total),
             ),
           ),
@@ -441,7 +443,7 @@ class _SpendableReservedCard extends StatelessWidget {
             child: _cell(
               icon: Icons.lock_outline,
               color: AppTheme.accentDark,
-              label: 'Reserved',
+              label: context.l10n.reservedLabel,
               value: currency.formatCompact(reserved),
             ),
           ),
@@ -450,7 +452,7 @@ class _SpendableReservedCard extends StatelessWidget {
             child: _cell(
               icon: Icons.account_balance_wallet_outlined,
               color: AppTheme.primaryColor,
-              label: 'Available',
+              label: context.l10n.available,
               value: currency.formatCompact(total - reserved),
             ),
           ),
@@ -526,8 +528,8 @@ class _AccountsSummaryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Accounts overview',
+            Text(
+              context.l10n.accountsOverview,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -535,10 +537,10 @@ class _AccountsSummaryCard extends StatelessWidget {
               ),
             ),
             if (anyReserved)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(top: 2),
                 child: Text(
-                  'Balance · reserved · available',
+                  context.l10n.balanceReservedAvailable,
                   style: TextStyle(fontSize: 11, color: AppTheme.textLight),
                 ),
               ),
@@ -548,7 +550,7 @@ class _AccountsSummaryCard extends StatelessWidget {
                 // One brand colour across all three accounts — the icon and
                 // label distinguish them, not a different hue each.
                 _AccountBalanceChip(
-                  label: 'Cash',
+                  label: context.l10n.accountCash,
                   icon: Icons.payments_outlined,
                   color: AppTheme.primaryColor,
                   amount: balances[AccountType.cash] ?? 0,
@@ -556,7 +558,7 @@ class _AccountsSummaryCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 _AccountBalanceChip(
-                  label: 'MoMo',
+                  label: context.l10n.momoShort,
                   icon: Icons.phone_iphone,
                   color: AppTheme.primaryColor,
                   amount: balances[AccountType.mobileMoney] ?? 0,
@@ -564,7 +566,7 @@ class _AccountsSummaryCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 _AccountBalanceChip(
-                  label: 'Bank',
+                  label: context.l10n.accountBank,
                   icon: Icons.account_balance,
                   color: AppTheme.primaryColor,
                   amount: balances[AccountType.bank] ?? 0,
@@ -673,7 +675,7 @@ class _AccountBalanceChip extends StatelessWidget {
                   Flexible(
                     child: Text(
                       underFunded
-                          ? 'short ${currency.formatCompact(-available)}'
+                          ? context.l10n.shortBy(currency.formatCompact(-available))
                           : currency.formatCompact(available),
                       style: TextStyle(
                         fontSize: 10,

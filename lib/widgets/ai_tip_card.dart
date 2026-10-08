@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../theme/app_theme.dart';
+import '../l10n/l10n_helpers.dart';
 
 class AITipCard extends StatelessWidget {
   final String tip;
@@ -41,8 +42,8 @@ class AITipCard extends StatelessWidget {
                   color: Colors.white.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
-                  'SMART TIP',
+                child: Text(
+                  context.l10n.smartTip,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,

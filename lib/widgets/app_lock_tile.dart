@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_lock_provider.dart';
 import '../screens/lock/pin_screen.dart';
 import '../theme/app_theme.dart';
+import '../l10n/l10n_helpers.dart';
 
 /// Settings controls for the app lock: enable/disable, biometric unlock,
 /// auto-lock timing, and changing the PIN.
@@ -20,11 +21,11 @@ class AppLockTile extends StatelessWidget {
             SwitchListTile(
               secondary: const Icon(Icons.lock_outline,
                   color: AppTheme.primaryColor),
-              title: const Text('App lock'),
+              title: Text(context.l10n.appLock),
               subtitle: Text(
                 lock.isEnabled
-                    ? 'FinWise asks for your PIN when opened'
-                    : 'Require a PIN to open FinWise',
+                    ? context.l10n.appLockOnSub
+                    : context.l10n.appLockOffSub,
                 style: const TextStyle(fontSize: 12),
               ),
               value: lock.isEnabled,
@@ -40,12 +41,12 @@ class AppLockTile extends StatelessWidget {
                   return SwitchListTile(
                     secondary: const Icon(Icons.fingerprint,
                         color: AppTheme.primaryColor),
-                    title: const Text('Unlock with fingerprint'),
+                    title: Text(context.l10n.unlockFingerprint),
                     subtitle: Text(
                       available
-                          ? 'Use your fingerprint or face instead of the PIN'
-                          : 'No fingerprint or face set up on this phone',
-                      style: const TextStyle(fontSize: 12),
+                          ? context.l10n.fingerprintSub
+                          : context.l10n.noFingerprint,
+                      style: TextStyle(fontSize: 12),
                     ),
                     value: lock.biometricEnabled && available,
                     onChanged: available
@@ -55,23 +56,23 @@ class AppLockTile extends StatelessWidget {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.timer_outlined,
+                leading: Icon(Icons.timer_outlined,
                     color: AppTheme.primaryColor),
-                title: const Text('Lock after'),
+                title: Text(context.l10n.lockAfter),
                 subtitle: Text(
                   lock.timeoutMinutes == 0
-                      ? 'Immediately when you leave the app'
-                      : 'After ${lock.timeoutMinutes} minute${lock.timeoutMinutes == 1 ? '' : 's'} away',
-                  style: const TextStyle(fontSize: 12),
+                      ? context.l10n.lockImmediately
+                      : context.l10n.lockAfterMinutes(lock.timeoutMinutes),
+                  style: TextStyle(fontSize: 12),
                 ),
                 trailing: DropdownButton<int>(
                   value: lock.timeoutMinutes,
-                  underline: const SizedBox.shrink(),
-                  items: const [
-                    DropdownMenuItem(value: 0, child: Text('Instant')),
-                    DropdownMenuItem(value: 1, child: Text('1 min')),
-                    DropdownMenuItem(value: 5, child: Text('5 min')),
-                    DropdownMenuItem(value: 15, child: Text('15 min')),
+                  underline: SizedBox.shrink(),
+                  items: [
+                    DropdownMenuItem(value: 0, child: Text(context.l10n.instant)),
+                    DropdownMenuItem(value: 1, child: Text(context.l10n.minShort(1))),
+                    DropdownMenuItem(value: 5, child: Text(context.l10n.minShort(5))),
+                    DropdownMenuItem(value: 15, child: Text(context.l10n.minShort(15))),
                   ],
                   onChanged: (v) {
                     if (v != null) lock.setTimeout(v);
@@ -81,16 +82,16 @@ class AppLockTile extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.password_outlined,
                     color: AppTheme.primaryColor),
-                title: const Text('Change PIN'),
-                subtitle: const Text('Set a new 4-digit PIN',
+                title: Text(context.l10n.changePin),
+                subtitle: Text(context.l10n.changePinSub,
                     style: TextStyle(fontSize: 12)),
                 onTap: () => _changePin(context),
               ),
               ListTile(
                 leading: const Icon(Icons.lock_clock_outlined,
                     color: AppTheme.primaryColor),
-                title: const Text('Lock now'),
-                subtitle: const Text('Immediately require the PIN',
+                title: Text(context.l10n.lockNow),
+                subtitle: Text(context.l10n.lockNowSub,
                     style: TextStyle(fontSize: 12)),
                 onTap: () => lock.lockNow(),
               ),
@@ -112,19 +113,18 @@ class AppLockTile extends StatelessWidget {
         final useBio = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Use fingerprint?'),
-            content: const Text(
-              'Unlock FinWise with your fingerprint or face instead of typing '
-              'the PIN each time. Your PIN still works as a backup.',
+            title: Text(context.l10n.useFingerprintQ),
+            content: Text(
+              context.l10n.useFingerprintBody,
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Not now'),
+                child: Text(context.l10n.notNow),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Enable'),
+                child: Text(context.l10n.enable),
               ),
             ],
           ),
@@ -133,7 +133,7 @@ class AppLockTile extends StatelessWidget {
       }
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('App lock is on')),
+          SnackBar(content: Text(context.l10n.appLockOn)),
         );
       }
     }
@@ -143,9 +143,9 @@ class AppLockTile extends StatelessWidget {
     // Require the current PIN before turning protection off.
     final ok = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => const PinScreen(
+        builder: (_) => PinScreen(
           mode: PinMode.verify,
-          title: 'Turn off app lock',
+          title: context.l10n.turnOffLock,
         ),
       ),
     );
@@ -153,7 +153,7 @@ class AppLockTile extends StatelessWidget {
       await lock.disableLock();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('App lock turned off')),
+          SnackBar(content: Text(context.l10n.lockTurnedOff)),
         );
       }
     }
@@ -162,24 +162,24 @@ class AppLockTile extends StatelessWidget {
   Future<void> _changePin(BuildContext context) async {
     final verified = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => const PinScreen(
+        builder: (_) => PinScreen(
           mode: PinMode.verify,
-          title: 'Enter current PIN',
+          title: context.l10n.enterCurrentPinTitle,
         ),
       ),
     );
     if (verified == true && context.mounted) {
       await Navigator.of(context).push<bool>(
         MaterialPageRoute(
-          builder: (_) => const PinScreen(
+          builder: (_) => PinScreen(
             mode: PinMode.setup,
-            title: 'Set a new PIN',
+            title: context.l10n.setNewPin,
           ),
         ),
       );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('PIN updated')),
+          SnackBar(content: Text(context.l10n.pinUpdated)),
         );
       }
     }
