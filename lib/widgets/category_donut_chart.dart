@@ -5,9 +5,10 @@ import '../providers/currency_provider.dart';
 import '../theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import '../l10n/l10n_helpers.dart';
+import '../providers/period_provider.dart';
 
-/// Donut chart of this month's spending by category — the "where your money
-/// goes" visual. Uses REAL expense transactions for the current month,
+/// Donut chart of spending by category for the selected period — the "where
+/// your money goes" visual. Uses REAL expense transactions in that window,
 /// excluding income and savings (savings is money set aside, not spending).
 class CategoryDonutChart extends StatelessWidget {
   final List<Transaction> transactions;
@@ -28,13 +29,13 @@ class CategoryDonutChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currency = context.watch<CurrencyProvider>();
-    final now = DateTime.now();
+    final period = context.watch<PeriodProvider>().period;
 
     final Map<Category, double> spend = {};
     for (final t in transactions) {
       if (t.type != TransactionType.expense) continue;
       if (t.category == Category.savings) continue;
-      if (t.date.year != now.year || t.date.month != now.month) continue;
+      if (!period.contains(t.date)) continue;
       spend[t.category] = (spend[t.category] ?? 0) + t.amount;
     }
     final total = spend.values.fold<double>(0, (s, v) => s + v);
@@ -56,11 +57,19 @@ class CategoryDonutChart extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.l10n.spendingByCategoryMonth,
+            context.l10n.spendingByCategory,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            periodLabel(context, period),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppTheme.textSecondary,
             ),
           ),
           const SizedBox(height: 16),
@@ -69,7 +78,7 @@ class CategoryDonutChart extends StatelessWidget {
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Center(
                 child: Text(
-                  context.l10n.noSpendingMonth,
+                  context.l10n.noSpendingData,
                   style: TextStyle(color: AppTheme.textLight),
                 ),
               ),
@@ -174,15 +183,32 @@ class CategoryDonutChart extends StatelessWidget {
                     Icon(s.icon, size: 13, color: AppTheme.textSecondary),
                     const SizedBox(width: 5),
                     Expanded(
-                      child: Text(
-                        s.label,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.textPrimary,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            s.label,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textPrimary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                          Text(
+                            currency.formatCompact(s.amount),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textSecondary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ],
                       ),
                     ),
+                    const SizedBox(width: 4),
                     Text(
                       '$pct%',
                       style: const TextStyle(

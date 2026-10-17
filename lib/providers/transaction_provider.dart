@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:async';
 import '../models/transaction.dart' hide Category;
 import '../models/transaction.dart' as models show Category;
+import '../models/overview_period.dart';
 import '../services/firestore_transaction_service.dart';
 
 /// Prefix for per-item SharedPreferences keys the SMS background isolate
@@ -412,7 +413,7 @@ class TransactionProvider with ChangeNotifier {
 
   List<Transaction> searchTransactions(String query) {
     if (query.isEmpty) return _transactions;
-    
+
     final lowerQuery = query.toLowerCase();
     return _transactions.where((t) {
       return t.description.toLowerCase().contains(lowerQuery) ||
@@ -421,12 +422,13 @@ class TransactionProvider with ChangeNotifier {
   }
 
   // Get spending by category (returns map of category to total amount)
-  Map<models.Category, double> getCategorySpending() {
+  Map<models.Category, double> getCategorySpending({OverviewPeriod? period}) {
     final Map<models.Category, double> spending = {};
-    
+
     for (var transaction in _transactions) {
       if (transaction.type == TransactionType.expense &&
-          transaction.category != models.Category.savings) {
+          transaction.category != models.Category.savings &&
+          (period == null || period.contains(transaction.date))) {
         spending[transaction.category] =
             (spending[transaction.category] ?? 0.0) + transaction.amount;
       }

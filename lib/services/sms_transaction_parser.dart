@@ -136,7 +136,40 @@ class SmsTransactionParser {
   /// merely mentioning an amount.
   static bool describesMoneyMovement(String body) {
     final lower = body.toLowerCase();
-    return _transactionVerbs.any(lower.contains);
+    if (_transactionVerbs.any(lower.contains)) return true;
+
+    // Airtel / AC Group receipts can say "A transaction of 2000 RWF by ...
+    // was completed" instead of using a direction verb such as "paid" or
+    // "transferred". Accept this narrowly only when the message also has a
+    // provider transaction reference; a generic completed transaction notice
+    // must not become a phantom expense.
+    final completedAmountTransaction = RegExp(
+      r'\btransaction\s+of\s+(?:[A-Z]{3,5}\s*)?[\d,]+(?:\.\d{1,2})?\s*(?:[A-Z]{3,5})?\b[\s\S]{0,180}?\bwas\s+completed\b',
+      caseSensitive: false,
+    ).hasMatch(body);
+    if (completedAmountTransaction && _extractTransactionId(body) != null) {
+      return true;
+    }
+
+    // MoMoAdvance overdraft SMS use "You have used ... on FRI:... with
+    // access fee ... from MoMoAdvance". Do not accept "used" by itself,
+    // since data-usage alerts use that wording too; require the FRI payment
+    // marker, MoMoAdvance product name, access fee and provider transaction id.
+    final momoAdvanceUsage = RegExp(
+      r'\byou\s+have\s+used\s+(?:[A-Z]{3,5}\s*)?[\d,]+(?:\.\d{1,2})?\s*(?:[A-Z]{3,5})?\b[\s\S]{0,100}?\bon\s+FRI\s*:[^\s]+[\s\S]{0,100}?\bwith\s+access\s+fee\b[\s\S]{0,100}?\bfrom\s+MoMoAdvance\b',
+      caseSensitive: false,
+    ).hasMatch(body);
+    if (momoAdvanceUsage && _extractTransactionId(body) != null) return true;
+
+    // Kinyarwanda variant: "wakoresheje ... kuri FRI:... ikiguzi/serivisi
+    // ... MoMoAdvance". The same markers and transaction ID requirement keep
+    // ordinary Kinyarwanda data-usage notices from being recorded.
+    final momoAdvanceUsageKinyarwanda = RegExp(
+      r'\bwakoresheje\s+(?:[A-Z]{3,5}\s*)?[\d,]+(?:\.\d{1,2})?\s*(?:[A-Z]{3,5})?\b[\s\S]{0,100}?\bFRI\s*:[^\s]+[\s\S]{0,120}?\b(?:ikiguzi|serivisi)\b[\s\S]{0,100}?\bMoMoAdvance\b',
+      caseSensitive: false,
+    ).hasMatch(body);
+    return momoAdvanceUsageKinyarwanda &&
+        _extractTransactionId(body) != null;
   }
 
   /// Words indicating money moved between the user's OWN accounts (wallet to

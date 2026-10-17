@@ -52,6 +52,49 @@ void main() {
       expect(parsed.description, contains('payment'));
     });
 
+    test('completed AC Group transaction with FT Id is recorded', () {
+      final parsed = SmsTransactionParser.parse(
+        'Airtel',
+        "*164*S*Y'ello, A transaction of 2000 RWF by AC GROUP LTD AC GROUP LTD "
+        'was completed at 2026-10-16 07:13:30. Balance:10522 RWF. '
+        'Fee 0 RWF. FT Id: 31263777812. ET Id: 566ffda4-c4a6-44f1-ab1f-d79d2c337208.*EN#',
+      );
+
+      expect(parsed, isNotNull);
+      expect(parsed!.type, TransactionType.expense);
+      expect(parsed.amount, 2000);
+      expect(parsed.txId, '31263777812');
+    });
+
+    test('MoMoAdvance used message records amount plus access fee', () {
+      final parsed = SmsTransactionParser.parse(
+        sender,
+        'You have used 289 RWF on FRI:18319607/MM with access fee 9 RWF '
+        'on 2026-10-15 17:16:52 from MoMoAdvance. Your available overdraft '
+        'balance is 9711 RWF. Financial transaction id: 31253519839.',
+      );
+
+      expect(parsed, isNotNull);
+      expect(parsed!.type, TransactionType.expense);
+      expect(parsed.amount, 298);
+      expect(parsed.fee, 9);
+      expect(parsed.txId, '31253519839');
+    });
+
+    test('Kinyarwanda wakoresheje MoMoAdvance format is recorded', () {
+      final parsed = SmsTransactionParser.parse(
+        sender,
+        'Wakoresheje 289 RWF kuri FRI:18319607/MM. Ikiguzi 9 RWF kuri '
+        'MoMoAdvance. Financial transaction id: 31253519839.',
+      );
+
+      expect(parsed, isNotNull);
+      expect(parsed!.type, TransactionType.expense);
+      expect(parsed.amount, 298);
+      expect(parsed.fee, 9);
+      expect(parsed.txId, '31253519839');
+    });
+
     test('a masked phone number is never mistaken for a transaction id', () {
       final parsed = SmsTransactionParser.parse(
         sender,

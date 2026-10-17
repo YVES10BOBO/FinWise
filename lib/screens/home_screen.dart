@@ -21,6 +21,7 @@ import '../providers/income_provider.dart';
 import '../models/transaction.dart';
 import '../services/budget_recommendation_service.dart';
 import '../providers/currency_provider.dart';
+import '../providers/period_provider.dart';
 import 'transactions_screen.dart';
 import '../l10n/l10n_helpers.dart';
 
@@ -39,7 +40,9 @@ class HomeScreen extends StatelessWidget {
         // Consumption = spending WITHOUT money set aside for goals, so setting
         // money aside raises your savings rate instead of looking like spending.
         final consumption = transactionProvider.totalConsumption;
-        final categorySpending = transactionProvider.getCategorySpending();
+        final selectedPeriod = context.watch<PeriodProvider>().period;
+        final categorySpending =
+            transactionProvider.getCategorySpending(period: selectedPeriod);
 
         // Show default message if no transactions
         if (transactionProvider.transactions.isEmpty) {
@@ -698,4 +701,3 @@ class _AccountBalanceChip extends StatelessWidget {
 // The old text-only "why you spent" card and its pills were replaced by
 // SpendingReasonChart (lib/widgets/spending_reason_chart.dart), which shows
 // the same data as a proportional bar with amounts and percentages.
-

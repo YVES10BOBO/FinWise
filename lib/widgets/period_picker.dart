@@ -5,7 +5,7 @@ import '../providers/period_provider.dart';
 import '../theme/app_theme.dart';
 import '../l10n/l10n_helpers.dart';
 
-/// Opens the "Show period" sheet and applies the choice to the shared
+/// Opens the "Show period" popup and applies the choice to the shared
 /// [PeriodProvider], so every screen that reads it updates together.
 Future<void> showPeriodPicker(BuildContext context) async {
   final now = DateTime.now();
@@ -13,60 +13,100 @@ Future<void> showPeriodPicker(BuildContext context) async {
   final l = context.l10n;
 
   // Each option returns a callback that builds its period; "Custom range"
-  // returns one that opens the date-range picker. Closing the sheet
-  // returns null, which leaves the current period unchanged.
-  final choice =
-      await showModalBottomSheet<Future<OverviewPeriod?> Function()>(
+  // returns one that opens the date-range picker. Closing the popup leaves the
+  // current period unchanged.
+  final choice = await showGeneralDialog<Future<OverviewPeriod?> Function()>(
     context: context,
-    showDragHandle: true,
-    builder: (ctx) {
+    barrierDismissible: true,
+    barrierLabel: l.showPeriod,
+    transitionDuration: const Duration(milliseconds: 280),
+    pageBuilder: (ctx, animation, secondaryAnimation) {
+      final maxHeight = MediaQuery.sizeOf(ctx).height * 0.88;
+      const optionCount = 9;
+      final rowHeight =
+          ((maxHeight - 76) / optionCount).clamp(38.0, 48.0).toDouble();
+
       Widget option(String label, IconData icon, OverviewPeriod? value) {
-        return ListTile(
-          leading: Icon(icon, color: AppTheme.primaryColor),
-          title: Text(label),
-          onTap: () => Navigator.pop(
-            ctx,
-            value != null
-                ? () async => value
-                : () => _pickCustomRange(context, provider.period),
+        return SizedBox(
+          height: rowHeight,
+          child: InkWell(
+            onTap: () => Navigator.pop(
+              ctx,
+              value != null
+                  ? () async => value
+                  : () => _pickCustomRange(context, provider.period),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Icon(icon, color: AppTheme.primaryColor, size: 20),
+                  const SizedBox(width: 14),
+                  Expanded(child: Text(label)),
+                ],
+              ),
+            ),
           ),
         );
       }
 
       return SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    l.showPeriod,
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
+        child: Center(
+          child: Material(
+            color: Theme.of(ctx).colorScheme.surface,
+            elevation: 12,
+            borderRadius: BorderRadius.circular(20),
+            clipBehavior: Clip.antiAlias,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: 420, maxHeight: maxHeight),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        l.showPeriod,
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ),
-                ),
+                  option(l.periodThisMonth, Icons.calendar_today,
+                      OverviewPeriod.month(now.year, now.month)),
+                  option(l.periodLastMonth, Icons.history,
+                      OverviewPeriod.month(now.year, now.month - 1)),
+                  option(l.periodLastDays(30), Icons.date_range,
+                      OverviewPeriod.lastDays(30)),
+                  option(l.periodLastDays(60), Icons.date_range,
+                      OverviewPeriod.lastDays(60)),
+                  option(l.periodLastDays(90), Icons.date_range,
+                      OverviewPeriod.lastDays(90)),
+                  option(l.periodThisYear, Icons.event_note,
+                      OverviewPeriod.year(now.year)),
+                  option(l.periodAllTime, Icons.all_inclusive,
+                      OverviewPeriod.allTime()),
+                  option(l.periodCustom, Icons.edit_calendar, null),
+                  const SizedBox(height: 8),
+                ],
               ),
-              option(l.periodThisMonth, Icons.calendar_today,
-                  OverviewPeriod.month(now.year, now.month)),
-              option(l.periodLastMonth, Icons.history,
-                  OverviewPeriod.month(now.year, now.month - 1)),
-              option(l.periodLastDays(30), Icons.date_range,
-                  OverviewPeriod.lastDays(30)),
-              option(l.periodLastDays(60), Icons.date_range,
-                  OverviewPeriod.lastDays(60)),
-              option(l.periodLastDays(90), Icons.date_range,
-                  OverviewPeriod.lastDays(90)),
-              option(l.periodThisYear, Icons.event_note,
-                  OverviewPeriod.year(now.year)),
-              option(l.periodAllTime, Icons.all_inclusive,
-                  OverviewPeriod.allTime()),
-              // null = "open the custom date-range picker".
-              option(l.periodCustom, Icons.edit_calendar, null),
-            ],
+            ),
           ),
+        ),
+      );
+    },
+    transitionBuilder: (ctx, animation, secondaryAnimation, child) {
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
+      return FadeTransition(
+        opacity: curved,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.94, end: 1).animate(curved),
+          child: child,
         ),
       );
     },

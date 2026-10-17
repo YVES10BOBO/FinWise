@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../models/transaction.dart' as models;
 import '../providers/currency_provider.dart';
+import '../providers/period_provider.dart';
 import '../l10n/l10n_helpers.dart';
 
 class TopSpendingCategoriesWidget extends StatelessWidget {
@@ -59,7 +60,7 @@ class TopSpendingCategoriesWidget extends StatelessWidget {
                 ),
               ),
               Text(
-                context.l10n.thisMonthTitle,
+                periodLabel(context, context.watch<PeriodProvider>().period),
                 style: TextStyle(
                   fontSize: 12,
                   color: AppTheme.textSecondary,
@@ -145,7 +146,8 @@ class TopSpendingCategoriesWidget extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          context.l10n.pctOfTotal(percentage.toStringAsFixed(1)),
+                          context.l10n
+                              .pctOfTotal(percentage.toStringAsFixed(1)),
                           style: TextStyle(
                             fontSize: 11,
                             color: AppTheme.textSecondary,
