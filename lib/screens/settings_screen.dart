@@ -23,6 +23,7 @@ import '../main.dart';
 import '../l10n/l10n_helpers.dart';
 import '../providers/locale_provider.dart';
 import '../services/foreground_service_handler.dart';
+import '../services/ad_consent_service.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -180,7 +181,9 @@ class SettingsScreen extends StatelessWidget {
                       themeProvider.setTheme(value);
                     },
                     secondary: Icon(
-                      themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                      themeProvider.isDarkMode
+                          ? Icons.dark_mode
+                          : Icons.light_mode,
                       color: AppTheme.primaryColor,
                     ),
                   );
@@ -216,7 +219,8 @@ class SettingsScreen extends StatelessWidget {
                     title: l.appVersion,
                     subtitle: info == null
                         ? l.loading
-                        : context.l10n.versionBuild(info.version, info.buildNumber),
+                        : context.l10n
+                            .versionBuild(info.version, info.buildNumber),
                     onTap: null,
                   );
                 },
@@ -238,6 +242,18 @@ class SettingsScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(builder: (_) => LegalScreen.privacy()),
                 ),
+              ),
+              ValueListenableBuilder<bool>(
+                valueListenable: AdConsentService.privacyOptionsRequired,
+                builder: (context, required, _) {
+                  if (!required) return const SizedBox.shrink();
+                  return _SettingsTile(
+                    icon: Icons.privacy_tip_outlined,
+                    title: l.adPrivacyOptionsTitle,
+                    subtitle: l.adPrivacyOptionsSub,
+                    onTap: AdConsentService.showPrivacyOptions,
+                  );
+                },
               ),
               _SettingsTile(
                 icon: Icons.gavel_outlined,
@@ -321,8 +337,7 @@ class SettingsScreen extends StatelessWidget {
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   labelText: context.l10n.amountWithCode(currencyCode),
-                  prefixIcon:
-                      const Icon(Icons.account_balance_wallet_outlined),
+                  prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
                 ),
               ),
               const SizedBox(height: 12),
@@ -366,7 +381,8 @@ class SettingsScreen extends StatelessWidget {
 
   Future<void> _exportData(BuildContext context, String format) async {
     final provider = Provider.of<TransactionProvider>(context, listen: false);
-    final currency = Provider.of<CurrencyProvider>(context, listen: false).currency;
+    final currency =
+        Provider.of<CurrencyProvider>(context, listen: false).currency;
     final transactions = provider.transactions;
 
     if (transactions.isEmpty) {
@@ -432,8 +448,7 @@ class SettingsScreen extends StatelessWidget {
             onPressed: () {
               // Safe bulk clear (no iterate-while-deleting). Reserved money
               // returns to available automatically once the goals are gone.
-              Provider.of<GoalProvider>(context, listen: false)
-                  .clearAllGoals();
+              Provider.of<GoalProvider>(context, listen: false).clearAllGoals();
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(context.l10n.goalsCleared)),
@@ -465,8 +480,7 @@ class SettingsScreen extends StatelessWidget {
             child: Text(context.l10n.cancel),
           ),
           TextButton(
-            style: TextButton.styleFrom(
-                foregroundColor: AppTheme.expenseColor),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.expenseColor),
             onPressed: () {
               Navigator.pop(ctx);
               _confirmDeleteWithPassword(context);
@@ -493,9 +507,10 @@ class SettingsScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                context.l10n.enterSignInPassword(FirebaseAuth.instance.currentUser?.email != null
-                    ? ' (${FirebaseAuth.instance.currentUser!.email})'
-                    : ''),
+                context.l10n.enterSignInPassword(
+                    FirebaseAuth.instance.currentUser?.email != null
+                        ? ' (${FirebaseAuth.instance.currentUser!.email})'
+                        : ''),
                 style: const TextStyle(fontSize: 13),
               ),
               const SizedBox(height: 6),
@@ -530,8 +545,8 @@ class SettingsScreen extends StatelessWidget {
               child: Text(context.l10n.cancel),
             ),
             TextButton(
-              style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.expenseColor),
+              style:
+                  TextButton.styleFrom(foregroundColor: AppTheme.expenseColor),
               onPressed: busy
                   ? null
                   : () async {
@@ -663,7 +678,7 @@ class SettingsScreen extends StatelessWidget {
             onPressed: () async {
               // Close dialog first
               Navigator.pop(context);
-              
+
               // Firebase logout + clear local cached profile/onboarding (avoid mixing users on same device)
               await FirebaseAuth.instance.signOut();
               final prefs = await SharedPreferences.getInstance();
@@ -681,7 +696,7 @@ class SettingsScreen extends StatelessWidget {
               // who skipped it (or a different user on the same phone)
               // should still be invited to protect their data.
               await prefs.remove('app_lock_prompt_shown');
-              
+
               if (context.mounted) {
                 // Show logout success message
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -698,14 +713,15 @@ class SettingsScreen extends StatelessWidget {
                     duration: const Duration(seconds: 2),
                   ),
                 );
-                
+
                 // Small delay to show the message, then navigate
                 await Future.delayed(const Duration(milliseconds: 800));
-                
+
                 if (context.mounted) {
                   // Navigate to InitialScreen which will show login screen
                   Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => const InitialScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const InitialScreen()),
                     (route) => false, // Remove all previous routes
                   );
                 }

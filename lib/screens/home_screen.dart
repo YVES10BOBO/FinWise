@@ -15,6 +15,7 @@ import '../widgets/financial_health_score.dart';
 import '../widgets/savings_rate_card.dart';
 import '../widgets/ai_tip_card.dart';
 import '../widgets/top_spending_categories_widget.dart';
+import '../widgets/home_banner_ad.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/goal_provider.dart';
 import '../providers/income_provider.dart';
@@ -46,8 +47,8 @@ class HomeScreen extends StatelessWidget {
 
         // Show default message if no transactions
         if (transactionProvider.transactions.isEmpty) {
-          return _buildEmptyState(context, transactionProvider, balance,
-              income, expenses);
+          return _buildEmptyState(
+              context, transactionProvider, balance, income, expenses);
         }
 
         // Income used for health score / savings rate: prefer real tracked
@@ -230,8 +231,7 @@ class HomeScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: TransactionItem(
                         transaction: transaction,
-                        onEdit: () =>
-                            _editTransaction(context, transaction),
+                        onEdit: () => _editTransaction(context, transaction),
                         onDelete: () {
                           Provider.of<TransactionProvider>(context,
                                   listen: false)
@@ -245,6 +245,8 @@ class HomeScreen extends StatelessWidget {
                         },
                       ),
                     )),
+
+                const HomeBannerAd(),
 
                 const SizedBox(height: 100), // Space for FAB
               ],
@@ -275,27 +277,27 @@ class HomeScreen extends StatelessWidget {
                   colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
                 ),
               ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.l10n.hello,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.hello,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-                SizedBox(height: 5),
-                Text(
-                  context.l10n.manageWisely,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white70,
+                  SizedBox(height: 5),
+                  Text(
+                    context.l10n.manageWisely,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white70,
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
             ),
 
             // Balance Card
@@ -678,7 +680,8 @@ class _AccountBalanceChip extends StatelessWidget {
                   Flexible(
                     child: Text(
                       underFunded
-                          ? context.l10n.shortBy(currency.formatCompact(-available))
+                          ? context.l10n
+                              .shortBy(currency.formatCompact(-available))
                           : currency.formatCompact(available),
                       style: TextStyle(
                         fontSize: 10,

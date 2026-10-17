@@ -174,7 +174,8 @@ class AppLocalizationsRw extends AppLocalizations {
   String get privacyPolicy => 'Politiki y\'ibanga';
 
   @override
-  String get privacyPolicySub => 'Ibyo dukusanya n\'ibiguma kuri telefoni yawe';
+  String get privacyPolicySub =>
+      'Uko dukoresha amakuru yawe, SMS n\'amatangazo';
 
   @override
   String get terms => 'Amategeko n\'amabwiriza';
@@ -2770,6 +2771,13 @@ class AppLocalizationsRw extends AppLocalizations {
       'Dushobora kuvugurura aya mategeko uko porogaramu igenda itera imbere. Gukomeza gukoresha FinWise nyuma y\'ivugurura bisobanura ko wemeye amategeko mashya.';
 
   @override
+  String get legalTermsS8T => '8. Amatangazo';
+
+  @override
+  String get legalTermsS8C =>
+      'FinWise ishobora kwerekana amatangazo agaragajwe neza, atangwa na Google Mobile Ads, mu bice bimwe bya porogaramu. Amatangazo ntabuza gukoresha ibindi bice. Ibicuruzwa cyangwa serivisi byamamazwamo bitangwa n\'abandi; FinWise ntibishingira kandi ntibyemeza. Gukanda ku itangazo ni amahitamo yawe.';
+
+  @override
   String get legalPrivacyTitle => 'Politiki y\'ibanga';
 
   @override
@@ -2817,21 +2825,21 @@ class AppLocalizationsRw extends AppLocalizations {
 
   @override
   String get legalPrivacyS6C =>
-      '• Ntitwigera tugurisha amakuru yawe bwite.\n• Ntitwigera dusangiza amakuru yawe y\'imari abamamaza cyangwa abacuruza amakuru.\n• Ntitwigera twohereza ibikubiye muri SMS.\n• Ntitwimura amafaranga, ntitwinjira kuri konti yawe ya banki cyangwa ya Mobile Money, kandi ntitugusaba PIN cyangwa amakuru yo kwinjira muri banki.\n• Ntitwerekana kwamamaza.';
+      '• Ntitwigera tugurisha amakuru yawe bwite.\n• Ntiduha Google Mobile Ads cyangwa abandi bamamaza amafaranga, ibisobanuro cyangwa ibyiciro by\'ibikorwa byawe, cyangwa amagambo ari muri SMS, kugira ngo bashingireho amatangazo.\n• Ntitwigera twohereza ubutumwa bwa SMS uko bwakabaye.\n• Ntitwimura amafaranga, ntitwinjira kuri konti yawe ya banki cyangwa ya Mobile Money, kandi ntitugusaba PIN cyangwa amakuru yo kwinjira muri banki.\n• Dushobora kwerekana amatangazo agaragajwe neza ku rubuga rw\'ibanze.';
 
   @override
   String get legalPrivacyS7T => '7. Serivisi z\'abandi';
 
   @override
   String get legalPrivacyS7C =>
-      'Dukoresha Firebase (Google) mu kwinjira, mu bubiko bw\'amakuru no mu kubika amadosiye. Politiki y\'ibanga ya Google ni yo ikurikizwa ku buryo ifata ayo makuru: https://policies.google.com/privacy\n\nNta yindi serivisi y\'abandi ihabwa amakuru yawe.';
+      'Dukoresha Firebase (Google) mu kwinjira, mu bubiko bw\'amakuru no mu kubika amadosiye. Dukoresha na Google Mobile Ads mu gusaba, kwerekana no gupima amatangazo no kurwanya uburiganya. Iyo porogaramu isabye itangazo, iyi serivisi ishobora gukoresha ibimenyetso by\'igikoresho cyangwa iyamamaza, aderesi ya IP, amakuru y\'ikoranabuhanga ku mikorere ya porogaramu n\'uko ukoresha amatangazo. Google ikoresha aya makuru ikurikije politiki yayo n\'amahitamo ajyanye n\'uburenganzira bwo gukoresha amakuru: https://policies.google.com/privacy\n\nFinWise ntishyira mu busabe bw\'itangazo amakuru y\'ibikorwa byawe cyangwa amagambo ari muri SMS. Ushobora kureba cyangwa guhindura amahitamo y\'ibanga ry\'amatangazo mu Igenamiterere iyo ayo mahitamo aboneka kuri konti cyangwa aho uri.';
 
   @override
   String get legalPrivacyS8T => '8. Uburenganzira bwawe n\'ubugenzuzi';
 
   @override
   String get legalPrivacyS8C =>
-      '• Kureba: reba amakuru yawe yose muri porogaramu\n• Kohereza: kuramo ibikorwa byawe nka CSV cyangwa PDF\n• Gusiba: siba ibyanditswe kimwe kimwe, siba amakuru yose, cyangwa usibe konti yawe burundu\n• Kwisubiraho: zimya kumenya SMS igihe icyo ari cyo cyose\n• Gusohoka: bihagarika guhuza amakuru kuri iyo telefoni';
+      '• Kureba: reba amakuru yawe yose muri porogaramu\n• Kohereza: kuramo ibikorwa byawe nka CSV cyangwa PDF\n• Gusiba: siba ibyanditswe kimwe kimwe, siba amakuru yose, cyangwa usibe konti yawe burundu\n• Kwisubiraho: zimya kumenya SMS igihe icyo ari cyo cyose\n• Ibanga ry\'amatangazo: reba cyangwa uhindure uburenganzira bwo gukoresha amatangazo mu Igenamiterere iyo bikenewe\n• Gusohoka: bihagarika guhuza amakuru kuri iyo telefoni';
 
   @override
   String get legalPrivacyS9T => '9. Igihe amakuru abikwa';
@@ -2867,7 +2875,17 @@ class AppLocalizationsRw extends AppLocalizations {
   }
 
   @override
-  String get legalUpdatedDate => 'Nyakanga 2026';
+  String get legalUpdatedDate => 'Ukwakira 2026';
+
+  @override
+  String get adLabel => 'Kwamamaza';
+
+  @override
+  String get adPrivacyOptionsTitle => 'Amahitamo y\'ibanga ry\'amatangazo';
+
+  @override
+  String get adPrivacyOptionsSub =>
+      'Reba cyangwa uhindure uburenganzira bwo gukoresha amatangazo';
 
   @override
   String get legalTranslationNote =>

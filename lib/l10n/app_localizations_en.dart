@@ -174,7 +174,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get privacyPolicy => 'Privacy Policy';
 
   @override
-  String get privacyPolicySub => 'What we collect and what stays on your phone';
+  String get privacyPolicySub => 'How we handle your data, SMS and ads';
 
   @override
   String get terms => 'Terms & Conditions';
@@ -2759,6 +2759,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'We may update these terms as the app evolves. Continuing to use FinWise after an update means you accept the revised terms.';
 
   @override
+  String get legalTermsS8T => '8. Advertising';
+
+  @override
+  String get legalTermsS8C =>
+      'FinWise may display clearly identified ads provided by Google Mobile Ads in parts of the app. Ads do not block access to the app\'s features. Advertised products and services are provided by third parties; FinWise does not endorse or guarantee them. Interacting with an ad is optional.';
+
+  @override
   String get legalPrivacyTitle => 'Privacy Policy';
 
   @override
@@ -2805,21 +2812,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get legalPrivacyS6C =>
-      '• We never sell your personal information.\n• We never share your financial data with advertisers or data brokers.\n• We never upload SMS content.\n• We do not move money, access your bank or Mobile Money account, or ask for your PIN or banking credentials.\n• We show no advertising.';
+      '• We never sell your personal information.\n• We do not send transaction amounts, descriptions, categories or SMS message text to Google Mobile Ads or advertisers for ad targeting.\n• We never upload SMS message content.\n• We do not move money, access your bank or Mobile Money account, or ask for your PIN or banking credentials.\n• We may show clearly identified ads in the Home feed.';
 
   @override
   String get legalPrivacyS7T => '7. Third-Party Services';
 
   @override
   String get legalPrivacyS7C =>
-      'We use Firebase (Google) for sign-in, database and file storage. Google\'s privacy policy applies to their handling of that data: https://policies.google.com/privacy\n\nNo other third-party service receives your data.';
+      'We use Firebase (Google) for sign-in, database and file storage. We also use Google Mobile Ads to request, display and measure ads and help prevent ad fraud. When the ads SDK makes an ad request, it may process device or advertising identifiers, IP address, technical diagnostics and ad interactions. Google handles this information under its privacy policy and applicable consent and device settings: https://policies.google.com/privacy\n\nFinWise does not include your transaction records or SMS message text in ad requests. You can review or change ad privacy choices in Settings when the AdMob privacy options are available for your account or location.';
 
   @override
   String get legalPrivacyS8T => '8. Your Rights & Control';
 
   @override
   String get legalPrivacyS8C =>
-      '• Access: view all of your data inside the app\n• Export: download your transactions as CSV or PDF\n• Delete: remove individual records, clear all data, or delete your account entirely\n• Withdraw consent: turn off SMS detection at any time\n• Sign out: stops cloud sync on that device';
+      '• Access: view all of your data inside the app\n• Export: download your transactions as CSV or PDF\n• Delete: remove individual records, clear all data, or delete your account entirely\n• Withdraw consent: turn off SMS detection at any time\n• Ad privacy: review or change ad consent in Settings when the option is required\n• Sign out: stops cloud sync on that device';
 
   @override
   String get legalPrivacyS9T => '9. Data Retention';
@@ -2855,7 +2862,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get legalUpdatedDate => 'July 2026';
+  String get legalUpdatedDate => 'October 2026';
+
+  @override
+  String get adLabel => 'Ad';
+
+  @override
+  String get adPrivacyOptionsTitle => 'Ad privacy options';
+
+  @override
+  String get adPrivacyOptionsSub => 'Review or change your advertising consent';
 
   @override
   String get legalTranslationNote => '';

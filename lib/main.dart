@@ -32,6 +32,7 @@ import 'services/firestore_user_profile_service.dart';
 import 'services/device_identity_service.dart';
 import 'services/sms_listener_service.dart';
 import 'services/foreground_service_handler.dart';
+import 'services/ad_consent_service.dart';
 import 'navigation_key.dart';
 
 void main() async {
@@ -55,6 +56,10 @@ void main() async {
   // so it runs in the background and the app opens immediately.
   runApp(const FinWiseApp());
 
+  // Consent and ad SDK setup run after the first frame so they never delay
+  // opening FinWise. Ads remain disabled until UMP allows ad requests.
+  unawaited(AdConsentService.initialize());
+
   // Restart the SMS listener + persistent monitoring service if permission
   // was already granted on a previous launch. (First-run permission
   // prompting happens from MainScreen, where there's an Activity to attach
@@ -67,18 +72,18 @@ class FinWiseApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      return MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => ThemeProvider()),
-          ChangeNotifierProvider(create: (_) => CategoryProvider()),
-          ChangeNotifierProvider(create: (_) => TransactionProvider()),
-          ChangeNotifierProvider(create: (_) => GoalProvider()),
-          ChangeNotifierProvider(create: (_) => CurrencyProvider()),
-          ChangeNotifierProvider(create: (_) => IncomeProvider()),
-          ChangeNotifierProvider(create: (_) => AppLockProvider()),
-          ChangeNotifierProvider(create: (_) => PeriodProvider()),
-          ChangeNotifierProvider(create: (_) => LocaleProvider()),
-        ],
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => CategoryProvider()),
+        ChangeNotifierProvider(create: (_) => TransactionProvider()),
+        ChangeNotifierProvider(create: (_) => GoalProvider()),
+        ChangeNotifierProvider(create: (_) => CurrencyProvider()),
+        ChangeNotifierProvider(create: (_) => IncomeProvider()),
+        ChangeNotifierProvider(create: (_) => AppLockProvider()),
+        ChangeNotifierProvider(create: (_) => PeriodProvider()),
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
+      ],
       child: Consumer2<ThemeProvider, LocaleProvider>(
         builder: (context, themeProvider, localeProvider, _) {
           return MaterialApp(
@@ -294,7 +299,7 @@ class _InitialScreenState extends State<_InitialScreen> {
           }
         }
       }
-      
+
       if (mounted) {
         setState(() {
           _isAuthenticated = authenticated;

@@ -12,6 +12,17 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+def configuredAdmobAppId = project.findProperty('ADMOB_APP_ID')
+def releaseTaskRequested = gradle.startParameter.taskNames.any {
+    it.toLowerCase(Locale.ROOT).contains('release')
+}
+if (releaseTaskRequested && !configuredAdmobAppId) {
+    throw new GradleException(
+        'Set ADMOB_APP_ID to your real AdMob app ID before building a release.'
+    )
+}
+def admobAppId = configuredAdmobAppId ?: 'ca-app-pub-3940256099942544~3347511713'
+
 android {
     namespace = "com.yves.finwise"
     // Pinned explicitly rather than inheriting flutter.compileSdkVersion,
@@ -49,6 +60,7 @@ android {
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders['admobAppId'] = admobAppId
     }
 
     signingConfigs {

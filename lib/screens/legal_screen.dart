@@ -103,28 +103,29 @@ class LegalScreen extends StatelessWidget {
   }
 
   static List<LegalSection> _termsSections(AppLocalizations l) => [
-          LegalSection(title: l.legalTermsS1T, content: l.legalTermsS1C),
-          LegalSection(title: l.legalTermsS2T, content: l.legalTermsS2C),
-          LegalSection(title: l.legalTermsS3T, content: l.legalTermsS3C),
-          LegalSection(title: l.legalTermsS4T, content: l.legalTermsS4C),
-          LegalSection(title: l.legalTermsS5T, content: l.legalTermsS5C),
-          LegalSection(title: l.legalTermsS6T, content: l.legalTermsS6C),
-          LegalSection(title: l.legalTermsS7T, content: l.legalTermsS7C),
+        LegalSection(title: l.legalTermsS1T, content: l.legalTermsS1C),
+        LegalSection(title: l.legalTermsS2T, content: l.legalTermsS2C),
+        LegalSection(title: l.legalTermsS3T, content: l.legalTermsS3C),
+        LegalSection(title: l.legalTermsS4T, content: l.legalTermsS4C),
+        LegalSection(title: l.legalTermsS5T, content: l.legalTermsS5C),
+        LegalSection(title: l.legalTermsS6T, content: l.legalTermsS6C),
+        LegalSection(title: l.legalTermsS7T, content: l.legalTermsS7C),
+        LegalSection(title: l.legalTermsS8T, content: l.legalTermsS8C),
       ];
 
   static List<LegalSection> _privacySections(AppLocalizations l) => [
-          LegalSection(title: l.legalPrivacyS1T, content: l.legalPrivacyS1C),
-          LegalSection(title: l.legalPrivacyS2T, content: l.legalPrivacyS2C),
-          LegalSection(title: l.legalPrivacyS3T, content: l.legalPrivacyS3C),
-          LegalSection(title: l.legalPrivacyS4T, content: l.legalPrivacyS4C),
-          LegalSection(title: l.legalPrivacyS5T, content: l.legalPrivacyS5C),
-          LegalSection(title: l.legalPrivacyS6T, content: l.legalPrivacyS6C),
-          LegalSection(title: l.legalPrivacyS7T, content: l.legalPrivacyS7C),
-          LegalSection(title: l.legalPrivacyS8T, content: l.legalPrivacyS8C),
-          LegalSection(title: l.legalPrivacyS9T, content: l.legalPrivacyS9C),
-          LegalSection(title: l.legalPrivacyS10T, content: l.legalPrivacyS10C),
-          LegalSection(title: l.legalPrivacyS11T, content: l.legalPrivacyS11C),
-          LegalSection(title: l.legalPrivacyS12T, content: l.legalPrivacyS12C),
+        LegalSection(title: l.legalPrivacyS1T, content: l.legalPrivacyS1C),
+        LegalSection(title: l.legalPrivacyS2T, content: l.legalPrivacyS2C),
+        LegalSection(title: l.legalPrivacyS3T, content: l.legalPrivacyS3C),
+        LegalSection(title: l.legalPrivacyS4T, content: l.legalPrivacyS4C),
+        LegalSection(title: l.legalPrivacyS5T, content: l.legalPrivacyS5C),
+        LegalSection(title: l.legalPrivacyS6T, content: l.legalPrivacyS6C),
+        LegalSection(title: l.legalPrivacyS7T, content: l.legalPrivacyS7C),
+        LegalSection(title: l.legalPrivacyS8T, content: l.legalPrivacyS8C),
+        LegalSection(title: l.legalPrivacyS9T, content: l.legalPrivacyS9C),
+        LegalSection(title: l.legalPrivacyS10T, content: l.legalPrivacyS10C),
+        LegalSection(title: l.legalPrivacyS11T, content: l.legalPrivacyS11C),
+        LegalSection(title: l.legalPrivacyS12T, content: l.legalPrivacyS12C),
       ];
 }
 

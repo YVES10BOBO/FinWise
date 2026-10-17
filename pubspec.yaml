@@ -98,6 +98,7 @@ dependencies:
   # showing the permission dialog after two refusals, so without a way to
   # reach settings the toggle simply appears broken.
   permission_handler: ^11.3.1
+  google_mobile_ads: ^9.1.0
 
 dev_dependencies:
   flutter_test:
