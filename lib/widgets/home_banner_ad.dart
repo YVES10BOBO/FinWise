@@ -34,7 +34,10 @@ class _LoadedHomeBannerAd extends StatefulWidget {
 
 class _LoadedHomeBannerAdState extends State<_LoadedHomeBannerAd> {
   static const _testBannerId = 'ca-app-pub-3940256099942544/6300978111';
-  static const _releaseBannerId = String.fromEnvironment('ADMOB_BANNER_ID');
+  static const _releaseBannerId = String.fromEnvironment(
+    'ADMOB_BANNER_ID',
+    defaultValue: 'ca-app-pub-4250217374753571/4648083132',
+  );
 
   BannerAd? _banner;
   bool _loaded = false;
